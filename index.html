@@ -764,7 +764,15 @@ function exportCSV(){
   dl('MH_Ingresos_'+new Date().toISOString().slice(0,10)+'.csv','\uFEFF'+head.join(',')+'\n'+rows.join('\n'),'text/csv;charset=utf-8');
   toast('CSV exportado');
 }
-function exportJSON(){dl('MH_Ingresos_respaldo_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({data:DATA,set:SET},null,2),'application/json');toast('Respaldo descargado');}
+function exportJSON(){
+  var name='MH_Reportes_respaldo.json';
+  var content=JSON.stringify({data:DATA,set:SET},null,2);
+  try{ var file=new File([content],name,{type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'MH Reportes — respaldo'}).then(function(){toast('Respaldo listo');}).catch(function(){}); return;
+    } }catch(e){}
+  dl(name,content,'application/json'); toast('Respaldo descargado');
+}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
 /* ---------- Init ---------- */
