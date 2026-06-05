@@ -327,6 +327,7 @@
   .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
   .rentblock.hide{display:none}
   .rentttl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-2);font-weight:700;margin-bottom:10px}
+  .rentsub{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);font-weight:700;margin:12px 0 8px;padding-top:11px;border-top:1px solid var(--line)}
   .icsbtn{width:100%;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.35;text-align:center}
   .icsbtn:hover{border-color:var(--gold);background:#fff}
   /* Alertas de contratos por vencer (Resumen) */
@@ -366,6 +367,31 @@
   .rentchips button:hover{border-color:var(--line2);color:var(--paper)}
   .rentchips button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
   .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
+  .fichabtn{width:100%;margin-top:12px;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:700;letter-spacing:.01em}
+  .fichabtn:hover{border-color:var(--gold);background:var(--gold-soft)}
+  .fichabtn:active{background:#F1E4CF}
+  .cuotaup{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:600;color:var(--ingreso);margin-left:4px}
+  /* Tarjeta IPC */
+  .ipccard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+  .ipchead{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted2)}
+  .ipclatest{font-family:'Newsreader',serif;font-size:21px;font-weight:700;color:var(--gold);letter-spacing:0;text-transform:none}
+  .ipclatest small{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:500;color:var(--muted2);letter-spacing:0}
+  .ipclatest.none{font-size:13px;color:var(--muted2);font-weight:600}
+  .ipcnote{font-size:12px;color:var(--muted);line-height:1.5;margin:9px 0 11px}
+  .ipcform{display:flex;gap:8px}
+  .ipcform input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--line);color:var(--paper);border-radius:10px;padding:10px 11px;font-size:13.5px;color-scheme:light;box-sizing:border-box}
+  .ipcform input:focus{border-color:var(--gold);outline:none;box-shadow:0 0 0 3px var(--gold-soft)}
+  .ipcform button{flex:0 0 auto;background:var(--gold);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13.5px;font-weight:700}
+  .ipcform button:active{transform:translateY(1px)}
+  .ipctgl{margin-top:10px;background:none;border:none;color:var(--gold);font-size:12.5px;font-weight:700;padding:2px 0}
+  .ipchist{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+  .ipcrow{display:flex;align-items:center;gap:10px;padding:7px 2px;font-size:13px;border-bottom:1px solid var(--line)}
+  .ipcrow:last-child{border-bottom:none}
+  .ipcrow span{flex:1;color:var(--paper)}
+  .ipcrow b{font-family:'Newsreader',serif;font-size:15px;color:var(--gold)}
+  .ipcrow button{flex:0 0 auto;background:none;border:none;color:var(--muted2);font-size:14px;padding:2px 6px}
+  .ipcrow button:hover{color:var(--gasto)}
+  .ipcempty{font-size:12.5px;color:var(--muted2);padding:8px 2px}
 
   /* ===== COMPARACIÓN LIBRE A vs B ===== */
   .cmpside{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -498,6 +524,19 @@
           <select id="fRentEstado"><option value="vigente">Vigente</option><option value="cancelado">Cancelado</option></select>
         </div>
       </div>
+      <div class="formrow"><label>Valor de la cuota de alquiler (₡)</label><input type="number" id="fRentCuota" inputmode="decimal" placeholder="0"></div>
+      <div class="rentsub">Propietario</div>
+      <div class="twocol">
+        <div class="formrow"><label>Nombre del propietario</label><input type="text" id="fOwnName" placeholder="Nombre completo"></div>
+        <div class="formrow"><label>Teléfono</label><input type="tel" id="fOwnTel" placeholder="0000-0000"></div>
+      </div>
+      <div class="formrow"><label>Correo del propietario</label><input type="email" id="fOwnMail" placeholder="correo@ejemplo.com"></div>
+      <div class="rentsub">Inquilino</div>
+      <div class="twocol">
+        <div class="formrow"><label>Nombre del inquilino</label><input type="text" id="fTenName" placeholder="Nombre completo"></div>
+        <div class="formrow"><label>Teléfono</label><input type="tel" id="fTenTel" placeholder="0000-0000"></div>
+      </div>
+      <div class="formrow"><label>Correo del inquilino</label><input type="email" id="fTenMail" placeholder="correo@ejemplo.com"></div>
       <button type="button" class="icsbtn" id="icsBtn" onclick="addRentToCalendar()">📅 Añadir vencimiento al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorios automáticos 3 meses y 1 mes antes</span></button>
     </div>
     <button class="saveBtn" onclick="saveMov()">Guardar</button>
@@ -1102,6 +1141,42 @@ function renderAjustes(){
   </div>`;
 }
 
+/* ---------- IPC (aumento anual alquileres en colones) ---------- */
+function ipcAll(){ return (SET.ipc||[]).slice().sort((a,b)=>b.mes.localeCompare(a.mes)); }
+function ipcLatest(){ const a=ipcAll(); return a.length?a[0]:null; }
+function ipcForMonth(mk){ const c=(SET.ipc||[]).filter(x=>x.mes<=mk).sort((a,b)=>b.mes.localeCompare(a.mes)); return c.length?c[0]:null; }
+function addIPC(){
+  const mes=document.getElementById('ipcMes').value;
+  const pct=parseFloat(document.getElementById('ipcPct').value);
+  if(!mes){toast('Eleg\u00ed el mes');return;}
+  if(isNaN(pct)){toast('Ingres\u00e1 el porcentaje');return;}
+  if(!SET.ipc)SET.ipc=[];
+  const i=SET.ipc.findIndex(x=>x.mes===mes);
+  if(i>=0)SET.ipc[i].pct=pct; else SET.ipc.push({mes,pct});
+  persist(); document.getElementById('ipcPct').value=''; renderAlquileres(); toast('\u00cdndice IPC guardado');
+}
+function delIPC(mes){ if(!confirm('\u00bfEliminar este \u00edndice IPC?'))return; SET.ipc=(SET.ipc||[]).filter(x=>x.mes!==mes); persist(); renderAlquileres(); }
+// Calcula aumentos anuales para un contrato en colones según aniversario
+function rentIncrease(m){
+  const a=m.alquiler||{};
+  if(m.moneda!=='CRC' || !a.inicio || !a.cuota) return {applies:false};
+  const start=new Date(a.inicio+'T00:00:00'); if(isNaN(start)) return {applies:false};
+  const today=new Date(); today.setHours(0,0,0,0);
+  let cur=a.cuota, steps=[], y=1, pend=null;
+  while(y<=30){
+    const ann=new Date(start); ann.setFullYear(start.getFullYear()+y);
+    const annStr=ann.toISOString().slice(0,10), mk=annStr.slice(0,7);
+    if(ann>today){ // próximo aniversario (pendiente)
+      const e=ipcForMonth(mk); pend={date:annStr, pct:e?e.pct:null, from:cur, to:e?Math.round(cur*(1+e.pct/100)):cur}; break;
+    }
+    const e=ipcForMonth(mk);
+    if(e){ const from=cur; cur=Math.round(cur*(1+e.pct/100)); steps.push({date:annStr,pct:e.pct,from,to:cur,mesIpc:e.mes}); }
+    else steps.push({date:annStr,pct:null,from:cur,to:cur});
+    y++;
+  }
+  return {applies:steps.length>0||!!pend, years:steps.length, base:a.cuota, current:cur, steps, pend};
+}
+
 /* ---------- Vista ALQUILERES ---------- */
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
@@ -1117,6 +1192,9 @@ function renderAlquileres(keepFocus){
   const cards = list.length ? list.map(m=>{
     const a=m.alquiler||{}; const cancel=a.estado==='cancelado';
     const orig=m.moneda==='USD'?` · ${fmtUSD(m.monto)} · TC ${m.tc}`:'';
+    const inc=rentIncrease(m);
+    const cuotaTxt = a.cuota ? (inc.applies && inc.years>0 && inc.current!==a.cuota ? `${fmtCRC(inc.current)} <span class="cuotaup">↑ desde ${fmtCRC(a.cuota)}</span>` : fmtCRC(a.cuota)) : '\u2014';
+    const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:''].filter(Boolean).join(' · ');
     return `<div class="rent ${cancel?'cancel':''}" onclick="openForm(${m.id})">
       <div class="rent-top">
         <div class="rent-prop">${m.propiedad||'(Sin propiedad)'}</div>
@@ -1128,7 +1206,12 @@ function renderAlquileres(keepFocus){
         <div><span>Vencimiento</span><b>${a.vencimiento?fmtFecha(a.vencimiento):'\u2014'}</b></div>
         <div><span>Día de pago</span><b>${fmtDiaPago(a.pago)}</b></div>
       </div>
+      <div class="rent-grid" style="grid-template-columns:1fr">
+        <div><span>Cuota de alquiler ${m.moneda==='CRC'?'(₡)':''}</span><b>${cuotaTxt}</b></div>
+      </div>
+      ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
+      <button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen para el propietario</button>
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${q?'\u26b2':'\u2302'}</div>${q?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
@@ -1140,6 +1223,7 @@ function renderAlquileres(keepFocus){
    <div class="section">
      <h3>Alquileres <span class="small">contratos y estado</span></h3>
      <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 8px;line-height:1.5">Comisiones por alquiler con el detalle de su contrato. Tocá una tarjeta para editar fechas, día de pago o estado (vigente / cancelado).</p>
+     ${ipcCardHTML()}
      <div class="rentsearch">
        <input id="rentSearch" type="search" placeholder="${RENTCRIT==='propiedad'?'Buscar por propiedad…':(RENTCRIT==='propietario'?'Buscar propietario (en notas)…':(RENTCRIT==='inquilino'?'Buscar inquilino (en notas)…':'Buscar propiedad, propietario o inquilino…'))}" value="${(RENTQ||'').replace(/"/g,'&quot;')}" oninput="onRentSearch(this.value)">
        <div class="rentchips">
@@ -1164,6 +1248,65 @@ function printRentReport(){
     +'<table class="rep-tbl small"><thead><tr><th>Propiedad</th><th>Estado</th><th>Inicio</th><th>Vencimiento</th><th>D\u00eda pago</th><th>Detalle</th><th class="r">Original</th><th class="r">Comisi\u00f3n \u20a1</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8">Sin alquileres registrados</td></tr>')+'</tbody></table>'
     +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Generado '+new Date().toLocaleDateString('es-CR')+' \u00b7 Montos en colones (CRC)</div></div>';
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+'</style><title>Alquileres MH Finance</title></head><body>'+INNER+'</body></html>';
+  var f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  var fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
+}
+
+let IPCEXP=false;
+function toggleIpcHist(){IPCEXP=!IPCEXP;renderAlquileres();}
+function ipcCardHTML(){
+  const latest=ipcLatest(); const all=ipcAll();
+  const hist = all.length ? all.map(e=>`<div class="ipcrow"><span>${fmtMesAno(e.mes)}</span><b>${e.pct.toFixed(2)}%</b><button onclick="event.stopPropagation();delIPC('${e.mes}')" title="Eliminar">✕</button></div>`).join('') : '<div class="ipcempty">Sin índices registrados todavía.</div>';
+  const today=new Date(); const mm=today.toISOString().slice(0,7);
+  return `<div class="ipccard">
+    <div class="ipchead"><span>Índice de aumento IPC · MIVAH</span>${latest?`<span class="ipclatest">${latest.pct.toFixed(2)}% <small>${fmtMesAno(latest.mes)}</small></span>`:'<span class="ipclatest none">sin dato</span>'}</div>
+    <p class="ipcnote">Ingresá manualmente el % de aumento anual autorizado que publica el MIVAH cada mes. La app guarda el histórico y calcula automáticamente el aumento de cada contrato en colones al cumplir años.</p>
+    <div class="ipcform">
+      <input type="month" id="ipcMes" value="${mm}">
+      <input type="number" id="ipcPct" inputmode="decimal" step="0.01" placeholder="% aumento">
+      <button onclick="addIPC()">Guardar</button>
+    </div>
+    <button class="ipctgl" onclick="toggleIpcHist()">${IPCEXP?'▾ Ocultar histórico':'▸ Ver histórico'+(all.length?` (${all.length})`:'')}</button>
+    ${IPCEXP?`<div class="ipchist">${hist}</div>`:''}
+  </div>`;
+}
+function fichaPDF(id){
+  const m=DATA.find(x=>x.id===id); if(!m){toast('No encontrado');return;}
+  const a=m.alquiler||{}; const inc=rentIncrease(m);
+  const row=(l,v)=>'<tr><td class="fl">'+l+'</td><td class="fv">'+(v||'\u2014')+'</td></tr>';
+  let incBlock='';
+  if(m.moneda==='CRC' && a.cuota){
+    if(inc.years>0){
+      const stepRows=inc.steps.filter(s=>s.pct!=null).map(s=>'<tr><td>'+fmtFecha(s.date)+'</td><td class="r">'+s.pct.toFixed(2)+'%</td><td class="r">'+fmtCRC(s.from)+'</td><td class="r">'+fmtCRC(s.to)+'</td></tr>').join('');
+      incBlock='<h4>Ajuste anual por IPC (Ley de Arrendamientos)</h4>'
+        +'<table class="ftbl"><thead><tr><th>Aniversario</th><th class="r">% IPC</th><th class="r">Cuota anterior</th><th class="r">Cuota ajustada</th></tr></thead><tbody>'+(stepRows||'<tr><td colspan="4">Sin índices IPC registrados para los aniversarios</td></tr>')+'</tbody></table>'
+        +'<div class="fcuota">Cuota vigente: <b>'+fmtCRC(inc.current)+'</b> <span>(cuota base '+fmtCRC(inc.base)+')</span></div>';
+    }
+    if(inc.pend){
+      incBlock+='<div class="fnext">Próximo ajuste: '+fmtFecha(inc.pend.date)+(inc.pend.pct!=null?' · IPC '+inc.pend.pct.toFixed(2)+'% → '+fmtCRC(inc.pend.to):' · pendiente del % IPC del MIVAH')+'</div>';
+    }
+  }
+  const cuotaShow = a.cuota ? (m.moneda==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
+  var INNER='<div class="rep ficha">'
+    +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Ficha de contrato de alquiler</div><div class="rep-period">'+(m.propiedad||'Propiedad')+' \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
+    +'<div class="festado '+(a.estado==='cancelado'?'off':'on')+'">'+(a.estado==='cancelado'?'Contrato cancelado':'Contrato vigente')+'</div>'
+    +'<h4>Datos del contrato</h4>'
+    +'<table class="ftbl big"><tbody>'
+    +row('Propiedad', m.propiedad)
+    +row('Inicio de contrato', a.inicio?fmtFecha(a.inicio):'')
+    +row('Vencimiento de contrato', a.vencimiento?fmtFecha(a.vencimiento):'')
+    +row('Día de pago', fmtDiaPago(a.pago))
+    +row('Valor de la cuota de alquiler', cuotaShow)
+    +'</tbody></table>'
+    +'<div class="fcols">'
+    +'<div><h4>Propietario</h4><table class="ftbl"><tbody>'+row('Nombre',a.ownName)+row('Teléfono',a.ownTel)+row('Correo',a.ownMail)+'</tbody></table></div>'
+    +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
+    +'</div>'
+    +incBlock
+    +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Ficha generada '+new Date().toLocaleDateString('es-CR')+'</div></div>';
+  var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+'</style><title>Ficha '+(m.propiedad||'alquiler')+'</title></head><body>'+INNER+'</body></html>';
   var f=document.getElementById('printFrame');
   if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
   var fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
@@ -1203,11 +1346,18 @@ function openForm(id){
     document.getElementById('fRentVen').value=al.vencimiento||'';
     var _pg=al.pago||''; if(_pg.indexOf('-')>=0)_pg=_pg.split('-')[2]||''; document.getElementById('fRentPago').value=_pg;
     document.getElementById('fRentEstado').value=al.estado||'vigente';
+    document.getElementById('fRentCuota').value=al.cuota||'';
+    document.getElementById('fOwnName').value=al.ownName||'';
+    document.getElementById('fOwnTel').value=al.ownTel||'';
+    document.getElementById('fOwnMail').value=al.ownMail||'';
+    document.getElementById('fTenName').value=al.tenName||'';
+    document.getElementById('fTenTel').value=al.tenTel||'';
+    document.getElementById('fTenMail').value=al.tenMail||'';
     document.getElementById('undoPipeBtn').classList.toggle('hide', !m.origenPipe);
   } else {
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
-    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago'].forEach(i=>document.getElementById(i).value='');
+    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente';
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
@@ -1232,7 +1382,7 @@ function saveMov(){
     moneda:fMon, monto, tc
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente' };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   persist(); closeForm(); render(); toast(editId?'Movimiento actualizado':'Movimiento guardado');
@@ -1433,6 +1583,21 @@ const REP_CSS=`
   .rep-tbl .c{color:#777;font-weight:600}
   .rep-foot{margin-top:22px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center}
   thead{display:table-header-group}.rep-tbl tr{page-break-inside:avoid}
+`;
+const FICHA_CSS=`
+  .ficha .festado{display:inline-block;font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;margin:4px 0 6px}
+  .ficha .festado.on{background:#E4F1EA;color:#15805A}
+  .ficha .festado.off{background:#F6E1DA;color:#B85138}
+  .ftbl{width:100%;border-collapse:collapse;margin:4px 0 10px}
+  .ftbl td{padding:7px 6px;border-bottom:1px solid #eee;font-size:12px;vertical-align:top}
+  .ftbl.big td{font-size:13px;padding:9px 6px}
+  .ftbl td.fl{color:#888;font-weight:600;width:42%}
+  .ftbl td.fv{color:#1a1a1a;font-weight:600}
+  .ftbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#999;padding:6px;border-bottom:1.5px solid #ddd}
+  .ftbl th.r,.ftbl td.r{text-align:right}
+  .fcols{display:flex;gap:22px}.fcols>div{flex:1}
+  .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
+  .fnext{margin-top:8px;font-size:11.5px;color:#9A6B1E;background:#FBF3E2;border-radius:8px;padding:8px 11px}
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
 function fmtFecha(f){const[y,mo,da]=f.split('-');return da+' '+MES[+mo-1]+' '+y;}
