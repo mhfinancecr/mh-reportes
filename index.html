@@ -301,6 +301,46 @@
   .probchip.lo{background:var(--gasto-soft);color:var(--gasto)}
   .addpipe{width:100%;border:1.5px dashed var(--line2);color:var(--gold);background:transparent;border-radius:14px;padding:15px;font-size:14px;font-weight:600;margin-bottom:14px}
   .addpipe:hover{border-color:var(--gold);background:var(--gold-soft)}
+  /* Totales del pipeline */
+  .pjtotals{margin:0 0 16px;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .pjtot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+  .pjtot:last-child{border-bottom:0}
+  .pjtot span{font-size:12.5px;color:var(--paper);font-weight:500;line-height:1.3}
+  .pjtot span i{font-style:normal;color:var(--muted2);font-size:11px;display:block;margin-top:1px}
+  .pjtot b{font-family:'Newsreader',serif;font-size:17px;font-weight:700;color:var(--neto);white-space:nowrap}
+  .pjtot b.vencn{color:var(--gasto)}
+  .pjtot.main{background:var(--gold-soft)}
+  .pjtot.grand{background:#EEF2F7}
+  .pjtot.grand span{font-weight:700} .pjtot.grand b{font-size:19px}
+  /* Barra y tarjetas de vencido + botón cerrar */
+  .vencbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 10px;padding:10px 13px;border-radius:10px;background:var(--gasto-soft);border:1px solid rgba(184,81,56,.25);font-size:12px;color:var(--gasto);font-weight:600}
+  .vencbar b{font-weight:800}
+  .pipe{flex-direction:column;align-items:stretch;gap:0;padding:0;cursor:default}
+  .pipe-main{display:flex;gap:12px;align-items:center;cursor:pointer;padding:13px 14px}
+  .pipe.venc{border-color:rgba(184,81,56,.3);background:#FCF6F4}
+  .pipe.venc .pmonths{background:var(--gasto-soft);color:var(--gasto)}
+  .closebtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:11px;font-size:13px;font-weight:600;color:var(--ingreso);background:transparent;width:100%;border-radius:0 0 14px 14px}
+  .closebtn .ck{width:17px;height:17px;border:1.6px solid var(--ingreso);border-radius:5px;display:inline-block;position:relative;flex:0 0 auto}
+  .closebtn:hover{background:var(--ingreso-soft)}
+  .closebtn:active{background:#D9ECE2}
+  /* Bloque de alquiler en formulario */
+  .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
+  .rentblock.hide{display:none}
+  .rentttl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-2);font-weight:700;margin-bottom:10px}
+  .icsbtn{width:100%;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.35;text-align:center}
+  .icsbtn:hover{border-color:var(--gold);background:#fff}
+  /* Alertas de contratos por vencer (Resumen) */
+  .alertbar{margin:0 0 14px;border-radius:14px;border:1px solid rgba(184,81,56,.28);background:var(--gasto-soft);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .alertbar .ah{display:flex;align-items:center;gap:8px;padding:11px 14px 7px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--gasto)}
+  .alertrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 14px;font-size:13px;color:var(--paper);border-top:1px solid rgba(184,81,56,.12)}
+  .alertrow:last-child{padding-bottom:12px}
+  .alertrow b{font-weight:700}
+  .alertrow .when{font-size:12px;font-weight:700;white-space:nowrap}
+  .alertrow .when.soon{color:var(--gasto)}
+  .alertrow .when.mid{color:#9A6B1E}
+  .logoutbtn{width:100%;border:1px solid var(--gasto);color:var(--gasto);background:transparent;border-radius:12px;padding:14px;font-size:15px;font-weight:700;letter-spacing:.01em}
+  .logoutbtn:hover{background:var(--gasto-soft)}
+  .logoutbtn:active{background:#F1DBD3}
 
   /* ===== COMPARACIÓN LIBRE A vs B ===== */
   .cmpside{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -420,7 +460,22 @@
       <label>Detalle</label>
       <textarea id="fDet" placeholder="Concepto, inquilino/comprador, observaciones…"></textarea>
     </div>
+    <div id="rentBlock" class="rentblock hide">
+      <div class="rentttl">Contrato de alquiler</div>
+      <div class="twocol">
+        <div class="formrow"><label>Inicio de contrato</label><input type="date" id="fRentIni"></div>
+        <div class="formrow"><label>Vencimiento</label><input type="date" id="fRentVen"></div>
+      </div>
+      <div class="twocol">
+        <div class="formrow"><label>Fecha de pago del alquiler</label><input type="date" id="fRentPago"></div>
+        <div class="formrow"><label>Estado del contrato</label>
+          <select id="fRentEstado"><option value="vigente">Vigente</option><option value="cancelado">Cancelado</option></select>
+        </div>
+      </div>
+      <button type="button" class="icsbtn" id="icsBtn" onclick="addRentToCalendar()">📅 Añadir vencimiento al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorios automáticos 3 meses y 1 mes antes</span></button>
+    </div>
     <button class="saveBtn" onclick="saveMov()">Guardar</button>
+    <button class="delBtn hide" id="undoPipeBtn" style="color:var(--gold);border-color:var(--line)" onclick="undoToPipe()">↩ Devolver al pipeline (deshacer cierre)</button>
     <button class="delBtn hide" id="delBtn" onclick="deleteMov()">Eliminar movimiento</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeForm()">Cancelar</button>
   </div>
@@ -471,6 +526,22 @@
     <button class="saveBtn" onclick="savePipe()">Guardar</button>
     <button class="delBtn hide" id="pDelBtn" onclick="deletePipe()">Eliminar del pipeline</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closePipe()">Cancelar</button>
+  </div>
+</div>
+
+<!-- CERRAR NEGOCIO -->
+<div class="overlay" id="closeOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>Cerrar negocio</h2>
+    <p id="closeName" style="font-size:13.5px;color:var(--paper);font-weight:600;margin:-6px 0 14px"></p>
+    <div class="formrow">
+      <label>Fecha de cierre</label>
+      <input type="date" id="closeDate">
+    </div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:-2px 0 16px">Al cerrar, este negocio se <b style="color:var(--paper)">suma a tus transacciones reales</b> y al gráfico principal con la fecha indicada, y sale del pipeline. No tenés que digitarlo de nuevo.</p>
+    <button class="saveBtn" onclick="confirmClose()">Cerrar y trasladar a transacciones</button>
+    <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCloseModal()">Cancelar</button>
   </div>
 </div>
 
@@ -566,7 +637,7 @@ function logoSVG(fill,h){var w=Math.round(h*677/727);return '<svg width="'+w+'" 
 
 /* ---------- Categorías ---------- */
 const CATS = {
-  ingreso:['Comisión por venta de propiedad','Comisión por alquiler de propiedad','Comisión por referido'],
+  ingreso:['Comisión por venta de propiedad','Comisión por alquiler de propiedad','Comisión por referido','Otro ingreso'],
   gasto:['Pago de comisiones por ventas','Pago de comisiones por alquileres','Pago de comisiones por referidos','Otros gastos de negocio']
 };
 
@@ -724,6 +795,7 @@ function renderResumen(){
 
   document.getElementById('view').innerHTML = `
   ${periodBarHTML()}
+  ${rentAlertsHTML()}
 
   <div class="cards">
     <div class="card"><div class="k"><span class="dot" style="background:var(--ingreso)"></span>Ingresos</div><div class="v ingreso num">${fmtCRC(s.i)}</div>${yoyTxt(s.i,prev.i,false)}</div>
@@ -847,9 +919,11 @@ function renderReportes(){
   const cur=DATA.filter(m=>inRange(m,PER.desde,PER.hasta));
   const s=sum(cur), pv=prevYear(PER), prevL=DATA.filter(m=>inRange(m,pv.desde,pv.hasta)), ps=sum(prevL);
   const on = SET.cmp!==false;
-  const vv=(a,b,inv)=>{ if(b===0&&a===0)return '<span style="color:var(--muted2)">—</span>';
-    const p=b===0?100:Math.round((a-b)/Math.abs(b)*100); const good=inv?p<0:p>0;
-    const cls=p===0?'':(good?'up':'down'); return `<b class="${cls}">${p>0?'▲':p<0?'▼':'—'} ${Math.abs(p)}%</b>`; };
+  const vv=(a,b,inv)=>{ if(b===0&&a===0)return '<b style="color:var(--muted2)">— 0%</b>';
+    const p=b===0?100:Math.round((a-b)/Math.abs(b)*100);
+    if(p===0)return '<b style="color:var(--muted2)">— 0%</b>';
+    const good=inv?p<0:p>0; const cls=good?'up':'down'; const ar=good?'▲':'▼';
+    return `<b class="${cls}">${ar} ${Math.abs(p)}%</b>`; };
   const A=DATA.filter(m=>inRange(m,CMP.aD,CMP.aH)), sA=sum(A);
   const Bl=DATA.filter(m=>inRange(m,CMP.bD,CMP.bH)), sB=sum(Bl);
   document.getElementById('view').innerHTML = periodBarHTML() + `
@@ -869,9 +943,9 @@ function renderReportes(){
      <button class="swapbtn" onclick="swapCmp()">⇅ Intercambiar A y B</button>
      <div class="cmptbl">
        <div class="cmprow head"><span>Concepto</span><span>A</span><span>B</span><span>Var.</span></div>
-       <div class="cmprow"><span>Ingresos</span><span class="num" style="color:var(--ingreso)">${fmtCRC(sA.i)}</span><span class="num" style="color:var(--muted)">${fmtCRC(sB.i)}</span><span>${vv(sA.i,sB.i,false)}</span></div>
-       <div class="cmprow"><span>Gastos</span><span class="num" style="color:var(--gasto)">${fmtCRC(sA.g)}</span><span class="num" style="color:var(--muted)">${fmtCRC(sB.g)}</span><span>${vv(sA.g,sB.g,true)}</span></div>
-       <div class="cmprow"><span>Saldo</span><span class="num" style="color:var(--neto);font-weight:700">${fmtCRC(sA.n)}</span><span class="num" style="color:var(--muted)">${fmtCRC(sB.n)}</span><span>${vv(sA.n,sB.n,false)}</span></div>
+       <div class="cmprow"><span>Ingresos</span><span class="num" style="color:var(--ingreso)">${fmtCRC(sA.i)}</span><span class="num" style="color:var(--ingreso)">${fmtCRC(sB.i)}</span><span>${vv(sA.i,sB.i,false)}</span></div>
+       <div class="cmprow"><span>Gastos</span><span class="num" style="color:var(--gasto)">${fmtCRC(sA.g)}</span><span class="num" style="color:var(--gasto)">${fmtCRC(sB.g)}</span><span>${vv(sA.g,sB.g,true)}</span></div>
+       <div class="cmprow"><span>Saldo</span><span class="num" style="color:var(--neto);font-weight:700">${fmtCRC(sA.n)}</span><span class="num" style="color:var(--neto);font-weight:700">${fmtCRC(sB.n)}</span><span>${vv(sA.n,sB.n,false)}</span></div>
        <div class="cmprow"><span>Transacciones</span><span class="num">${A.length}</span><span class="num" style="color:var(--muted)">${Bl.length}</span><span>${vv(A.length,Bl.length,false)}</span></div>
      </div>
      <div style="font-size:11.5px;color:var(--muted);margin-bottom:11px"><b style="color:var(--neto)">A</b> = ${rangeLabel(CMP.aD,CMP.aH)} &nbsp;·&nbsp; <b style="color:var(--gold-2)">B</b> = ${rangeLabel(CMP.bD,CMP.bH)}</div>
@@ -993,12 +1067,17 @@ function renderAjustes(){
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Los datos se guardan solo en este dispositivo. Respaldá con frecuencia para no perderlos. Para generar PDF y CSV, usá la pestaña <b style="color:var(--paper)">Reportes</b>.</p>
     <div class="setrow"><div class="l">Respaldo completo (JSON)<small>Para restaurar en otro equipo</small></div><button class="ghostbtn" onclick="exportJSON()">Descargar</button></div>
     <div class="setrow"><div class="l">Restaurar respaldo<small>Importar archivo JSON</small></div><label class="ghostbtn" style="display:inline-block">Importar<input type="file" accept=".json" class="hide" onchange="importJSON(event)"></label></div>
+  </div>
+  <div class="section">
+    <h3>Sesión</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Cerrá la sesión para volver a la pantalla de contraseña, sin tener que cerrar la app con el gesto de Apple.</p>
+    <button class="logoutbtn" onclick="logout()">⤶  Cerrar sesión / Salir</button>
   </div>`;
 }
 
 /* ---------- Formulario ---------- */
 let editId=null, fTipo='ingreso', fMon='CRC';
-function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats();}
+function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock();}
 function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   document.getElementById('lblMonto').textContent = m==='CRC'?'Monto (₡)':'Monto ($)';
   document.getElementById('tcRow').classList.toggle('show',m==='USD');
@@ -1006,6 +1085,8 @@ function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b
   else document.getElementById('tcHint').classList.add('hide');
 }
 function fillCats(){const sel=document.getElementById('fCat');sel.innerHTML=CATS[fTipo].map(c=>`<option>${c}</option>`).join('');}
+function isAlquilerCat(c){return !!c && c.toLowerCase().indexOf('alquiler')>=0;}
+function updRentBlock(){ const rb=document.getElementById('rentBlock'); if(!rb)return; const cat=document.getElementById('fCat').value; rb.classList.toggle('hide', !(fTipo==='ingreso' && isAlquilerCat(cat))); }
 function updTcHint(){const m=parseFloat(document.getElementById('fMonto').value)||0,tc=parseFloat(document.getElementById('fTC').value)||0;document.getElementById('tcHint').textContent= m&&tc?`≈ ${fmtCRC(m*tc)} en colones`:'';}
 
 function openForm(id){
@@ -1022,13 +1103,22 @@ function openForm(id){
     document.getElementById('fDet').value=m.detalle||'';
     document.getElementById('fMonto').value=m.monto;
     setMon(m.moneda); document.getElementById('fTC').value=m.tc; updTcHint();
+    const al=m.alquiler||{};
+    document.getElementById('fRentIni').value=al.inicio||'';
+    document.getElementById('fRentVen').value=al.vencimiento||'';
+    document.getElementById('fRentPago').value=al.pago||'';
+    document.getElementById('fRentEstado').value=al.estado||'vigente';
+    document.getElementById('undoPipeBtn').classList.toggle('hide', !m.origenPipe);
   } else {
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
-    ['fMonto','fProp','fDet','fTC'].forEach(i=>document.getElementById(i).value='');
+    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('fRentEstado').value='vigente';
+    document.getElementById('undoPipeBtn').classList.add('hide');
   }
   document.getElementById('fMonto').oninput=updTcHint;
   document.getElementById('fTC').oninput=updTcHint;
+  document.getElementById('fCat').onchange=updRentBlock; updRentBlock();
 }
 function closeForm(){document.getElementById('overlay').classList.remove('open');}
 
@@ -1036,19 +1126,54 @@ function saveMov(){
   const monto=parseFloat(document.getElementById('fMonto').value);
   if(!monto||monto<=0){toast('Ingresá un monto válido');return;}
   const tc = fMon==='USD' ? (parseFloat(document.getElementById('fTC').value)||SET.tc) : 1;
+  const cat=document.getElementById('fCat').value;
   const rec={
     id: editId||Date.now(),
     tipo:fTipo,
-    categoria:document.getElementById('fCat').value,
+    categoria:cat,
     fecha:document.getElementById('fFecha').value,
     propiedad:document.getElementById('fProp').value.trim(),
     detalle:document.getElementById('fDet').value.trim(),
     moneda:fMon, monto, tc
   };
-  if(editId){const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
+  if(fTipo==='ingreso' && isAlquilerCat(cat)){
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente' };
+  }
+  if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   persist(); closeForm(); render(); toast(editId?'Movimiento actualizado':'Movimiento guardado');
 }
 function deleteMov(){ if(!editId)return; if(confirm('¿Eliminar este movimiento?')){DATA=DATA.filter(x=>x.id!==editId);persist();closeForm();render();toast('Movimiento eliminado');} }
+function undoToPipe(){
+  if(!editId)return; const m=DATA.find(x=>x.id===editId); if(!m||!m.origenPipe){closeForm();return;}
+  if(!confirm('¿Devolver este negocio al pipeline? Se quitará de tus transacciones reales.'))return;
+  const op=m.origenPipe;
+  PIPE.push({id:Date.now(),creado:op.creado||new Date().toISOString().slice(0,10),concepto:op.concepto||'Comisión por venta',propiedad:m.propiedad||'',detalle:m.detalle||'',moneda:m.moneda,monto:m.monto,tc:m.tc,prob:(op.prob??75),meses:op.meses||1});
+  DATA=DATA.filter(x=>x.id!==editId);
+  persist();closeForm();render();toast('↩ Devuelto al pipeline');
+}
+function addRentToCalendar(){
+  const ven=document.getElementById('fRentVen').value;
+  if(!ven){toast('Ingresá la fecha de vencimiento del contrato');return;}
+  const prop=document.getElementById('fProp').value.trim()||'Alquiler';
+  const dt=ven.replace(/-/g,'');
+  const uid='mh'+(editId||Date.now())+'@mhfinance.cr';
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const L=[
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MH Finance//Panel//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+dt,'DTEND;VALUE=DATE:'+dt,
+    'SUMMARY:Vence contrato de alquiler \u00b7 '+prop,
+    'DESCRIPTION:Vencimiento del contrato de alquiler de '+prop+'. Generado por MH Finance.',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Faltan 3 meses para el vencimiento \u00b7 '+prop,'TRIGGER:-P90D','END:VALARM',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Falta 1 mes para el vencimiento \u00b7 '+prop,'TRIGGER:-P30D','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  const blob=new Blob([L],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=prop.replace(/[^\w]+/g,'_')+'_vencimiento.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast('📅 Evento de calendario generado');
+}
 
 /* ---------- Vista PIPELINE / PROYECCIÓN ---------- */
 const PIPE_CATS=['Comisión por venta','Comisión por alquiler','Comisión por referido','Otro'];
@@ -1057,49 +1182,67 @@ let pEditId=null,pMon='CRC',pProb=75,pMeses=1;
 
 function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else openForm(); }
 
-function renderPipeline(){
-  const cy=new Date().getFullYear();
-  const realInc=DATA.filter(m=>m.tipo==='ingreso'&&+m.fecha.slice(0,4)===cy).reduce((a,m)=>a+crc(m),0);
-  const valTot=PIPE.reduce((a,p)=>a+crc(p),0);
-  const valPond=Math.round(PIPE.reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0));
-  const hz=h=>PIPE.filter(p=>(p.meses||1)<=h).reduce((a,p)=>a+crc(p),0);
-  const cn=h=>PIPE.filter(p=>(p.meses||1)<=h).length;
-  const hz1=hz(1),hz2=hz(2),hz3=hz(3);
-  const growth= realInc>0? Math.round(valTot/realInc*100):null;
-  const list=[...PIPE].sort((a,b)=>(a.meses||1)-(b.meses||1)||crc(b)-crc(a));
-  const pc=p=>p>=70?'hi':p>=40?'mid':'lo';
-  const rows= list.length? list.map(p=>{
-    const pr=p.prob??100;
-    const orig=p.moneda==='USD'?`<span>· ${fmtUSD(p.monto)} · TC ${p.tc}</span>`:'';
-    return `<div class="pipe" onclick="openPipe(${p.id})">
+/* helpers de pipeline */
+const PIPE_TO_CAT={'Comisión por venta':'Comisión por venta de propiedad','Comisión por alquiler':'Comisión por alquiler de propiedad','Comisión por referido':'Comisión por referido','Otro':'Otro ingreso'};
+const pchip=p=>p>=70?'hi':p>=40?'mid':'lo';
+function pipeCreado(p){ return p.creado || new Date(p.id||Date.now()).toISOString().slice(0,10); }
+function isVencido(p){ const c=new Date(pipeCreado(p)); const lim=new Date(c); lim.setMonth(lim.getMonth()+3); return new Date() > lim; }
+function pipeRow(p,venc){
+  const pr=p.prob??100;
+  const orig=p.moneda==='USD'?`<span>· ${fmtUSD(p.monto)} · TC ${p.tc}</span>`:'';
+  return `<div class="pipe ${venc?'venc':''}">
+    <div class="pipe-main" onclick="openPipe(${p.id})">
       <div class="pmonths"><b>${p.meses||1}</b><span>${(p.meses||1)===1?'mes':'meses'}</span></div>
       <div class="pinfo"><div class="pcat">${p.propiedad||p.concepto}</div>
         <div class="pmeta"><span>${p.concepto}</span>${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
-      <div class="pright"><div class="pamt">${fmtCRC(crc(p))}</div><div class="pprob"><span class="probchip ${pc(pr)}">${pr}%</span></div></div>
-    </div>`;
-  }).join('') : `<div class="empty"><div class="big">⇗</div>Tu pipeline está vacío.<br>Agregá las propiedades en proceso o en cartera para proyectar tu crecimiento.</div>`;
+      <div class="pright"><div class="pamt">${fmtCRC(crc(p))}</div><div class="pprob"><span class="probchip ${pchip(pr)}">${pr}%</span></div></div>
+    </div>
+    <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Marcar como negocio cerrado</button>
+  </div>`;
+}
+
+function renderPipeline(){
+  const cy=new Date().getFullYear();
+  const realInc=DATA.filter(m=>m.tipo==='ingreso'&&+m.fecha.slice(0,4)===cy).reduce((a,m)=>a+crc(m),0);
+  const active=PIPE.filter(p=>!isVencido(p));
+  const venc=PIPE.filter(isVencido);
+  const porCerrar=active.reduce((a,p)=>a+crc(p),0);
+  const vencidoTot=venc.reduce((a,p)=>a+crc(p),0);
+  const grandTot=porCerrar+vencidoTot;
+  const valPond=Math.round(active.reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0));
+  const hz=h=>active.filter(p=>(p.meses||1)===h).reduce((a,p)=>a+crc(p),0);
+  const cn=h=>active.filter(p=>(p.meses||1)===h).length;
+  const growth= realInc>0? Math.round(porCerrar/realInc*100):null;
+  const activeList=[...active].sort((a,b)=>(a.meses||1)-(b.meses||1)||crc(b)-crc(a));
+  const vencList=[...venc].sort((a,b)=>crc(b)-crc(a));
 
   document.getElementById('view').innerHTML=`
    <div class="pjhero">
-     <div class="k">Valor del pipeline</div>
-     <div class="v num">${fmtCRC(valTot)}</div>
-     <div class="sub">${PIPE.length} ${PIPE.length===1?'propiedad':'propiedades'} en proceso · Ponderado por probabilidad: <b>${fmtCRC(valPond)}</b></div>
+     <div class="k">Pipeline por cerrar</div>
+     <div class="v num">${fmtCRC(porCerrar)}</div>
+     <div class="sub">${active.length} ${active.length===1?'propiedad':'propiedades'} en proceso · Ponderado por probabilidad: <b>${fmtCRC(valPond)}</b></div>
    </div>
    <div class="section" style="margin-bottom:14px">
      <h3>Proyección de ingresos <span class="small">si cierran</span></h3>
-     <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.5">Ingreso adicional estimado <b style="color:var(--paper)">en caso de cerrar</b> los negocios dentro de cada plazo. No afecta tus cifras reales.</p>
+     <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.5">Ingreso adicional estimado <b style="color:var(--paper)">en caso de cerrar</b> en cada plazo. Cada negocio suma solo en su mes estimado. No afecta tus cifras reales.</p>
      <div class="horizons">
-       <div class="hz"><div class="hk">En 1 mes</div><div class="hv num">${fmtC(hz1)}</div><div class="hn">${cn(1)} ${cn(1)===1?'negocio':'negocios'}</div></div>
-       <div class="hz"><div class="hk">En 2 meses</div><div class="hv num">${fmtC(hz2)}</div><div class="hn">${cn(2)} ${cn(2)===1?'negocio':'negocios'}</div></div>
-       <div class="hz"><div class="hk">En 3 meses</div><div class="hv num">${fmtC(hz3)}</div><div class="hn">${cn(3)} ${cn(3)===1?'negocio':'negocios'}</div></div>
+       <div class="hz"><div class="hk">En 1 mes</div><div class="hv num">${fmtC(hz(1))}</div><div class="hn">${cn(1)} ${cn(1)===1?'negocio':'negocios'}</div></div>
+       <div class="hz"><div class="hk">En 2 meses</div><div class="hv num">${fmtC(hz(2))}</div><div class="hn">${cn(2)} ${cn(2)===1?'negocio':'negocios'}</div></div>
+       <div class="hz"><div class="hk">En 3 meses</div><div class="hv num">${fmtC(hz(3))}</div><div class="hn">${cn(3)} ${cn(3)===1?'negocio':'negocios'}</div></div>
      </div>
-     ${valTot>0 ? (growth!==null
-        ? `<div class="pjgrow"><div class="gl">Si cerrás todo el pipeline, tu ingreso real de <b>${cy}</b> (${fmtC(realInc)}) crecería</div><div class="gv">+${growth}%</div></div>`
-        : `<div class="pjgrow"><div class="gl">Proyección de ingreso adicional total</div><div class="gv">${fmtC(valTot)}</div></div>`) : ''}
+     <div class="pjtotals">
+       <div class="pjtot main"><span>Total por cerrar · 1 + 2 + 3 meses</span><b>${fmtCRC(porCerrar)}</b></div>
+       <div class="pjtot"><span>Pipeline vencido<i>+3 meses sin cerrar</i></span><b class="vencn">${fmtCRC(vencidoTot)}</b></div>
+       <div class="pjtot grand"><span>Total pipeline · por cerrar + vencido</span><b>${fmtCRC(grandTot)}</b></div>
+     </div>
+     ${porCerrar>0 ? (growth!==null
+        ? `<div class="pjgrow"><div class="gl">Si cerrás todo el pipeline por cerrar, tu ingreso real de <b>${cy}</b> (${fmtC(realInc)}) crecería</div><div class="gv">+${growth}%</div></div>`
+        : `<div class="pjgrow"><div class="gl">Proyección de ingreso adicional</div><div class="gv">${fmtC(porCerrar)}</div></div>`) : ''}
    </div>
    <button class="addpipe" onclick="openPipe()">+  Agregar propiedad al pipeline</button>
-   ${list.length?`<div class="sortbar"><div class="res"><b>${list.length}</b> en pipeline · Total <b>${fmtCRC(valTot)}</b></div></div>`:''}
-   ${rows}`;
+   ${activeList.length ? `<div class="sortbar"><div class="res"><b>${activeList.length}</b> por cerrar · Total <b>${fmtCRC(porCerrar)}</b></div></div>`+activeList.map(p=>pipeRow(p,false)).join('')
+      : (PIPE.length ? '' : `<div class="empty"><div class="big">⇗</div>Tu pipeline está vacío.<br>Agregá las propiedades en proceso o en cartera para proyectar tu crecimiento.</div>`)}
+   ${vencList.length ? `<div class="vencbar"><span>⚠︎ Pipeline vencido</span><span><b>${vencList.length}</b> sin cerrar tras 3 meses · <b>${fmtCRC(vencidoTot)}</b></span></div>`+vencList.map(p=>pipeRow(p,true)).join('') : ''}`;
 }
 
 /* Formulario de pipeline */
@@ -1138,11 +1281,36 @@ function savePipe(){
   const monto=parseFloat(document.getElementById('pMonto').value);
   if(!monto||monto<=0){toast('Ingresá la comisión esperada');return;}
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
-  const rec={id:pEditId||Date.now(),concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses};
+  const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
+  const creado=(ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10);
+  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
 }
 function deletePipe(){if(!pEditId)return;if(confirm('¿Quitar esta propiedad del pipeline?')){PIPE=PIPE.filter(x=>x.id!==pEditId);persist();closePipe();render();toast('Quitado del pipeline');}}
+
+/* Cerrar negocio → traslada a transacciones reales */
+let closeId=null;
+function openClose(id){
+  closeId=id; const p=PIPE.find(x=>x.id===id); if(!p)return;
+  document.getElementById('closeName').textContent=(p.propiedad||p.concepto)+' · '+fmtCRC(crc(p));
+  document.getElementById('closeDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('closeOverlay').classList.add('open');
+}
+function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
+function confirmClose(){
+  const p=PIPE.find(x=>x.id===closeId); if(!p){closeCloseModal();return;}
+  const d=document.getElementById('closeDate').value; if(!d){toast('Elegí la fecha de cierre');return;}
+  const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
+  const newId=Date.now();
+  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
+  if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
+  DATA.push(rec);
+  PIPE=PIPE.filter(x=>x.id!==closeId);
+  persist();closeCloseModal();render();
+  if(rec.alquiler){ toast('✓ Cerrado · agregá las fechas del contrato'); openForm(newId); }
+  else toast('✓ Negocio cerrado y sumado a transacciones');
+}
 
 /* ---------- Reporte PDF (impresión) ---------- */
 const REP_CSS=`
@@ -1172,8 +1340,19 @@ const REP_CSS=`
   thead{display:table-header-group}.rep-tbl tr{page-break-inside:avoid}
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
+function fmtFecha(f){const[y,mo,da]=f.split('-');return da+' '+MES[+mo-1]+' '+y;}
+function rentAlerts(){
+  const today=new Date(); today.setHours(0,0,0,0); const out=[];
+  DATA.forEach(m=>{ if(m.tipo==='ingreso' && m.alquiler && m.alquiler.estado!=='cancelado' && m.alquiler.vencimiento){ const v=new Date(m.alquiler.vencimiento+'T00:00:00'); const days=Math.round((v-today)/86400000); if(days<=90) out.push({m,days,v:m.alquiler.vencimiento}); } });
+  out.sort((a,b)=>a.days-b.days); return out;
+}
+function rentAlertsHTML(){
+  const a=rentAlerts(); if(!a.length)return '';
+  const rows=a.map(x=>{ const cls=x.days<=30?'soon':'mid'; const when=x.days<0?`Venció hace ${Math.abs(x.days)} d`:(x.days===0?'Vence hoy':`Vence en ${x.days} d`); return `<div class="alertrow"><span><b>${x.m.propiedad||'Alquiler'}</b> · vence ${fmtFecha(x.v)}</span><span class="when ${cls}">${when}</span></div>`; }).join('');
+  return `<div class="alertbar"><div class="ah">⚠︎ Contratos de alquiler por vencer</div>${rows}</div>`;
+}
 function rangeLabel(d,h){ if(d===h)return fmtMesAno(d); const[dy,dm]=d.split('-'),[hy,hm]=h.split('-'); if(dy===hy)return MES[+dm-1]+'–'+MES[+hm-1]+' '+dy; return fmtMesAno(d)+' – '+fmtMesAno(h); }
-function pctSpan(a,b,inv){ if(b===0&&a===0)return '\u2014'; var p=b===0?(a>0?100:-100):Math.round((a-b)/Math.abs(b)*100); var c=p===0?'#888':((inv?p<0:p>0)?'#15805A':'#B85138'); var ar=p>0?'\u25B2':p<0?'\u25BC':''; return '<span style="color:'+c+';font-weight:700">'+ar+' '+Math.abs(p)+'%</span>'; }
+function pctSpan(a,b,inv){ if(b===0&&a===0)return '<span style="color:#888;font-weight:700">\u2014 0%</span>'; var p=b===0?(a>0?100:-100):Math.round((a-b)/Math.abs(b)*100); if(p===0)return '<span style="color:#888;font-weight:700">\u2014 0%</span>'; var good=inv?p<0:p>0; var c=good?'#15805A':'#B85138'; var ar=good?'\u25B2':'\u25BC'; return '<span style="color:'+c+';font-weight:700">'+ar+' '+Math.abs(p)+'%</span>'; }
 function printChartLight(months,ing,gas,sal){
   const W=1000,H=300,pL=12,pR=12,pT=18,pB=32,n=months.length;
   const all=ing.concat(gas).concat(sal).concat([0]);
@@ -1232,6 +1411,12 @@ function printReport(){
       +'<tr><td>N\u00b0 transacciones</td><td class="r">'+Al.length+'</td><td class="r">'+Bl2.length+'</td><td class="r">'+pctSpan(Al.length,Bl2.length,false)+'</td></tr>'
       +'</tbody></table>';
   }
+  var rentList=cur.filter(function(m){return m.tipo==='ingreso'&&m.alquiler&&(m.alquiler.inicio||m.alquiler.vencimiento||m.alquiler.pago);});
+  var rentHTML='';
+  if(rentList.length){
+    var rr=rentList.map(function(m){var a=m.alquiler; var est=a.estado==='cancelado'?'<span style="color:#B85138">Cancelado</span>':'<span style="color:#15805A">Vigente</span>'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+(a.pago?fmtFecha(a.pago):'\u2014')+'</td><td>'+est+'</td></tr>';}).join('');
+    rentHTML='<h4>Contratos de alquiler</h4><table class="rep-tbl small"><thead><tr><th>Propiedad</th><th>Inicio contrato</th><th>Vencimiento</th><th>Pago alquiler</th><th>Estado</th></tr></thead><tbody>'+rr+'</tbody></table>';
+  }
   var REPORT_INNER=`
     <div class="rep">
       <div class="rep-head"><img class="rep-logo" alt="MH Finance" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NzcgNzI3Ij48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDcyNykgc2NhbGUoMC4xLC0wLjEpIiBmaWxsPSIjMTQxMTBFIj48cGF0aCBkPSJNMjIzOCA3MjUwIGMtMTYgLTEyIC0yOCAtMjcgLTI4IC0zNCAwIC03IDIyIC02MCA0OSAtMTE3IDg2IC0xODUKMTI0IC0zMTMgMTU2IC01MzMgNDEgLTI4MyAzOSAtOTIzIC01IC0xMTM1IC0yNSAtMTI0IC01MyAtMTk1IC0xMDkgLTI4MSAtMjIKLTM1IC00MSAtNzAgLTQxIC03NyAwIC0yNyA4MyAtMTY1IDEwNCAtMTcyIDExIC01IDEyNCAtNSAyNTAgLTEgMTc2IDYgMjMwIDExCjIzNyAyMSA1IDggOSAzNyAxMCA2NCAwIDI4IDYgMzcyIDEyIDc2NiAxMyA3NDkgMTMgNzQ5IDU1IDc0OSAyNyAwIDEwMCAtODcKMTM2IC0xNjIgODkgLTE4NyAxNTcgLTQ2NiAxODYgLTc1OCAxMiAtMTMwIDUxIC0xMTI3IDc0IC0xOTA0IDMgLTEwMiA4IC0xNDEKMTggLTE0NyAyNSAtMTcgNjEgLTIyIDk3IC0xMyBsMzYgOSA3IDE0NSBjNCA4MCAxNCAzNjEgMjMgNjI1IDM5IDExNjcgNTAKMTM1NiAxMDAgMTYwMiAyOSAxNDQgOTkgMzYxIDE0NCA0NTEgMzQgNjggMTA4IDE1MiAxMzQgMTUyIDQwIDAgNDEgLTIyIDQ5Ci02ODUgNSAtMzUyIDEyIC02OTggMTYgLTc3MCBsNyAtMTMwIDU1IC03IGMzMCAtMyAxMzkgLTggMjQyIC05IDIxNyAtNCAyMDgKLTcgMjY1IDEwNCAzOCA3NyA0MCA2NiAtMzEgMTgyIC00NyA3NyAtODAgMTgzIC0xMDIgMzI2IC0yNSAxNjEgLTI1IDc4MiAtMQo5NzcgMzQgMjY1IDczIDQxMSAxNjMgNjAzIDMwIDYzIDU0IDEyMCA1NCAxMjYgMCA3IC0xMiAyMSAtMjcgMzMgLTI2IDIxIC0zNgoyMiAtMTIzIDE3IC00MTEgLTI1IC04ODAgLTQwOCAtMTAyNSAtODM3IGwtMjIgLTY1IC0yMyA3MCBjLTExNSAzNDkgLTQ4OSA3MDMKLTg1MCA4MDUgLTQxIDExIC0xMTggMjMgLTE3MCAyNyAtODggNSAtOTcgNCAtMTIyIC0xN3ogTTE4NzAgNjI1MSBjLTQ3IC0xNQotMTA4IC01MSAtMjc3IC0xNjIgLTk0IC02MiAtMjM2IC0xNDQgLTMyMSAtMTg3IC0xNjcgLTgyIC0xODUgLTk4IC0xNjEgLTE0OAoyMSAtNDIgNTMgLTU0IDE1MiAtNTQgMTAwIDAgMTQzIC0xNiAxNTMgLTU2IDQgLTE0IDEgLTE0MyAtNSAtMjg3IC02IC0xNDQKLTIzIC01NTQgLTM2IC05MTIgLTE0IC0zNTcgLTMwIC03NjEgLTM2IC04OTggLTYgLTEzNiAtMTIgLTMyNyAtMTIgLTQyNSAtMgotMjA1IC0xIC0yMDEgLTExNCAtMzQ5IC0xNzMgLTIyNyAtMjAzIC0yNzQgLTE5MSAtMjk2IDIxIC00MSAyMzEgLTMyOSAyNDMKLTMzMyA2IC0zIDE2NiA4NSAzNTYgMTk1IDI2NCAxNTMgMzQ0IDIwNCAzNDIgMjE4IDAgMTAgLTEzIDUwIC0yNyA4OCAtNTYgMTU0Ci01NCAxMTEgLTQ3IDE0OTggbDEgMTU3IDU2NSAwIDU2NSAwIDAgMjEwIDAgMjEwIC01NjEgMCAtNTYyIDAgNyAxNTMgYzMgODMKMTEgMzEyIDE2IDUwNyAxNiA1MzQgMjUgNTg4IDEzNyA3NTcgNDIgNjIgMzggODUgLTE4IDEwNyAtNDEgMTcgLTEyNiAyMCAtMTY5Cjd6IE00NzA2IDYyMDAgYy0zMiAtMTAgLTY2IC0zOCAtNjYgLTU0IDAgLTYgMTkgLTQzIDQzIC04MSAxMDYgLTE3MSAxMTEgLTIwNgoxMjcgLTc3MCA1IC0xOTIgMTMgLTQxMiAxNiAtNDg3IGw3IC0xMzggLTU2MiAwIC01NjEgMCAwIC0yMDggMCAtMjA5IDEwOCAtNwpjNTkgLTMgMzEzIC0zIDU2NSAxIGw0NTcgNiAzIC01OTkgYzEgLTMyOSAyIC02NjAgMSAtNzM0IDAgLTE0NyAtMTggLTI1MCAtNjAKLTM1NSAtMTQgLTMzIC0yMiAtNjUgLTIwIC03MSA3IC0xOCA2ODUgLTQwNyA3MDAgLTQwMSAyMSA4IDI0NiAzMjQgMjQ2IDM0NiAwCjE4IC03NSAxMjYgLTIyMyAzMjEgLTMxIDQxIC02MyA5NSAtNzEgMTIwIC0xMCAzMiAtMTYgMTI0IC0yMCAzMjUgLTIgMTU0IC0yNAo3MzUgLTQ3IDEyOTAgLTIzIDU1NiAtNDIgMTAzMCAtNDEgMTA1NCAxIDM0IDggNTEgMjcgNzAgMjQgMjQgMzIgMjYgMTI0IDI2CjEwOCAxIDE0NCAxNCAxNjIgNjIgMTggNDcgMyA2MiAtMTE2IDExOCAtMTQxIDY2IC0yMjAgMTEyIC00MTcgMjQyIC0yMDIgMTM0Ci0yODMgMTYyIC0zODIgMTMzeiBNMjQ2NiA0MDA3IGMtMTYgLTEyIC0xOCAtNTAgLTIwIC00NDcgLTMgLTQ2NyAtNyAtNTIyIC02MgotNzQ5IC04NyAtMzU0IC0yNzYgLTcxMCAtNTE2IC05NjkgLTk3IC0xMDUgLTEyOCAtMTU1IC0xMjggLTIxMCAwIC01OSAxNCAtODAKNjYgLTEwMyA2OSAtMzEgMTM5IC0xMSAyNDAgNjggMjcgMjIgMTM3IDEwNiAyNDQgMTg4IDEwNyA4MiAyNjMgMjA0IDM0NSAyNzAKODMgNjcgMTc5IDE0MCAyMTUgMTY0IDExOSA4MCAxMzYgMTA0IDExOSAxNjggLTYgMjEgLTI5IDY4IC01MSAxMDUgLTEyMyAyMDYKLTE0OCA0ODIgLTk5IDEwODggMTIgMTUxIDIxIDMwMCAxOSAzMzAgbC0zIDU1IC0xMDAgLTMgYy0xMDAgLTQgLTEyMCAwIC0yMTYKNDIgLTMwIDEyIC00MCAxMyAtNTMgM3ogTTQyMjUgMzk5MiBjLTU0IC0yNCAtNzIgLTI3IC0xNzUgLTI3IGwtMTE1IDAgLTMgLTgwCmMtMiAtNDQgNCAtMTYzIDEzIC0yNjUgOSAtMTAyIDE5IC0zMDMgMjIgLTQ0NiA1IC0yMTggMyAtMjc5IC0xMiAtMzY1IC0yMAotMTI1IC01NiAtMjM4IC05NSAtMjk5IC0zOCAtNjAgLTcwIC0xMzAgLTcwIC0xNTYgMCAtMzMgMzIgLTY3IDEyMyAtMTMwIDQ1Ci0zMiAxMzggLTEwMyAyMDcgLTE1OSAyMTQgLTE3MyA2NDYgLTUwMyA2ODcgLTUyMyA4MyAtNDIgMTUyIC0zNSAxOTcgMTkgNTUKNjUgMjYgMTM5IC0xMTUgMjk0IC0yNTEgMjc3IC00MzEgNjI0IC01MTQgOTkyIC00NiAyMDUgLTU2IDMzNCAtNTUgNzU0IDAgNDU1CjUgNDM1IC05NSAzOTF6IE01MDkxIDExNjQgYy0xNzcgLTQ3IC0zMDQgLTE4NCAtMzU4IC0zODQgLTI0IC04OSAtMjQgLTI5MSAwCi0zODAgNTUgLTIwMiAxODIgLTMzOCAzNjIgLTM4NSA4MiAtMjEgMjI0IC0xOSAzMDYgMyAxNTYgNDQgMjU2IDE0MSAyOTUgMjg3CjIxIDc3IDIzIDc1IC02NSA3NSBsLTc5IDAgLTExIC00NiBjLTMzIC0xMjkgLTEzNSAtMTk4IC0yOTYgLTE5OCAtMTA2IC0xCi0xNzAgMjIgLTIzOCA4NCAtOTIgODQgLTEzMSAxOTUgLTEzMSAzNzAgMCAxNjMgMzEgMjYxIDEwOSAzNDggOTQgMTA0IDI0MwoxMzYgMzk5IDg1IDY5IC0yMiAxMzkgLTkzIDE1NCAtMTU2IGwxMiAtNDcgODAgMCBjNDQgMCA4MCA0IDgwIDkgMCA1IC05IDM5Ci0yMCA3NSAtMzggMTIxIC0xNTYgMjIyIC0zMDYgMjYxIC03MyAxOSAtMjIxIDE4IC0yOTMgLTF6IE0wIDU5MCBsMCAtNTcwIDgwCjAgODAgMCAwIDI1NSAwIDI1NSAyNzAgMCAyNzAgMCAwIDcwIDAgNzAgLTI3MCAwIC0yNzAgMCAwIDE3NSAwIDE3NSAzMTAgMAozMTAgMCAwIDcwIDAgNzAgLTM5MCAwIC0zOTAgMCAwIC01NzB6IE05OTAgNTkwIGwwIC01NzAgODAgMCA4MCAwIDAgNTcwIDAKNTcwIC04MCAwIC04MCAwIDAgLTU3MHogTTE0MTAgNTkwIGwwIC01NzAgNzUgMCA3NSAwIDIgNDQzIDMgNDQyIDI5NCAtNDQyCjI5MyAtNDQzIDc5IDAgNzkgMCAwIDU3MCAwIDU3MCAtNzUgMCAtNzUgMCAwIC00NDIgMCAtNDQxIC0yOTIgNDQxIC0yOTMgNDQyCi04MiAwIC04MyAwIDAgLTU3MHogTTI2NjAgNjAzIGMtMTE3IC0zMDcgLTIxNiAtNTY0IC0yMTggLTU3MSAtMyAtMTAgMTQgLTEyCjc4IC0xMCBsODIgMyA2MSAxNzIgNjIgMTczIDIzNiAwIDIzNiAwIDY1IC0xNzMgNjYgLTE3MiA4NiAtMyBjNDcgLTEgODYgMSA4Ngo1IDAgNCAtMTAzIDI2MCAtMjI5IDU2OCBsLTIyOCA1NjAgLTg1IDMgLTg1IDMgLTIxMyAtNTU4eiBtMzkzIDE0NyBjNDcgLTEyNAo4OSAtMjMzIDkyIC0yNDIgNyAtMTcgLTYgLTE4IC0xODUgLTE4IC0xNTAgMCAtMTkxIDMgLTE4NyAxMyAyIDYgNDQgMTIyIDkyCjI1NSA1NCAxNTAgOTEgMjM5IDk2IDIzMCA0IC03IDQ1IC0xMTQgOTIgLTIzOHogTTM2MjAgNTkwIGwwIC01NzAgNzUgMCA3NSAwCjIgNDQzIDMgNDQyIDI5NCAtNDQyIDI5MyAtNDQzIDc5IDAgNzkgMCAwIDU3MCAwIDU3MCAtNzUgMCAtNzUgMCAwIC00NDIgMAotNDQxIC0yOTIgNDQxIC0yOTMgNDQyIC04MiAwIC04MyAwIDAgLTU3MHogTTU5MTAgNTkwIGwwIC01NzAgNDMwIDAgNDMwIDAgMAo3MCAwIDcwIC0zNTAgMCAtMzUwIDAgMCAxOTAgMCAxOTAgMzE1IDAgMzE1IDAgMCA3MCAwIDcwIC0zMTUgMCAtMzE1IDAgMCAxNzAKMCAxNzAgMzM1IDAgMzM1IDAgMCA3MCAwIDcwIC00MTUgMCAtNDE1IDAgMCAtNTcweiIvPjwvZz48L3N2Zz4=">
@@ -1253,6 +1438,7 @@ function printReport(){
       <h4>Detalle de movimientos</h4>
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
         <tbody>${movs||'<tr><td colspan="7">Sin movimientos en el per\u00edodo</td></tr>'}</tbody></table>
+      ${rentHTML}
       <div class="rep-foot">MH Finance Costa Rica \u00b7 Generado ${new Date().toLocaleDateString('es-CR')} \u00b7 Montos en colones (CRC)</div>
     </div>`;
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+'</style><title>Reporte MH Finance</title></head><body>'+REPORT_INNER+'</body></html>';
@@ -1285,9 +1471,18 @@ function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileRe
 /* ---------- Init ---------- */
 try{ document.getElementById('hdrLogo').innerHTML=logoSVG('#1C3D60',44); }catch(e){}
 try{ document.getElementById('lockLogo').innerHTML=logoSVG('#1C3D60',88); }catch(e){}
+function logout(){
+  document.getElementById('passInput').value='';
+  document.getElementById('passErr').style.display='none';
+  ['overlay','poverlay','closeOverlay','wheelMask'].forEach(id=>{var e=document.getElementById(id); if(e)e.classList.remove('open');});
+  document.getElementById('lock').style.display='';
+  go('resumen'); window.scrollTo(0,0);
+  setTimeout(()=>{try{document.getElementById('passInput').focus();}catch(e){}},80);
+}
 function tryUnlock(){var v=document.getElementById('passInput').value;if(v===PASS){document.getElementById('lock').style.display='none';}else{document.getElementById('passErr').style.display='block';var i=document.getElementById('passInput');i.value='';i.focus();}}
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm();});
 document.getElementById('poverlay').addEventListener('click',e=>{if(e.target.id==='poverlay')closePipe();});
+document.getElementById('closeOverlay').addEventListener('click',e=>{if(e.target.id==='closeOverlay')closeCloseModal();});
 document.getElementById('wheelMask').addEventListener('click',e=>{if(e.target.id==='wheelMask')wheelCancel();});
 go('resumen');
 try{document.getElementById('passInput').focus();}catch(e){}
