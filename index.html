@@ -357,6 +357,15 @@
   .rent-grid span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);font-weight:600;margin-bottom:3px}
   .rent-grid b{font-size:13px;font-weight:600;color:var(--paper)}
   .rent-det{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.45}
+  /* Buscador de alquileres */
+  .rentsearch{margin:6px 0 14px}
+  .rentsearch input{width:100%;background:var(--surface2);border:1px solid var(--line);color:var(--paper);border-radius:11px;padding:12px 13px;font-size:14.5px;color-scheme:light;box-sizing:border-box}
+  .rentsearch input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft);outline:none}
+  .rentchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .rentchips button{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+  .rentchips button:hover{border-color:var(--line2);color:var(--paper)}
+  .rentchips button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+  .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
 
   /* ===== COMPARACIÓN LIBRE A vs B ===== */
   .cmpside{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -1096,10 +1105,15 @@ function renderAjustes(){
 /* ---------- Vista ALQUILERES ---------- */
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
-function renderAlquileres(){
-  const list=rentList();
-  const vig=list.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
-  const can=list.filter(m=>m.alquiler && m.alquiler.estado==='cancelado');
+let RENTQ='', RENTCRIT='todos';
+function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
+function onRentSearch(v){RENTQ=v;renderAlquileres(true);}
+function renderAlquileres(keepFocus){
+  const all=rentList();
+  const q=(RENTQ||'').trim().toLowerCase();
+  const list = q ? all.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;}) : all;
+  const vig=all.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
+  const can=all.filter(m=>m.alquiler && m.alquiler.estado==='cancelado');
   const cards = list.length ? list.map(m=>{
     const a=m.alquiler||{}; const cancel=a.estado==='cancelado';
     const orig=m.moneda==='USD'?` · ${fmtUSD(m.monto)} · TC ${m.tc}`:'';
@@ -1116,19 +1130,27 @@ function renderAlquileres(){
       </div>
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
     </div>`;
-  }).join('') : `<div class="empty"><div class="big">⌂</div>Todavía no hay alquileres.<br>Registrá una comisión por alquiler (o cerrá un alquiler del pipeline) para verlo acá.</div>`;
+  }).join('') : `<div class="empty"><div class="big">${q?'\u26b2':'\u2302'}</div>${q?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
    <div class="statstrip" style="margin-top:4px">
-     <div class="stat"><div class="sv num">${list.length}</div><div class="sk">Contratos</div></div>
+     <div class="stat"><div class="sv num">${all.length}</div><div class="sk">Contratos</div></div>
      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${vig.length}</div><div class="sk">Vigentes</div></div>
      <div class="stat"><div class="sv num" style="color:var(--gasto)">${can.length}</div><div class="sk">Cancelados</div></div>
    </div>
    <div class="section">
      <h3>Alquileres <span class="small">contratos y estado</span></h3>
      <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 8px;line-height:1.5">Comisiones por alquiler con el detalle de su contrato. Tocá una tarjeta para editar fechas, día de pago o estado (vigente / cancelado).</p>
+     <div class="rentsearch">
+       <input id="rentSearch" type="search" placeholder="${RENTCRIT==='propiedad'?'Buscar por propiedad…':(RENTCRIT==='propietario'?'Buscar propietario (en notas)…':(RENTCRIT==='inquilino'?'Buscar inquilino (en notas)…':'Buscar propiedad, propietario o inquilino…'))}" value="${(RENTQ||'').replace(/"/g,'&quot;')}" oninput="onRentSearch(this.value)">
+       <div class="rentchips">
+         ${[['todos','Todos'],['propiedad','Propiedad'],['propietario','Propietario'],['inquilino','Inquilino']].map(([k,l])=>`<button class="${RENTCRIT===k?'on':''}" onclick="setRentCrit('${k}')">${l}</button>`).join('')}
+       </div>
+     </div>
      <button class="pdfbtn" style="margin:6px 0 2px" onclick="printRentReport()">⎙  Generar PDF de alquileres</button>
    </div>
+   ${q?`<div class="rentres">${list.length} resultado${list.length===1?'':'s'}${RENTCRIT!=='todos'?' · '+RENTCRIT:''}</div>`:''}
    ${cards}`;
+  if(keepFocus){var si=document.getElementById('rentSearch'); if(si){si.focus(); var v2=si.value; si.value=''; si.value=v2;}}
 }
 function printRentReport(){
   const list=rentList();
@@ -1137,7 +1159,7 @@ function printRentReport(){
   const rows=list.map(function(m){var a=m.alquiler||{}; var cancel=a.estado==='cancelado'; var est=cancel?'<span style="color:#B85138">Cancelado</span>':'<span style="color:#15805A">Vigente</span>'; var orig=m.moneda==='USD'?fmtUSD(m.monto)+' · TC '+m.tc:'\u2014'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+est+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+(m.detalle||'')+'</td><td class="r">'+orig+'</td><td class="r" style="color:#15805A">'+fmtCRC(crc(m))+'</td></tr>';}).join('');
   var INNER='<div class="rep">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de alquileres</div><div class="rep-period">Contratos y comisiones \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
-    +'<div class="rep-cards"><div><span>Contratos</span><b>'+list.length+'</b></div><div><span>Vigentes</span><b style="color:#15805A">'+vig.length+'</b></div><div><span>Cancelados</span><b style="color:#B85138">'+(list.length-vig.length)+'</b></div><div><span>Comisiones (vigentes)</span><b>'+fmtCRC(totVig)+'</b></div></div>'
+    +'<div class="rep-cards"><div><span>Cantidad de contratos</span><b>'+vig.length+'</b></div></div>'
     +'<h4>Detalle de alquileres y contratos</h4>'
     +'<table class="rep-tbl small"><thead><tr><th>Propiedad</th><th>Estado</th><th>Inicio</th><th>Vencimiento</th><th>D\u00eda pago</th><th>Detalle</th><th class="r">Original</th><th class="r">Comisi\u00f3n \u20a1</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8">Sin alquileres registrados</td></tr>')+'</tbody></table>'
     +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Generado '+new Date().toLocaleDateString('es-CR')+' \u00b7 Montos en colones (CRC)</div></div>';
