@@ -366,8 +366,8 @@
   .rentchips button{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
   .rentchips button:hover{border-color:var(--line2);color:var(--paper)}
   .rentchips button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
-  .rentmonth{display:flex;gap:8px;align-items:stretch;margin-top:9px}
-  .rentmonth .wheelfield{flex:1}
+  .rentmonth{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-top:9px}
+  .rentmonth .wheelfield{flex:1 1 calc(50% - 5px);min-width:120px;justify-content:center;gap:7px}
   .rentmclear{flex:0 0 auto;background:var(--gold-soft);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:0 14px;font-size:14px;font-weight:700}
   .rentmclear:hover{background:#F1E4CF}
   .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
@@ -528,7 +528,16 @@
           <select id="fRentEstado"><option value="vigente">Vigente</option><option value="cancelado">Cancelado</option></select>
         </div>
       </div>
-      <div class="formrow"><label>Valor de la cuota de alquiler (₡)</label><input type="number" id="fRentCuota" inputmode="decimal" placeholder="0"></div>
+      <div class="twocol">
+        <div class="formrow">
+          <label>Moneda de la cuota</label>
+          <div class="seg" id="segCuotaMon">
+            <button type="button" data-m="CRC" class="on" onclick="setCuotaMon('CRC')">₡ CRC</button>
+            <button type="button" data-m="USD" onclick="setCuotaMon('USD')">$ USD</button>
+          </div>
+        </div>
+        <div class="formrow"><label id="lblCuota">Valor de la cuota (₡)</label><input type="number" id="fRentCuota" inputmode="decimal" placeholder="0"></div>
+      </div>
       <div class="rentsub">Propietario</div>
       <div class="twocol">
         <div class="formrow"><label>Nombre del propietario</label><input type="text" id="fOwnName" placeholder="Nombre completo"></div>
@@ -1162,9 +1171,11 @@ function addIPC(){
 }
 function delIPC(mes){ if(!confirm('\u00bfEliminar este \u00edndice IPC?'))return; SET.ipc=(SET.ipc||[]).filter(x=>x.mes!==mes); persist(); renderAlquileres(); }
 // Calcula aumentos anuales para un contrato en colones según aniversario
+function cuotaMonOf(a){ return (a&&a.cuotaMon)||'CRC'; }
+function fmtCuotaVal(a,val){ return cuotaMonOf(a)==='USD'?fmtUSD(val):fmtCRC(val); }
 function rentIncrease(m){
   const a=m.alquiler||{};
-  if(m.moneda!=='CRC' || !a.inicio || !a.cuota) return {applies:false};
+  if(cuotaMonOf(a)!=='CRC' || !a.inicio || !a.cuota) return {applies:false};
   const start=new Date(a.inicio+'T00:00:00'); if(isNaN(start)) return {applies:false};
   const today=new Date(); today.setHours(0,0,0,0);
   let cur=a.cuota, steps=[], y=1, pend=null;
@@ -1204,7 +1215,7 @@ function renderAlquileres(keepFocus){
     const a=m.alquiler||{}; const cancel=a.estado==='cancelado';
     const orig=m.moneda==='USD'?` · ${fmtUSD(m.monto)} · TC ${m.tc}`:'';
     const inc=rentIncrease(m);
-    const cuotaTxt = a.cuota ? (inc.applies && inc.years>0 && inc.current!==a.cuota ? `${fmtCRC(inc.current)} <span class="cuotaup">↑ desde ${fmtCRC(a.cuota)}</span>` : fmtCRC(a.cuota)) : '\u2014';
+    const cuotaTxt = a.cuota ? (inc.applies && inc.years>0 && inc.current!==a.cuota ? `${fmtCuotaVal(a,inc.current)} <span class="cuotaup">↑ desde ${fmtCuotaVal(a,a.cuota)}</span>` : fmtCuotaVal(a,a.cuota)) : '\u2014';
     const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:''].filter(Boolean).join(' · ');
     return `<div class="rent ${cancel?'cancel':''}" onclick="openForm(${m.id})">
       <div class="rent-top">
@@ -1218,7 +1229,7 @@ function renderAlquileres(keepFocus){
         <div><span>Día de pago</span><b>${fmtDiaPago(a.pago)}</b></div>
       </div>
       <div class="rent-grid" style="grid-template-columns:1fr">
-        <div><span>Cuota de alquiler ${m.moneda==='CRC'?'(₡)':''}</span><b>${cuotaTxt}</b></div>
+        <div><span>Cuota de alquiler ${cuotaMonOf(a)==='USD'?'($)':'(₡)'}</span><b>${cuotaTxt}</b></div>
       </div>
       ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
@@ -1293,7 +1304,7 @@ function fichaPDF(id){
   const a=m.alquiler||{}; const inc=rentIncrease(m);
   const row=(l,v)=>'<tr><td class="fl">'+l+'</td><td class="fv">'+(v||'\u2014')+'</td></tr>';
   let incBlock='';
-  if(m.moneda==='CRC' && a.cuota){
+  if(cuotaMonOf(a)==='CRC' && a.cuota){
     if(inc.years>0){
       const stepRows=inc.steps.filter(s=>s.pct!=null).map(s=>'<tr><td>'+fmtFecha(s.date)+'</td><td class="r">'+s.pct.toFixed(2)+'%</td><td class="r">'+fmtCRC(s.from)+'</td><td class="r">'+fmtCRC(s.to)+'</td></tr>').join('');
       incBlock='<h4>Ajuste anual por IPC (Ley de Arrendamientos)</h4>'
@@ -1304,7 +1315,7 @@ function fichaPDF(id){
       incBlock+='<div class="fnext">Próximo ajuste: '+fmtFecha(inc.pend.date)+(inc.pend.pct!=null?' · IPC '+inc.pend.pct.toFixed(2)+'% → '+fmtCRC(inc.pend.to):' · pendiente del % IPC del MIVAH')+'</div>';
     }
   }
-  const cuotaShow = a.cuota ? (m.moneda==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
+  const cuotaShow = a.cuota ? (cuotaMonOf(a)==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
   var INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Ficha de contrato de alquiler</div><div class="rep-period">'+(m.propiedad||'Propiedad')+' \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
     +'<div class="festado '+(a.estado==='cancelado'?'off':'on')+'">'+(a.estado==='cancelado'?'Contrato cancelado':'Contrato vigente')+'</div>'
@@ -1330,7 +1341,8 @@ function fichaPDF(id){
 }
 
 /* ---------- Formulario ---------- */
-let editId=null, fTipo='ingreso', fMon='CRC';
+let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC';
+function setCuotaMon(m){fCuotaMon=m; document.querySelectorAll('#segCuotaMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); document.getElementById('lblCuota').textContent = m==='CRC'?'Valor de la cuota (₡)':'Valor de la cuota ($)';}
 function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock();}
 function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   document.getElementById('lblMonto').textContent = m==='CRC'?'Monto (₡)':'Monto ($)';
@@ -1363,6 +1375,7 @@ function openForm(id){
     var _pg=al.pago||''; if(_pg.indexOf('-')>=0)_pg=_pg.split('-')[2]||''; document.getElementById('fRentPago').value=_pg;
     document.getElementById('fRentEstado').value=al.estado||'vigente';
     document.getElementById('fRentCuota').value=al.cuota||'';
+    setCuotaMon(al.cuotaMon||'CRC');
     document.getElementById('fOwnName').value=al.ownName||'';
     document.getElementById('fOwnTel').value=al.ownTel||'';
     document.getElementById('fOwnMail').value=al.ownMail||'';
@@ -1374,7 +1387,7 @@ function openForm(id){
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente';
+    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC');
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
   document.getElementById('fMonto').oninput=updTcHint;
@@ -1398,7 +1411,7 @@ function saveMov(){
     moneda:fMon, monto, tc
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   persist(); closeForm(); render(); toast(editId?'Movimiento actualizado':'Movimiento guardado');
