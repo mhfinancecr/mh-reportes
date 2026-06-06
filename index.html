@@ -743,9 +743,10 @@ function buildWheelItems(){
   document.getElementById('wheelMonth').innerHTML=MES.map((m,i)=>`<div class="witem" onclick="wheelTo('month',${i})">${m}</div>`).join('');
   document.getElementById('wheelYear').innerHTML=_wheel.years.map((y,i)=>`<div class="witem" onclick="wheelTo('year',${i})">${y}</div>`).join('');
 }
-function openWheel(title,value,cb){
-  _wheel.cb=cb; _wheel.years=yearRange();
+function openWheel(title,value,cb,yearOnly){
+  _wheel.cb=cb; _wheel.yearOnly=!!yearOnly; _wheel.years=yearRange();
   document.getElementById('wheelTitle').textContent=title;
+  document.getElementById('wheelMonth').style.display=yearOnly?'none':'';
   const [y,m]=(value||thisMonth()).split('-').map(Number);
   if(_wheel.years.indexOf(y)<0){_wheel.years.push(y);_wheel.years.sort((a,b)=>a-b);}
   buildWheelItems();
@@ -771,7 +772,7 @@ function wheelDone(){
   const yi=Math.round(document.getElementById('wheelYear').scrollTop/WITEM_H);
   const m=Math.min(11,Math.max(0,mi))+1;
   const y=_wheel.years[Math.min(_wheel.years.length-1,Math.max(0,yi))];
-  const val=y+'-'+String(m).padStart(2,'0');
+  const val=_wheel.yearOnly ? String(y) : y+'-'+String(m).padStart(2,'0');
   document.getElementById('wheelMask').classList.remove('open');
   const cb=_wheel.cb; _wheel.cb=null; if(cb)cb(val);
 }
@@ -1187,13 +1188,15 @@ function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || 
 let RENTQ='', RENTCRIT='todos', RENTMONTH=null;
 function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
 function onRentSearch(v){RENTQ=v;renderAlquileres(true);}
-function pickRentMonth(){ openWheel('Mes y año', RENTMONTH||thisMonth(), v=>{RENTMONTH=v; renderAlquileres();}); }
+function pickRentMonth(){ openWheel('Mes y año', (RENTMONTH&&RENTMONTH.indexOf('-')>=0)?RENTMONTH:thisMonth(), v=>{RENTMONTH=v; renderAlquileres();}); }
+function pickRentYear(){ openWheel('Año', (RENTMONTH&&RENTMONTH.indexOf('-')<0)?RENTMONTH:String(new Date().getFullYear()), v=>{RENTMONTH=v; renderAlquileres();}, true); }
 function clearRentMonth(){ RENTMONTH=null; renderAlquileres(); }
+function rentFiltLabel(){ if(!RENTMONTH)return ''; return RENTMONTH.indexOf('-')>=0?fmtMesAno(RENTMONTH):('Año '+RENTMONTH); }
 function renderAlquileres(keepFocus){
   const all=rentList();
   const q=(RENTQ||'').trim().toLowerCase();
   let list = all;
-  if(RENTMONTH) list = list.filter(m=>mkey(m.fecha)===RENTMONTH);
+  if(RENTMONTH) list = list.filter(m=> RENTMONTH.indexOf('-')>=0 ? mkey(m.fecha)===RENTMONTH : m.fecha.slice(0,4)===RENTMONTH);
   if(q) list = list.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;});
   const vig=all.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
   const can=all.filter(m=>m.alquiler && m.alquiler.estado==='cancelado');
@@ -1238,13 +1241,14 @@ function renderAlquileres(keepFocus){
          ${[['todos','Todos'],['propiedad','Propiedad'],['propietario','Propietario'],['inquilino','Inquilino']].map(([k,l])=>`<button class="${RENTCRIT===k?'on':''}" onclick="setRentCrit('${k}')">${l}</button>`).join('')}
        </div>
        <div class="rentmonth">
-         <button class="wheelfield ${RENTMONTH?'on':''}" onclick="pickRentMonth()"><span class="cal">◷</span>${RENTMONTH?fmtMesAno(RENTMONTH):'Filtrar por mes y año'}</button>
+         <button class="wheelfield ${RENTMONTH&&RENTMONTH.indexOf('-')>=0?'on':''}" onclick="pickRentMonth()"><span class="cal">◷</span>Mes y año</button>
+         <button class="wheelfield ${RENTMONTH&&RENTMONTH.indexOf('-')<0?'on':''}" onclick="pickRentYear()"><span class="cal">◷</span>Solo año</button>
          ${RENTMONTH?`<button class="rentmclear" onclick="clearRentMonth()" title="Quitar filtro">✕</button>`:''}
        </div>
      </div>
      <button class="pdfbtn" style="margin:6px 0 2px" onclick="printRentReport()">⎙  Generar PDF de alquileres</button>
    </div>
-   ${(q||RENTMONTH)?`<div class="rentres">${list.length} resultado${list.length===1?'':'s'}${RENTMONTH?' · '+fmtMesAno(RENTMONTH):''}${q&&RENTCRIT!=='todos'?' · '+RENTCRIT:''}</div>`:''}
+   ${(q||RENTMONTH)?`<div class="rentres">${list.length} resultado${list.length===1?'':'s'}${RENTMONTH?' · '+rentFiltLabel():''}${q&&RENTCRIT!=='todos'?' · '+RENTCRIT:''}</div>`:''}
    ${cards}`;
   if(keepFocus){var si=document.getElementById('rentSearch'); if(si){si.focus(); var v2=si.value; si.value=''; si.value=v2;}}
 }
