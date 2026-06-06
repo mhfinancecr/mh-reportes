@@ -366,6 +366,10 @@
   .rentchips button{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
   .rentchips button:hover{border-color:var(--line2);color:var(--paper)}
   .rentchips button.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+  .rentmonth{display:flex;gap:8px;align-items:stretch;margin-top:9px}
+  .rentmonth .wheelfield{flex:1}
+  .rentmclear{flex:0 0 auto;background:var(--gold-soft);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:0 14px;font-size:14px;font-weight:700}
+  .rentmclear:hover{background:#F1E4CF}
   .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
   .fichabtn{width:100%;margin-top:12px;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:700;letter-spacing:.01em}
   .fichabtn:hover{border-color:var(--gold);background:var(--gold-soft)}
@@ -1180,13 +1184,17 @@ function rentIncrease(m){
 /* ---------- Vista ALQUILERES ---------- */
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
-let RENTQ='', RENTCRIT='todos';
+let RENTQ='', RENTCRIT='todos', RENTMONTH=null;
 function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
 function onRentSearch(v){RENTQ=v;renderAlquileres(true);}
+function pickRentMonth(){ openWheel('Mes y año', RENTMONTH||thisMonth(), v=>{RENTMONTH=v; renderAlquileres();}); }
+function clearRentMonth(){ RENTMONTH=null; renderAlquileres(); }
 function renderAlquileres(keepFocus){
   const all=rentList();
   const q=(RENTQ||'').trim().toLowerCase();
-  const list = q ? all.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;}) : all;
+  let list = all;
+  if(RENTMONTH) list = list.filter(m=>mkey(m.fecha)===RENTMONTH);
+  if(q) list = list.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;});
   const vig=all.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
   const can=all.filter(m=>m.alquiler && m.alquiler.estado==='cancelado');
   const cards = list.length ? list.map(m=>{
@@ -1213,7 +1221,7 @@ function renderAlquileres(keepFocus){
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
       <button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen para el propietario</button>
     </div>`;
-  }).join('') : `<div class="empty"><div class="big">${q?'\u26b2':'\u2302'}</div>${q?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
+  }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
    <div class="statstrip" style="margin-top:4px">
      <div class="stat"><div class="sv num">${all.length}</div><div class="sk">Contratos</div></div>
@@ -1229,10 +1237,14 @@ function renderAlquileres(keepFocus){
        <div class="rentchips">
          ${[['todos','Todos'],['propiedad','Propiedad'],['propietario','Propietario'],['inquilino','Inquilino']].map(([k,l])=>`<button class="${RENTCRIT===k?'on':''}" onclick="setRentCrit('${k}')">${l}</button>`).join('')}
        </div>
+       <div class="rentmonth">
+         <button class="wheelfield ${RENTMONTH?'on':''}" onclick="pickRentMonth()"><span class="cal">◷</span>${RENTMONTH?fmtMesAno(RENTMONTH):'Filtrar por mes y año'}</button>
+         ${RENTMONTH?`<button class="rentmclear" onclick="clearRentMonth()" title="Quitar filtro">✕</button>`:''}
+       </div>
      </div>
      <button class="pdfbtn" style="margin:6px 0 2px" onclick="printRentReport()">⎙  Generar PDF de alquileres</button>
    </div>
-   ${q?`<div class="rentres">${list.length} resultado${list.length===1?'':'s'}${RENTCRIT!=='todos'?' · '+RENTCRIT:''}</div>`:''}
+   ${(q||RENTMONTH)?`<div class="rentres">${list.length} resultado${list.length===1?'':'s'}${RENTMONTH?' · '+fmtMesAno(RENTMONTH):''}${q&&RENTCRIT!=='todos'?' · '+RENTCRIT:''}</div>`:''}
    ${cards}`;
   if(keepFocus){var si=document.getElementById('rentSearch'); if(si){si.focus(); var v2=si.value; si.value=''; si.value=v2;}}
 }
