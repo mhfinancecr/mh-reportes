@@ -124,6 +124,11 @@
   .cgt.cols5 .cgpct{font-size:11.5px}
   .cgt.cols5 .cgi,.cgt.cols5 .cgg{font-size:10.5px}
   .cgt.cols5 .cgh{letter-spacing:.03em}
+  .brk.og{cursor:pointer;user-select:none}
+  .ogchev{color:var(--muted2);font-size:11px;font-weight:700}
+  .brk.ogsub{padding:7px 0 7px 22px;font-size:12.5px;border-bottom:none}
+  .brk.ogsub .name{color:var(--muted)}
+  .brk.ogsub .amt{color:var(--muted);font-weight:600;font-size:12.5px}
   .cgt .cgname{padding-right:4px;min-width:0}
   .cgt .cgh{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line);text-align:right}
   .cgt .cgh:first-child{text-align:left}
@@ -581,7 +586,16 @@
       <div class="colochint hide" id="colocHint"></div>
     </div>
     <div class="formrow"><label>Corredor</label><input type="text" id="fCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
+    <div class="formrow hide" id="subcatRow">
+      <label>Tipo de gasto</label>
+      <select id="fSubcat"><option value="">— Sin clasificar</option><option>IVA</option><option>Gastos legales</option><option>Gastos de mantenimiento</option><option>Cashback</option></select>
+    </div>
     <div id="ingExtras">
+      <div class="formrow hide" id="colegaRow">
+        <label>Comisión a pagar al colega</label>
+        <input type="number" id="fColegaMonto" inputmode="decimal" placeholder="0">
+        <div class="colochint">Por defecto el 50% de la comisión — editá el monto si el acuerdo es otro. Al guardar, este monto se registra como el gasto por pago de comisión.</div>
+      </div>
       <div class="formrow">
         <label>Facturación</label>
         <div class="seg" id="segFact">
@@ -859,11 +873,14 @@ function ivaAdjTx(desde,hasta){
   const out=[];
   monthsInRange(desde,hasta).forEach(ym=>{
     const dif=ivaAdjFor(ym); if(!dif) return;
-    out.push({id:'ivaadj-'+ym, virt:true, tipo:'gasto', categoria:'Otros gastos de negocio', fecha:ym+'-28', propiedad:'', detalle:'Ajuste IVA declarado · '+fmtMesAno(ym), moneda:'CRC', monto:dif, tc:1});
+    out.push({id:'ivaadj-'+ym, virt:true, tipo:'gasto', categoria:'Otros gastos de negocio', subcat:'IVA', fecha:ym+'-28', propiedad:'', detalle:'Ajuste IVA declarado · '+fmtMesAno(ym), moneda:'CRC', monto:dif, tc:1});
   });
   return out;
 }
 function rango(desde,hasta){ return DATA.filter(m=>inRange(m,desde,hasta)).concat(ivaAdjTx(desde,hasta)); }
+let OGEXP=false;
+function toggleOG(){OGEXP=!OGEXP;render();}
+function subcatOf(m){ if(m.subcat)return m.subcat; if(m.ivaAuto||m.virt||/(IVA 13%|Ajuste IVA)/i.test(m.detalle||''))return 'IVA'; return 'Sin clasificar'; }
 function setIvaPag(ym,v){ if(!SET.ivaPag)SET.ivaPag={}; if(v===''||v==null){delete SET.ivaPag[ym];} else {SET.ivaPag[ym]=parseFloat(v)||0;} persist(); render(); }
 function ivaPagSectionHTML(){
   const months=monthsInRange(PER.desde,PER.hasta);
@@ -1060,10 +1077,19 @@ function renderResumen(){
     return `<div class="yoy">vs. ${labelPrev()}: <b class="${cls}">${arr} ${Math.abs(p)}%</b> · ${fmtCRC(b)}</div>`; };
 
   // breakdown
+  const OGCAT='Otros gastos de negocio';
   const brk = (tipo,color)=>{const g={}; cur.filter(m=>m.tipo===tipo).forEach(m=>{g[m.categoria]=(g[m.categoria]||0)+crc(m);});
-    const keys=Object.keys(g).sort((a,b)=>g[b]-g[a]);
+    let keys=Object.keys(g).sort((a,b)=>g[b]-g[a]);
     if(!keys.length) return `<div class="brk"><span class="name" style="color:var(--muted2)">Sin movimientos</span></div>`;
-    return keys.map(k=>`<div class="brk"><span class="name"><span class="dot" style="background:${color}"></span>${k}</span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>`).join('');};
+    if(tipo==='gasto'&&g[OGCAT]!=null){keys=keys.filter(k=>k!==OGCAT); keys.push(OGCAT);}
+    return keys.map(k=>{
+      if(tipo==='gasto'&&k===OGCAT){
+        const sg={}; cur.filter(m=>m.tipo==='gasto'&&m.categoria===OGCAT).forEach(m=>{const s=subcatOf(m); sg[s]=(sg[s]||0)+crc(m);});
+        const subs=OGEXP?Object.keys(sg).sort((a,b)=>sg[b]-sg[a]).map(s=>`<div class="brk ogsub"><span class="name">${s}</span><span class="amt num">${fmtCRC(sg[s])}</span></div>`).join(''):'';
+        return `<div class="brk og" onclick="toggleOG()"><span class="name"><span class="dot" style="background:${color}"></span>${k} <b class="ogchev">${OGEXP?'▾':'▸'}</b></span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>${subs}`;
+      }
+      return `<div class="brk"><span class="name"><span class="dot" style="background:${color}"></span>${k}</span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>`;
+    }).join('');};
 
   document.getElementById('view').innerHTML = `
   ${periodBarHTML()}
@@ -1616,15 +1642,17 @@ function fichaPDF(id){
 
 /* ---------- Formulario ---------- */
 let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC', fColoc='propia', fFact='no';
-function setFact(v){fFact=v; document.querySelectorAll('#segFact button').forEach(b=>b.classList.toggle('on',b.dataset.f===v)); document.getElementById('ivaRow').classList.toggle('hide',v!=='si'); if(v==='si'&&!editId){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}}
+function setFact(v,noCalc){fFact=v; document.querySelectorAll('#segFact button').forEach(b=>b.classList.toggle('on',b.dataset.f===v)); document.getElementById('ivaRow').classList.toggle('hide',v!=='si'); if(v==='si'&&!noCalc){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}}
+let fColegaDirty=false;
+function updColega(){const row=document.getElementById('colegaRow'); if(!row)return; const show=(fTipo==='ingreso'&&(fColoc==='comp'||fColoc==='colega')); row.classList.toggle('hide',!show); if(show&&!fColegaDirty){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fColegaMonto').value=mo?mo/2:'';}}
 const COLOC_HINTS={
  propia:'',
- comp:'Tu portafolio colocado con otro corredor: ingresá la comisión COMPLETA — al guardar te ofrezco registrar el gasto del 50%.',
- colega:'Propiedad del portafolio de un colega: ingresá SOLO tu 50% de la comisión (no se registra gasto).'
+ comp:'Tu portafolio colocado con otro corredor: ingresá la comisión COMPLETA — abajo aparece la comisión a pagar al colega (50% por defecto, editable) que se registrará como gasto.',
+ colega:'Propiedad del portafolio de un colega: ingresá la comisión COMPLETA — abajo aparece la comisión a pagar al colega (50% por defecto, editable) que se registrará como gasto.'
 };
 function colocTag(x){return x.coloc==='comp'?'50/50':x.coloc==='colega'?'De colega':'';}
 function corredorOf(x){return (x.coloc==='comp'||x.coloc==='colega')?(x.corredor||''):'';}
-function setColoc(c){fColoc=c; document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
+function setColoc(c){fColoc=c; updColega(); document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
 let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
 const RENT_CHECK=[
  ['elec','Disponibilidad de electricidad'],
@@ -1703,7 +1731,7 @@ function renderChk(){
 }
 function setChk(k,v){ fCheck[k]=(fCheck[k]===v?'':v); renderChk(); }
 function setCuotaMon(m){fCuotaMon=m; document.querySelectorAll('#segCuotaMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); document.getElementById('lblCuota').textContent = m==='CRC'?'Valor de la cuota (₡)':'Valor de la cuota ($)';}
-function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock(); const ie=document.getElementById('ingExtras'); if(ie)ie.classList.toggle('hide',t!=='ingreso');}
+function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock(); const ie=document.getElementById('ingExtras'); if(ie)ie.classList.toggle('hide',t!=='ingreso'); updColega();}
 function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   document.getElementById('lblMonto').textContent = m==='CRC'?'Monto (₡)':'Monto ($)';
   document.getElementById('tcRow').classList.toggle('show',m==='USD');
@@ -1712,7 +1740,7 @@ function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b
 }
 function fillCats(){const sel=document.getElementById('fCat');sel.innerHTML=CATS[fTipo].map(c=>`<option>${c}</option>`).join('');}
 function isAlquilerCat(c){return !!c && c.toLowerCase().indexOf('alquiler')>=0;}
-function updRentBlock(){ const rb=document.getElementById('rentBlock'); if(!rb)return; const cat=document.getElementById('fCat').value; rb.classList.toggle('hide', !(fTipo==='ingreso' && isAlquilerCat(cat))); }
+function updRentBlock(){ const rb=document.getElementById('rentBlock'); if(!rb)return; const cat=document.getElementById('fCat').value; rb.classList.toggle('hide', !(fTipo==='ingreso' && isAlquilerCat(cat))); const sr=document.getElementById('subcatRow'); if(sr) sr.classList.toggle('hide', !(fTipo==='gasto' && cat==='Otros gastos de negocio')); }
 function updTcHint(){const m=parseFloat(document.getElementById('fMonto').value)||0,tc=parseFloat(document.getElementById('fTC').value)||0;document.getElementById('tcHint').textContent= m&&tc?`≈ ${fmtCRC(m*tc)} en colones`:'';}
 
 function openForm(id){
@@ -1727,8 +1755,11 @@ function openForm(id){
     document.getElementById('fFecha').value=m.fecha;
     document.getElementById('fProp').value=m.propiedad||'';
     document.getElementById('fCorredor').value=m.corredor||'';
+    fColegaDirty=true;
     setColoc(m.coloc||'propia');
-    setFact(m.factura||'no');
+    document.getElementById('fColegaMonto').value=(m.colegaMonto!=null&&m.colegaMonto!==0)?m.colegaMonto:((m.coloc==='comp'||m.coloc==='colega')?m.monto/2:'');
+    document.getElementById('fSubcat').value=m.subcat||'';
+    setFact(m.factura||'no',true);
     document.getElementById('fIva').value=m.iva||'';
     document.getElementById('fRefNombre').value=m.refNombre||'';
     document.getElementById('fRefMonto').value=m.refMonto||'';
@@ -1757,11 +1788,12 @@ function openForm(id){
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC'); setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={};
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
-  document.getElementById('fMonto').oninput=function(){updTcHint(); if(fFact==='si'&&!editId){const mo=parseFloat(this.value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}};
+  document.getElementById('fMonto').oninput=function(){updTcHint(); if(fFact==='si'){const mo=parseFloat(this.value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';} updColega();};
+  document.getElementById('fColegaMonto').oninput=function(){fColegaDirty=true;};
   document.getElementById('fTC').oninput=updTcHint;
   document.getElementById('fCat').onchange=updRentBlock; updRentBlock();
   CHKOPEN=true; toggleChk(); /* deja cerrado y actualiza contador */
@@ -1783,6 +1815,8 @@ function saveMov(){
     detalle:document.getElementById('fDet').value.trim(),
     moneda:fMon, monto, tc,
     coloc:fColoc, corredor:document.getElementById('fCorredor').value.trim(),
+    subcat:fTipo==='gasto'?document.getElementById('fSubcat').value:'',
+    colegaMonto:(fTipo==='ingreso'&&(fColoc==='comp'||fColoc==='colega'))?(parseFloat(document.getElementById('fColegaMonto').value)||0):0,
     factura:fTipo==='ingreso'?fFact:'no',
     iva:(fTipo==='ingreso'&&fFact==='si')?(parseFloat(document.getElementById('fIva').value)||0):0,
     refNombre:fTipo==='ingreso'?document.getElementById('fRefNombre').value.trim():'',
@@ -1793,15 +1827,16 @@ function saveMov(){
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   let extraToast='';
-  if(!editId && rec.tipo==='ingreso' && rec.coloc==='comp'){
-    if(confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
+  if(!editId && rec.tipo==='ingreso' && (rec.coloc==='comp'||rec.coloc==='colega') && rec.colegaMonto>0){
+    const fmtX=rec.moneda==='USD'?fmtUSD:fmtCRC;
+    if(confirm('¿Registrar también el GASTO por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al colega')+' por '+fmtX(rec.colegaMonto)+'?')){
       const gcat=/venta/i.test(rec.categoria)?'Pago de comisiones por ventas':/alquiler/i.test(rec.categoria)?'Pago de comisiones por alquileres':/referido/i.test(rec.categoria)?'Pago de comisiones por referidos':'Otros gastos de negocio';
-      DATA.push({id:rec.id+1,tipo:'gasto',categoria:gcat,fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:rec.moneda,monto:rec.monto/2,tc:rec.tc,coloc:'comp',corredor:rec.corredor});
-      extraToast=' + gasto 50/50 registrado';
+      DATA.push({id:rec.id+1,tipo:'gasto',categoria:gcat,fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a colega'+(rec.corredor?' · '+rec.corredor:''),moneda:rec.moneda,monto:rec.colegaMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
+      extraToast=' + gasto comisión registrado';
     }
   }
   if(!editId && rec.tipo==='ingreso' && rec.factura==='si' && rec.iva>0){
-    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true,coloc:rec.coloc,corredor:rec.corredor});
+    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true,subcat:'IVA',coloc:rec.coloc,corredor:rec.corredor});
     extraToast+=' + IVA a gastos';
   }
   if(!editId && rec.tipo==='ingreso' && rec.refMonto>0){
