@@ -101,11 +101,11 @@
   /* IVA pagado mensual */
   .ivarow{display:grid;grid-template-columns:1fr 116px minmax(86px,auto);gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
   .ivarow:last-child{border-bottom:none}
-  .ivarow.ivahead{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;padding:0 0 4px;border-bottom:1px solid var(--line)}
+  .ivarow.ivahead{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:0 0 4px;border-bottom:1px solid var(--line)}
   .ivarow.ivahead span:last-child,.ivaadj{text-align:right}
-  .ivames{font-size:13.5px;font-weight:600;color:var(--ink)}
-  .ivames small{display:block;font-size:11.5px;font-weight:500;color:var(--muted2)}
-  .ivain{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;text-align:right;background:var(--card);color:var(--ink)}
+  .ivames{font-size:13.5px;font-weight:600;color:var(--paper)}
+  .ivames small{display:block;font-size:11.5px;font-weight:600;color:var(--paper)}
+  .ivain{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:14px;text-align:right;background:var(--surface);color:var(--paper)}
   .ivain:focus{outline:none;border-color:var(--gold)}
   .ivaadj{font-size:13px;font-weight:700}
   .cghead{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line)}
@@ -117,6 +117,19 @@
   .cgpct{color:var(--gold);font-weight:700}
   .cgi{color:var(--ingreso);font-weight:600;white-space:nowrap}
   .cgg{color:var(--gasto);font-weight:600;white-space:nowrap}
+  /* grilla única para desgloses (titulares alineados con cifras) */
+  .cgt{display:grid;align-items:center;column-gap:8px;font-size:13.5px}
+  .cgt.cols4{grid-template-columns:minmax(0,1.1fr) max-content max-content max-content}
+  .cgt.cols5{grid-template-columns:minmax(64px,1fr) max-content max-content max-content max-content;column-gap:6px;font-size:12px}
+  .cgt.cols5 .cgpct{font-size:11.5px}
+  .cgt.cols5 .cgi,.cgt.cols5 .cgg{font-size:10.5px}
+  .cgt.cols5 .cgh{letter-spacing:.03em}
+  .cgt .cgname{padding-right:4px;min-width:0}
+  .cgt .cgh{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line);text-align:right}
+  .cgt .cgh:first-child{text-align:left}
+  .cgt>span:not(.cgh){padding:11px 0;border-bottom:1px solid var(--line)}
+  .cgt .cgpct,.cgt .cgi,.cgt .cgg{text-align:right}
+  .cgt.cols4>span:nth-last-child(-n+4),.cgt.cols5>span:nth-last-child(-n+5){border-bottom:none}
 
   /* MINI CHART */
   .chart{display:flex;gap:6px;align-items:flex-end;height:118px;overflow-x:auto;padding-top:6px;-webkit-overflow-scrolling:touch}
@@ -1107,26 +1120,30 @@ function factBreak(list){
 }
 function factSectionHTML(cur){
   const {r,totI}=factBreak(cur);
-  const rows=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(([f,name])=>{
+  const cells=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(([f,name])=>{
     const o=r[f]; const pct=totI?Math.round(o.i/totI*100):0;
-    return `<div class="cgrow"><span class="cgname">${name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${f==='si'&&o.iva?'−'+fmtCRC(o.iva):'—'}</span></div>`;
+    return `<span class="cgname">${name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${f==='si'&&o.iva?'−'+fmtCRC(o.iva):'—'}</span>`;
   }).join('');
   return `<div class="section">
     <h3>Cierres por facturación <span class="small">ingresos brutos · IVA del período</span></h3>
-    <div class="cghead"><span></span><span>%</span><span>Ingresos</span><span>IVA</span></div>
-    ${rows}
+    <div class="cgt cols4">
+      <span class="cgh"></span><span class="cgh">%</span><span class="cgh">Ingresos</span><span class="cgh">IVA</span>
+      ${cells}
+    </div>
   </div>`;
 }
 function colocSectionHTML(cur){
   const {r,totI}=colocBreak(cur);
-  const rows=['propia','comp','colega'].map(c=>{
+  const cells=['propia','comp','colega'].map(c=>{
     const o=r[c]; const pct=totI?Math.round(o.i/totI*100):0;
-    return `<div class="cgrow cols5"><span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.gc?'−'+fmtCRC(o.gc):'—'}</span><span class="cgg num">${o.go?'−'+fmtCRC(o.go):'—'}</span></div>`;
+    return `<span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.gc?'−'+fmtCRC(o.gc):'—'}</span><span class="cgg num">${o.go?'−'+fmtCRC(o.go):'—'}</span>`;
   }).join('');
   return `<div class="section">
     <h3>Cierres por colocación <span class="small">% sobre ingresos del período</span></h3>
-    <div class="cghead cols5"><span></span><span>%</span><span>Ingresos</span><span>Comisiones</span><span>Otros gastos</span></div>
-    ${rows}
+    <div class="cgt cols5">
+      <span class="cgh"></span><span class="cgh">%</span><span class="cgh">Ingresos</span><span class="cgh">Comis.</span><span class="cgh">Otros</span>
+      ${cells}
+    </div>
   </div>`;
 }
 
@@ -1784,11 +1801,11 @@ function saveMov(){
     }
   }
   if(!editId && rec.tipo==='ingreso' && rec.factura==='si' && rec.iva>0){
-    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true});
+    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true,coloc:rec.coloc,corredor:rec.corredor});
     extraToast+=' + IVA a gastos';
   }
   if(!editId && rec.tipo==='ingreso' && rec.refMonto>0){
-    DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc});
+    DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
     extraToast+=' + gasto referido';
   }
   persist(); closeForm(); render(); toast((editId?'Movimiento actualizado':'Movimiento guardado')+extraToast);
