@@ -94,6 +94,17 @@
   .brk:last-child{border-bottom:none}
   .brk .name{font-size:13.5px;color:var(--paper);display:flex;align-items:center;gap:9px}
   .brk .amt{font-size:14.5px;font-weight:600}
+  /* Cierres por colocación */
+  .cghead,.cgrow{display:grid;grid-template-columns:1fr 44px minmax(86px,auto) minmax(70px,auto);gap:8px;align-items:center}
+  .cghead{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line)}
+  .cghead span:nth-child(n+2),.cgrow .cgpct,.cgrow .cgi,.cgrow .cgg{text-align:right}
+  .cgrow{padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .cgrow:last-child{border-bottom:none}
+  .cgname{color:var(--paper);font-weight:600}
+  .cgname small{display:block;font-size:10.5px;color:var(--muted2);font-weight:500;margin-top:2px}
+  .cgpct{color:var(--gold);font-weight:700}
+  .cgi{color:var(--ingreso);font-weight:600;white-space:nowrap}
+  .cgg{color:var(--gasto);font-weight:600;white-space:nowrap}
 
   /* MINI CHART */
   .chart{display:flex;gap:6px;align-items:flex-end;height:118px;overflow-x:auto;padding-top:6px;-webkit-overflow-scrolling:touch}
@@ -166,6 +177,7 @@
   .formrow label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px}
   .formrow input,.formrow select,.formrow textarea{background:var(--surface2);border:1px solid var(--line);color:var(--paper);border-radius:11px;padding:12px 13px;color-scheme:light}
   .formrow textarea{resize:vertical;min-height:58px}
+  .colochint{margin-top:7px;font-size:11.5px;line-height:1.45;color:var(--gold-2);background:var(--gold-soft);border-radius:8px;padding:7px 10px}
   .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--surface2)}
   .seg button{flex:1;padding:12px 6px;font-size:13.5px;font-weight:600;color:var(--muted)}
   .seg button.on{background:var(--gold-soft);color:var(--gold)}
@@ -469,7 +481,7 @@
 <header>
   <div class="brand">
     <span class="logo" id="hdrLogo"></span>
-    <span class="sub">Control de Ingresos</span>
+    <span class="sub">Gestión de Negocios</span>
   </div>
   <button class="gearbtn" onclick="go('ajustes')">⚙︎</button>
 </header>
@@ -531,6 +543,16 @@
       <label>Propiedad</label>
       <input type="text" id="fProp" placeholder="Ej: Cipreses A606 · Monte Alto I5-4">
     </div>
+    <div class="formrow">
+      <label>Colocación</label>
+      <div class="seg" id="segColoc">
+        <button type="button" data-c="propia" class="on" onclick="setColoc('propia')">Propia · solo</button>
+        <button type="button" data-c="comp" onclick="setColoc('comp')">Propia · 50/50</button>
+        <button type="button" data-c="colega" onclick="setColoc('colega')">De colega</button>
+      </div>
+      <div class="colochint hide" id="colocHint"></div>
+    </div>
+    <div class="formrow"><label>Corredor</label><input type="text" id="fCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
     <div class="formrow">
       <label>Detalle</label>
       <textarea id="fDet" placeholder="Concepto, inquilino/comprador, observaciones…"></textarea>
@@ -607,6 +629,16 @@
       <label>Propiedad / negocio</label>
       <input type="text" id="pProp" placeholder="Ej: Escazú Distrito 4 · Lote Santa Ana">
     </div>
+    <div class="formrow">
+      <label>Colocación</label>
+      <div class="seg" id="pSegColoc">
+        <button type="button" data-c="propia" class="on" onclick="pSetColoc('propia')">Propia · solo</button>
+        <button type="button" data-c="comp" onclick="pSetColoc('comp')">Propia · 50/50</button>
+        <button type="button" data-c="colega" onclick="pSetColoc('colega')">De colega</button>
+      </div>
+      <div class="colochint hide" id="pColocHint"></div>
+    </div>
+    <div class="formrow"><label>Corredor</label><input type="text" id="pCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
     <div class="twocol">
       <div class="formrow">
         <label id="pLblMonto">Comisión esperada (₡)</label>
@@ -979,6 +1011,8 @@ function renderResumen(){
     ${renderChart(cur)}
   </div>
 
+  ${colocSectionHTML(cur)}
+
   <div class="twocols">
     <div class="section">
       <h3>Ingresos por categoría</h3>
@@ -988,6 +1022,26 @@ function renderResumen(){
       <h3>Gastos por categoría</h3>
       ${brk('gasto','var(--gasto)')}
     </div>
+  </div>`;
+}
+
+const COLOC_NAMES={propia:'Propia · solo',comp:'Propia · 50/50',colega:'De colega'};
+function colocBreak(list){
+  const r={propia:{n:0,i:0,g:0},comp:{n:0,i:0,g:0},colega:{n:0,i:0,g:0}}; let totI=0;
+  list.forEach(m=>{const c=(m.coloc==='comp'||m.coloc==='colega')?m.coloc:'propia';
+    if(m.tipo==='ingreso'){r[c].n++; r[c].i+=crc(m); totI+=crc(m);} else r[c].g+=crc(m);});
+  return {r,totI};
+}
+function colocSectionHTML(cur){
+  const {r,totI}=colocBreak(cur);
+  const rows=['propia','comp','colega'].map(c=>{
+    const o=r[c]; const pct=totI?Math.round(o.i/totI*100):0;
+    return `<div class="cgrow"><span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.g?'−'+fmtCRC(o.g):'—'}</span></div>`;
+  }).join('');
+  return `<div class="section">
+    <h3>Cierres por colocación <span class="small">% sobre ingresos del período</span></h3>
+    <div class="cghead"><span></span><span>%</span><span>Ingresos</span><span>Gastos</span></div>
+    ${rows}
   </div>`;
 }
 
@@ -1155,7 +1209,7 @@ function renderMovs(keepFocus){
 
   let list=[...base];
   if(MFILTER!=='todos') list=list.filter(m=>m.tipo===MFILTER);
-  if(MSEARCH) list=list.filter(m=>((m.propiedad||'')+' '+(m.detalle||'')+' '+m.categoria).toLowerCase().includes(MSEARCH));
+  if(MSEARCH) list=list.filter(m=>((m.propiedad||'')+' '+(m.detalle||'')+' '+(m.corredor||'')+' '+m.categoria).toLowerCase().includes(MSEARCH));
   if(MSORT==='monto') list.sort((a,b)=> crc(b)-crc(a) || b.fecha.localeCompare(a.fecha));
   else list.sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id-a.id);
 
@@ -1180,7 +1234,7 @@ function renderMovs(keepFocus){
       <div class="stripe" style="background:${color}"></div>
       <div class="info">
         <div class="top"><span class="cat">${m.categoria}</span><span class="amt" style="color:${color}">${sign}${fmtCRC(crc(m))}</span></div>
-        <div class="meta"><span>${da}/${mo}/${y}</span>${m.propiedad?`<span>· ${m.propiedad}</span>`:''}${orig?'· '+orig:''}</div>
+        <div class="meta"><span>${da}/${mo}/${y}</span>${m.propiedad?`<span>· ${m.propiedad}</span>`:''}${colocTag(m)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(m)}</span>`:''}${corredorOf(m)?`<span>· ${corredorOf(m)}</span>`:''}${orig?'· '+orig:''}</div>
         ${m.detalle?`<div class="meta" style="color:var(--muted2)">${m.detalle}</div>`:''}
       </div></div>`;
   }).join('') : emptyMsg;
@@ -1209,7 +1263,7 @@ function renderMovs(keepFocus){
         <div class="field"><span>Hasta</span><button type="button" class="wheelfield" onclick="pickMov('hasta')">${MHASTA?fmtMesAno(MHASTA):'Cualquiera'}<span class="cal">▾</span></button></div>
       </div>
     </div>
-    <input class="search" placeholder="Buscar por propiedad o detalle…" value="${MSEARCH}" oninput="setMSearch(this.value)">
+    <input class="search" placeholder="Buscar por propiedad, detalle o corredor…" value="${MSEARCH}" oninput="setMSearch(this.value)">
     <div id="movList">${listInner}</div>`;
 }
 
@@ -1300,7 +1354,7 @@ function renderAlquileres(keepFocus){
     const orig=m.moneda==='USD'?` · ${fmtUSD(m.monto)} · TC ${m.tc}`:'';
     const inc=rentIncrease(m);
     const cuotaTxt = a.cuota ? (inc.applies && inc.years>0 && inc.current!==a.cuota ? `${fmtCuotaVal(a,inc.current)} <span class="cuotaup">↑ desde ${fmtCuotaVal(a,a.cuota)}</span>` : fmtCuotaVal(a,a.cuota)) : '\u2014';
-    const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:''].filter(Boolean).join(' · ');
+    const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:'', colocTag(m)?`Corredor: ${corredorOf(m)||'—'} (${colocTag(m)})`:''].filter(Boolean).join(' · ');
     return `<div class="rent ${cancel?'cancel':''}" onclick="openForm(${m.id})">
       <div class="rent-top">
         <div class="rent-prop">${m.propiedad||'(Sin propiedad)'}</div>
@@ -1407,7 +1461,7 @@ function fichaPDF(id){
     return '<tr><td>'+t+'</td><td class="r">'+lbl+'</td></tr>';
   }).join('');
   if(a.inspFecha||a.inspHora||a.llaves||chkRows||a.chkNotas){
-    inspBlock='<h4>Inspección de entrega</h4><table class="ftbl big"><tbody>'
+    inspBlock='<h4 class="pbreak">Inspección de entrega</h4><table class="ftbl big"><tbody>'
      +row('Fecha de inspección', a.inspFecha?fmtFecha(a.inspFecha):'')
      +row('Hora de entrega', a.inspHora?(a.inspHora+' h'):'')
      +row('Juegos de llaves entregados', a.llaves?String(a.llaves):'')
@@ -1449,7 +1503,15 @@ function fichaPDF(id){
 }
 
 /* ---------- Formulario ---------- */
-let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC';
+let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC', fColoc='propia';
+const COLOC_HINTS={
+ propia:'',
+ comp:'Tu portafolio colocado con otro corredor: ingresá la comisión COMPLETA — al guardar te ofrezco registrar el gasto del 50%.',
+ colega:'Propiedad del portafolio de un colega: ingresá SOLO tu 50% de la comisión (no se registra gasto).'
+};
+function colocTag(x){return x.coloc==='comp'?'50/50':x.coloc==='colega'?'De colega':'';}
+function corredorOf(x){return (x.coloc==='comp'||x.coloc==='colega')?(x.corredor||''):'';}
+function setColoc(c){fColoc=c; document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
 let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
 const RENT_CHECK=[
  ['elec','Disponibilidad de electricidad'],
@@ -1458,7 +1520,9 @@ const RENT_CHECK=[
  ['fuga','Sin fugas de agua'],
  ['calen','Calentador de agua funcionando'],
  ['bomb','Bombillos completos y funcionando'],
- ['tomas','Tomacorrientes y apagadores'],
+ ['tomas','Tomacorrientes'],
+ ['apag','Apagadores'],
+ ['humo','Sensores de humo (alarma de incendio)'],
  ['cocina','Cocina / plantilla y horno'],
  ['micro','Microondas'],
  ['refri','Refrigeradora'],
@@ -1472,7 +1536,8 @@ const RENT_CHECK=[
  ['cerr','Cerraduras y llavines'],
  ['pint','Pintura y paredes'],
  ['piso','Pisos'],
- ['banos','Baños (inodoros, duchas, grifería)'],
+ ['banos','Baños (inodoros, duchas)'],
+ ['grif','Grifería'],
  ['cort','Cortinas / persianas'],
  ['mueb','Mobiliario (si amueblado)'],
  ['parq','Parqueo y control de portón'],
@@ -1549,6 +1614,8 @@ function openForm(id){
     document.getElementById('fCat').value=m.categoria;
     document.getElementById('fFecha').value=m.fecha;
     document.getElementById('fProp').value=m.propiedad||'';
+    document.getElementById('fCorredor').value=m.corredor||'';
+    setColoc(m.coloc||'propia');
     document.getElementById('fDet').value=m.detalle||'';
     document.getElementById('fMonto').value=m.monto;
     setMon(m.moneda); document.getElementById('fTC').value=m.tc; updTcHint();
@@ -1574,7 +1641,7 @@ function openForm(id){
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC');
+    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC'); setColoc('propia'); document.getElementById('fCorredor').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={};
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
@@ -1598,13 +1665,22 @@ function saveMov(){
     fecha:document.getElementById('fFecha').value,
     propiedad:document.getElementById('fProp').value.trim(),
     detalle:document.getElementById('fDet').value.trim(),
-    moneda:fMon, monto, tc
+    moneda:fMon, monto, tc,
+    coloc:fColoc, corredor:document.getElementById('fCorredor').value.trim()
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
     rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
-  persist(); closeForm(); render(); toast(editId?'Movimiento actualizado':'Movimiento guardado');
+  let extraToast='';
+  if(!editId && rec.tipo==='ingreso' && rec.coloc==='comp'){
+    if(confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
+      const gcat=/venta/i.test(rec.categoria)?'Pago de comisiones por ventas':/alquiler/i.test(rec.categoria)?'Pago de comisiones por alquileres':/referido/i.test(rec.categoria)?'Pago de comisiones por referidos':'Otros gastos de negocio';
+      DATA.push({id:rec.id+1,tipo:'gasto',categoria:gcat,fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:rec.moneda,monto:rec.monto/2,tc:rec.tc,coloc:'comp',corredor:rec.corredor});
+      extraToast=' + gasto 50/50 registrado';
+    }
+  }
+  persist(); closeForm(); render(); toast((editId?'Movimiento actualizado':'Movimiento guardado')+extraToast);
 }
 function deleteMov(){ if(!editId)return; if(confirm('¿Eliminar este movimiento?')){DATA=DATA.filter(x=>x.id!==editId);persist();closeForm();render();toast('Movimiento eliminado');} }
 function undoToPipe(){
@@ -1642,7 +1718,8 @@ function addRentToCalendar(){
 /* ---------- Vista PIPELINE / PROYECCIÓN ---------- */
 const PIPE_CATS=['Comisión por venta','Comisión por alquiler','Comisión por referido','Otro'];
 const PROBS=[25,50,75,90,100];
-let pEditId=null,pMon='CRC',pProb=75,pMeses=1;
+let pEditId=null,pMon='CRC',pProb=75,pMeses=1,pColoc='propia';
+function pSetColoc(c){pColoc=c; document.querySelectorAll('#pSegColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('pColocHint'); if(h){const t=c==='colega'?'Propiedad de un colega: ingresá SOLO tu 50% esperado.':c==='comp'?'Tu portafolio con otro corredor: ingresá la comisión completa esperada.':''; h.textContent=t; h.classList.toggle('hide',!t);}}
 
 function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else openForm(); }
 
@@ -1658,7 +1735,7 @@ function pipeRow(p,venc){
     <div class="pipe-main" onclick="openPipe(${p.id})">
       <div class="pmonths"><b>${p.meses||1}</b><span>${(p.meses||1)===1?'mes':'meses'}</span></div>
       <div class="pinfo"><div class="pcat">${p.propiedad||p.concepto}</div>
-        <div class="pmeta"><span>${p.concepto}</span>${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
+        <div class="pmeta"><span>${p.concepto}</span>${colocTag(p)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(p)}</span>`:''}${corredorOf(p)?`<span>· ${corredorOf(p)}</span>`:''}${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
       <div class="pright"><div class="pamt">${fmtCRC(crc(p))}</div><div class="pprob"><span class="probchip ${pchip(pr)}">${pr}%</span></div></div>
     </div>
     <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Marcar como negocio cerrado</button>
@@ -1731,13 +1808,15 @@ function openPipe(id){
     const p=PIPE.find(x=>x.id===pEditId);
     document.getElementById('pCat').value=p.concepto;
     document.getElementById('pProp').value=p.propiedad||'';
+    document.getElementById('pCorredor').value=p.corredor||'';
+    pSetColoc(p.coloc||'propia');
     document.getElementById('pDet').value=p.detalle||'';
     document.getElementById('pMonto').value=p.monto;
     pSetMon(p.moneda); document.getElementById('pTC').value=p.tc;
     pSetProb(p.prob??100); pSetMeses(p.meses||1);
   } else {
-    ['pProp','pDet','pMonto','pTC'].forEach(i=>document.getElementById(i).value='');
-    pSetMon('CRC'); pSetProb(75); pSetMeses(1);
+    ['pProp','pDet','pMonto','pTC','pCorredor'].forEach(i=>document.getElementById(i).value='');
+    pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
   }
 }
 function closePipe(){document.getElementById('poverlay').classList.remove('open');}
@@ -1747,7 +1826,7 @@ function savePipe(){
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
   const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
   const creado=(ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10);
-  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses};
+  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim()};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
 }
@@ -1767,9 +1846,13 @@ function confirmClose(){
   const d=document.getElementById('closeDate').value; if(!d){toast('Elegí la fecha de cierre');return;}
   const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
   const newId=Date.now();
-  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
+  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
   DATA.push(rec);
+  if(rec.coloc==='comp' && confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
+    const gcat=/venta/i.test(cat)?'Pago de comisiones por ventas':/alquiler/i.test(cat)?'Pago de comisiones por alquileres':/referido/i.test(cat)?'Pago de comisiones por referidos':'Otros gastos de negocio';
+    DATA.push({id:newId+1,tipo:'gasto',categoria:gcat,fecha:d,propiedad:p.propiedad||'',detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:p.moneda,monto:p.monto/2,tc:p.tc,coloc:'comp',corredor:rec.corredor});
+  }
   PIPE=PIPE.filter(x=>x.id!==closeId);
   persist();closeCloseModal();render();
   if(rec.alquiler){ toast('✓ Cerrado · agregá las fechas del contrato'); openForm(newId); }
@@ -1817,12 +1900,14 @@ const FICHA_CSS=`
   .fcols{display:flex;gap:22px}.fcols>div{flex:1}
   .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
   .fnext{margin-top:8px;font-size:11.5px;color:#9A6B1E;background:#FBF3E2;border-radius:8px;padding:8px 11px}
-  .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#888}
+  .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#1C3D60;font-weight:700}
   .ftbl.chk td{font-size:11.5px;padding:6px}
+  .pbreak{page-break-before:always}
+  .ftbl.chk tr{page-break-inside:avoid}
   .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal}
   .fpage{page-break-before:always}
-  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .fgrid img{width:100%;height:290px;object-fit:cover;border-radius:6px;border:1px solid #ddd;page-break-inside:avoid}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;page-break-inside:avoid}
+  .fgrid img{width:100%;height:228px;object-fit:cover;border-radius:6px;border:1px solid #ddd;page-break-inside:avoid}
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
 function fmtFecha(f){const[y,mo,da]=f.split('-');return da+' '+MES[+mo-1]+' '+y;}
@@ -1864,7 +1949,7 @@ function printReport(){
   const mrows=months.map((k,i)=>`<tr><td>${fmtMesAno(k)}</td><td class="r c">${cIng[i]}</td><td class="r" style="color:#15805A">${fmtCRC(ing[i])}</td><td class="r c">${cGas[i]}</td><td class="r" style="color:#B85138">${fmtCRC(gas[i])}</td><td class="r"><b>${fmtCRC(sal[i])}</b></td></tr>`).join('');
   const movs=[...cur].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>{const[y,mo,da]=m.fecha.split('-');
     const orig=m.moneda==='USD'?`${fmtUSD(m.monto)} · TC ${m.tc}`:'\u2014';
-    return `<tr><td>${da}/${mo}/${y}</td><td>${m.tipo==='ingreso'?'Ingreso':'Gasto'}</td><td>${m.categoria}</td><td>${m.propiedad||''}</td><td>${m.detalle||''}</td><td class="r">${orig}</td><td class="r" style="color:${m.tipo==='ingreso'?'#15805A':'#B85138'}">${m.tipo==='ingreso'?'+':'\u2212'}${fmtCRC(crc(m))}</td></tr>`;}).join('');
+    return `<tr><td>${da}/${mo}/${y}</td><td>${m.tipo==='ingreso'?'Ingreso':'Gasto'}</td><td>${m.categoria}</td><td>${m.propiedad||''}</td><td>${[m.detalle||'',colocTag(m),corredorOf(m)?('Corredor: '+corredorOf(m)):''].filter(Boolean).join(' · ')}</td><td class="r">${orig}</td><td class="r" style="color:${m.tipo==='ingreso'?'#15805A':'#B85138'}">${m.tipo==='ingreso'?'+':'\u2212'}${fmtCRC(crc(m))}</td></tr>`;}).join('');
   const per=fmtMesAno(PER.desde)+' \u2013 '+fmtMesAno(PER.hasta);
   var cmpHTML='';
   if(SET.cmp!==false){
@@ -1897,6 +1982,12 @@ function printReport(){
       +'</tbody></table>';
   }
   var rentList2=cur.filter(function(m){return m.tipo==='ingreso'&&m.alquiler&&(m.alquiler.inicio||m.alquiler.vencimiento||m.alquiler.pago);});
+  var cb=colocBreak(cur);
+  var colocRepHTML='';
+  {
+    var cRows=['propia','comp','colega'].map(function(c){var o=cb.r[c]; var pct=cb.totI?Math.round(o.i/cb.totI*100):0; return '<tr><td>'+COLOC_NAMES[c]+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(o.g?fmtCRC(o.g):'—')+'</td></tr>';}).join('');
+    colocRepHTML='<h4>Cierres por colocación</h4><table class="rep-tbl"><thead><tr><th>Colocación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">Gastos</th></tr></thead><tbody>'+cRows+'</tbody></table>';
+  }
   var rentHTML='';
   if(rentList2.length){
     var rr=rentList2.map(function(m){var a=m.alquiler; var est=a.estado==='cancelado'?'<span style="color:#B85138">Cancelado</span>':'<span style="color:#15805A">Vigente</span>'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+est+'</td></tr>';}).join('');
@@ -1920,6 +2011,7 @@ function printReport(){
       <table class="rep-tbl"><thead><tr><th>Mes</th><th class="r">N° Ing.</th><th class="r">Ingresos</th><th class="r">N° Gas.</th><th class="r">Gastos</th><th class="r">Saldo</th></tr></thead>
         <tbody>${mrows||'<tr><td colspan="6">Sin datos</td></tr>'}</tbody>
         <tfoot><tr><td>Total</td><td class="r">${totCi}</td><td class="r">${fmtCRC(s.i)}</td><td class="r">${totCg}</td><td class="r">${fmtCRC(s.g)}</td><td class="r">${fmtCRC(s.n)}</td></tr></tfoot></table>
+      ${colocRepHTML}
       <h4>Detalle de movimientos</h4>
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
         <tbody>${movs||'<tr><td colspan="7">Sin movimientos en el per\u00edodo</td></tr>'}</tbody></table>
