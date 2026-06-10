@@ -96,6 +96,18 @@
   .brk .amt{font-size:14.5px;font-weight:600}
   /* Cierres por colocación */
   .cghead,.cgrow{display:grid;grid-template-columns:1fr 44px minmax(86px,auto) minmax(70px,auto);gap:8px;align-items:center}
+  .cghead.cols5,.cgrow.cols5{grid-template-columns:1fr 32px repeat(3,minmax(58px,auto));gap:6px;font-size:12px}
+  .cgrow.cols5 .cgi,.cgrow.cols5 .cgg{font-size:11.5px}
+  /* IVA pagado mensual */
+  .ivarow{display:grid;grid-template-columns:1fr 116px minmax(86px,auto);gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+  .ivarow:last-child{border-bottom:none}
+  .ivarow.ivahead{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;padding:0 0 4px;border-bottom:1px solid var(--line)}
+  .ivarow.ivahead span:last-child,.ivaadj{text-align:right}
+  .ivames{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .ivames small{display:block;font-size:11.5px;font-weight:500;color:var(--muted2)}
+  .ivain{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;text-align:right;background:var(--card);color:var(--ink)}
+  .ivain:focus{outline:none;border-color:var(--gold)}
+  .ivaadj{font-size:13px;font-weight:700}
   .cghead{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line)}
   .cghead span:nth-child(n+2),.cgrow .cgpct,.cgrow .cgi,.cgrow .cgg{text-align:right}
   .cgrow{padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -141,7 +153,11 @@
   .empty{text-align:center;color:var(--muted2);padding:50px 20px;font-size:14px}
   .empty .big{font-size:34px;margin-bottom:10px;opacity:.5}
 
-  /* FAB */
+  /* FAB → botón en header */
+  .addbtn{margin-left:auto;margin-right:10px;background:linear-gradient(145deg,var(--gold-2),var(--gold));color:#fff;border:none;border-radius:999px;padding:9px 15px;font-size:13.5px;font-weight:700;letter-spacing:.01em;box-shadow:0 3px 10px rgba(0,0,0,.16);white-space:nowrap}
+  .addbtn:hover{filter:brightness(1.06)}
+  .addbtn:active{transform:scale(.95)}
+  .fab{display:none}
   .fab{position:fixed;right:18px;bottom:max(86px,calc(env(safe-area-inset-bottom) + 78px));z-index:30;width:58px;height:58px;border-radius:50%;background:linear-gradient(145deg,var(--gold-2),var(--gold));color:var(--ink);font-size:30px;display:grid;place-items:center;box-shadow:0 10px 26px -6px rgba(28,61,96,.5);font-weight:300}
   .fab:hover{box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 0 6px var(--gold-glow)}
   .fab:active{transform:scale(.92)}
@@ -483,12 +499,11 @@
     <span class="logo" id="hdrLogo"></span>
     <span class="sub">Gestión de Negocios</span>
   </div>
+  <button class="addbtn" onclick="fabAdd()">＋ Nuevo</button>
   <button class="gearbtn" onclick="go('ajustes')">⚙︎</button>
 </header>
 
 <main id="view"></main>
-
-<button class="fab" onclick="fabAdd()">+</button>
 
 <nav>
   <button id="nav-resumen" class="active" onclick="go('resumen')"><span class="ic">◈</span>Resumen</button>
@@ -553,6 +568,24 @@
       <div class="colochint hide" id="colocHint"></div>
     </div>
     <div class="formrow"><label>Corredor</label><input type="text" id="fCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
+    <div id="ingExtras">
+      <div class="formrow">
+        <label>Facturación</label>
+        <div class="seg" id="segFact">
+          <button type="button" data-f="no" class="on" onclick="setFact('no')">Sin factura</button>
+          <button type="button" data-f="si" onclick="setFact('si')">Facturado · IVA 13%</button>
+        </div>
+      </div>
+      <div class="formrow hide" id="ivaRow">
+        <label>Valor del IVA (13%)</label>
+        <input type="number" id="fIva" inputmode="decimal" placeholder="0">
+        <div class="colochint">Ingresá arriba la comisión NETA: el IVA se suma al ingreso (bruto) y en transacciones nuevas se registra automáticamente como gasto en “Otros gastos de negocio”.</div>
+      </div>
+      <div class="twocol">
+        <div class="formrow"><label>Referido (nombre)</label><input type="text" id="fRefNombre" placeholder="Opcional"></div>
+        <div class="formrow"><label>Comisión al referido</label><input type="number" id="fRefMonto" inputmode="decimal" placeholder="0"></div>
+      </div>
+    </div>
     <div class="formrow">
       <label>Detalle</label>
       <textarea id="fDet" placeholder="Concepto, inquilino/comprador, observaciones…"></textarea>
@@ -792,7 +825,7 @@ const fmtCRC = n => new Intl.NumberFormat('es-CR',{style:'currency',currency:'CR
 const fmtUSD = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
 function fmtC(n){const s=n<0?'−':'';n=Math.abs(n);if(n>=1e6)return s+'₡'+(n/1e6).toFixed(n>=1e7?0:1)+'M';if(n>=1e3)return s+'₡'+Math.round(n/1e3)+'k';return s+'₡'+Math.round(n);}
 const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
-const crc = m => m.moneda==='USD' ? m.monto*m.tc : m.monto;          // valor en colones
+const crc = m => { const base = m.monto + ((m.tipo==='ingreso'&&m.factura==='si')?(+m.iva||0):0); return m.moneda==='USD' ? base*m.tc : base; };  // valor en colones (ingreso facturado = bruto con IVA)
 const mkey = f => f.slice(0,7);                                       // "YYYY-MM"
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
 
@@ -805,6 +838,36 @@ let CMP=SET.cmp2;
 function inRange(m, desde, hasta){const k=mkey(m.fecha); return k>=desde && k<=hasta;}
 function sum(list){let i=0,g=0; list.forEach(m=>{ if(m.tipo==='ingreso') i+=crc(m); else g+=crc(m); }); return {i,g,n:i-g};}
 function prevYear(p){const f=s=>{const[y,m]=s.split('-');return (parseInt(y)-1)+'-'+m;}; return {desde:f(p.desde),hasta:f(p.hasta)};}
+
+/* ---- IVA pagado a Hacienda (ajuste mensual) ---- */
+function ivaCalcMonth(ym){let t=0; DATA.forEach(m=>{ if(m.tipo==='gasto' && mkey(m.fecha)===ym && (m.ivaAuto || /IVA 13%/i.test(m.detalle||''))) t+=crc(m); }); return t;}
+function ivaAdjFor(ym){ if(!SET.ivaPag || SET.ivaPag[ym]==null || SET.ivaPag[ym]==='') return 0; return (+SET.ivaPag[ym]) - ivaCalcMonth(ym); }
+function ivaAdjTx(desde,hasta){
+  const out=[];
+  monthsInRange(desde,hasta).forEach(ym=>{
+    const dif=ivaAdjFor(ym); if(!dif) return;
+    out.push({id:'ivaadj-'+ym, virt:true, tipo:'gasto', categoria:'Otros gastos de negocio', fecha:ym+'-28', propiedad:'', detalle:'Ajuste IVA declarado · '+fmtMesAno(ym), moneda:'CRC', monto:dif, tc:1});
+  });
+  return out;
+}
+function rango(desde,hasta){ return DATA.filter(m=>inRange(m,desde,hasta)).concat(ivaAdjTx(desde,hasta)); }
+function setIvaPag(ym,v){ if(!SET.ivaPag)SET.ivaPag={}; if(v===''||v==null){delete SET.ivaPag[ym];} else {SET.ivaPag[ym]=parseFloat(v)||0;} persist(); render(); }
+function ivaPagSectionHTML(){
+  const months=monthsInRange(PER.desde,PER.hasta);
+  const rows=months.map(ym=>{
+    const calc=ivaCalcMonth(ym);
+    const has=SET.ivaPag && SET.ivaPag[ym]!=null && SET.ivaPag[ym]!=='';
+    const pag=has?SET.ivaPag[ym]:'';
+    const dif=has?(+pag)-calc:0;
+    const adj=!has?'—':(dif===0?'sin ajuste':(dif<0?'−':'+')+fmtCRC(Math.abs(dif)));
+    return `<div class="ivarow"><span class="ivames">${fmtMesAno(ym)} <small>calc. ${calc?fmtCRC(calc):'—'}</small></span><input type="number" inputmode="decimal" class="ivain" value="${pag}" placeholder="pagado" onchange="setIvaPag('${ym}',this.value)"><span class="ivaadj num" style="color:${!has||dif===0?'var(--muted2)':dif<0?'#15805A':'#B85138'}">${adj}</span></div>`;
+  }).join('');
+  return `<div class="section">
+    <h3>IVA pagado a Hacienda <span class="small">declaración mensual · reajusta el gasto y el saldo del período</span></h3>
+    <div class="ivarow ivahead"><span>Mes · IVA calculado</span><span>IVA pagado</span><span>Ajuste</span></div>
+    ${rows}
+  </div>`;
+}
 
 /* ---------- Rueda / cilindro de selección de mes ---------- */
 const WITEM_H=40;
@@ -971,11 +1034,11 @@ function periodBarHTML(){return `
   </div>`;}
 
 function renderResumen(){
-  const cur = DATA.filter(m=>inRange(m,PER.desde,PER.hasta));
+  const cur = rango(PER.desde,PER.hasta);
   const s = sum(cur);
-  const nIng = cur.filter(m=>m.tipo==='ingreso').length, nGas = cur.length-nIng;
+  const nIng = cur.filter(m=>m.tipo==='ingreso').length, nGas = cur.filter(m=>m.tipo==='gasto'&&!m.virt).length;
   const pv = prevYear(PER);
-  const prev = sum(DATA.filter(m=>inRange(m,pv.desde,pv.hasta)));
+  const prev = sum(rango(pv.desde,pv.hasta));
 
   const pct=(a,b)=> b===0 ? (a>0?100:0) : Math.round(((a-b)/Math.abs(b))*100);
   const yoyTxt=(a,b,inv)=>{ if(b===0&&a===0) return '<span class="yoy">Sin datos comparables</span>';
@@ -1000,7 +1063,7 @@ function renderResumen(){
   </div>
 
   <div class="statstrip">
-    <div class="stat"><div class="sv num">${cur.length}</div><div class="sk">Operaciones</div></div>
+    <div class="stat"><div class="sv num">${nIng+nGas}</div><div class="sk">Operaciones</div></div>
     <div class="stat"><div class="sv num" style="color:var(--ingreso)">${nIng}</div><div class="sk">Ingresos</div></div>
     <div class="stat"><div class="sv num" style="color:var(--gasto)">${nGas}</div><div class="sk">Gastos</div></div>
   </div>
@@ -1012,6 +1075,10 @@ function renderResumen(){
   </div>
 
   ${colocSectionHTML(cur)}
+
+  ${factSectionHTML(cur)}
+
+  ${ivaPagSectionHTML()}
 
   <div class="twocols">
     <div class="section">
@@ -1027,20 +1094,38 @@ function renderResumen(){
 
 const COLOC_NAMES={propia:'Propia · solo',comp:'Propia · 50/50',colega:'De colega'};
 function colocBreak(list){
-  const r={propia:{n:0,i:0,g:0},comp:{n:0,i:0,g:0},colega:{n:0,i:0,g:0}}; let totI=0;
-  list.forEach(m=>{const c=(m.coloc==='comp'||m.coloc==='colega')?m.coloc:'propia';
-    if(m.tipo==='ingreso'){r[c].n++; r[c].i+=crc(m); totI+=crc(m);} else r[c].g+=crc(m);});
+  const r={propia:{n:0,i:0,gc:0,go:0},comp:{n:0,i:0,gc:0,go:0},colega:{n:0,i:0,gc:0,go:0}}; let totI=0;
+  list.forEach(m=>{if(m.virt)return; const c=(m.coloc==='comp'||m.coloc==='colega')?m.coloc:'propia';
+    if(m.tipo==='ingreso'){r[c].n++; r[c].i+=crc(m); totI+=crc(m);}
+    else { if(/^Pago de comisiones/i.test(m.categoria)) r[c].gc+=crc(m); else r[c].go+=crc(m); }});
   return {r,totI};
+}
+function factBreak(list){
+  const r={si:{n:0,i:0,iva:0},no:{n:0,i:0}}; let totI=0;
+  list.forEach(m=>{ if(m.tipo!=='ingreso')return; const f=m.factura==='si'?'si':'no'; const v=crc(m); r[f].n++; r[f].i+=v; totI+=v; if(f==='si'){const iv=+m.iva||0; r.si.iva+=(m.moneda==='USD'?iv*m.tc:iv);} });
+  return {r,totI};
+}
+function factSectionHTML(cur){
+  const {r,totI}=factBreak(cur);
+  const rows=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(([f,name])=>{
+    const o=r[f]; const pct=totI?Math.round(o.i/totI*100):0;
+    return `<div class="cgrow"><span class="cgname">${name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${f==='si'&&o.iva?'−'+fmtCRC(o.iva):'—'}</span></div>`;
+  }).join('');
+  return `<div class="section">
+    <h3>Cierres por facturación <span class="small">ingresos brutos · IVA del período</span></h3>
+    <div class="cghead"><span></span><span>%</span><span>Ingresos</span><span>IVA</span></div>
+    ${rows}
+  </div>`;
 }
 function colocSectionHTML(cur){
   const {r,totI}=colocBreak(cur);
   const rows=['propia','comp','colega'].map(c=>{
     const o=r[c]; const pct=totI?Math.round(o.i/totI*100):0;
-    return `<div class="cgrow"><span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.g?'−'+fmtCRC(o.g):'—'}</span></div>`;
+    return `<div class="cgrow cols5"><span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.gc?'−'+fmtCRC(o.gc):'—'}</span><span class="cgg num">${o.go?'−'+fmtCRC(o.go):'—'}</span></div>`;
   }).join('');
   return `<div class="section">
     <h3>Cierres por colocación <span class="small">% sobre ingresos del período</span></h3>
-    <div class="cghead"><span></span><span>%</span><span>Ingresos</span><span>Gastos</span></div>
+    <div class="cghead cols5"><span></span><span>%</span><span>Ingresos</span><span>Comisiones</span><span>Otros gastos</span></div>
     ${rows}
   </div>`;
 }
@@ -1076,6 +1161,7 @@ function monthsInRange(desde,hasta){const a=[];let d=desde,g=0;while(d<=hasta&&g
 function renderGraficos(){
   const months=monthsInRange(PER.desde,PER.hasta);
   const map={}; DATA.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0}; if(m.tipo==='ingreso')map[k].i+=crc(m); else map[k].g+=crc(m);});
+  if(SET.ivaPag) Object.keys(SET.ivaPag).forEach(k=>{const d=ivaAdjFor(k); if(d){if(!map[k])map[k]={i:0,g:0}; map[k].g+=d;}});
   const mv=k=>{const o=map[k]||{i:0,g:0}; return GMETRIC==='ingresos'?o.i:GMETRIC==='gastos'?o.g:o.i-o.g;};
   const shift=(k,o)=>{const[y,m]=k.split('-');return (parseInt(y)+o)+'-'+m;};
   const cur=months.map(mv), prev=months.map(k=>mv(shift(k,-1)));
@@ -1134,16 +1220,16 @@ function cmpLabel(){
 function toggleCmp(v){SET.cmp=v;persist();render();}
 
 function renderReportes(){
-  const cur=DATA.filter(m=>inRange(m,PER.desde,PER.hasta));
-  const s=sum(cur), pv=prevYear(PER), prevL=DATA.filter(m=>inRange(m,pv.desde,pv.hasta)), ps=sum(prevL);
+  const cur=rango(PER.desde,PER.hasta);
+  const s=sum(cur), pv=prevYear(PER), prevL=rango(pv.desde,pv.hasta), ps=sum(prevL);
   const on = SET.cmp!==false;
   const vv=(a,b,inv)=>{ if(b===0&&a===0)return '<b style="color:var(--muted2)">— 0%</b>';
     const p=b===0?100:Math.round((a-b)/Math.abs(b)*100);
     if(p===0)return '<b style="color:var(--muted2)">— 0%</b>';
     const good=inv?p<0:p>0; const cls=good?'up':'down'; const ar=good?'▲':'▼';
     return `<b class="${cls}">${ar} ${Math.abs(p)}%</b>`; };
-  const A=DATA.filter(m=>inRange(m,CMP.aD,CMP.aH)), sA=sum(A);
-  const Bl=DATA.filter(m=>inRange(m,CMP.bD,CMP.bH)), sB=sum(Bl);
+  const A=rango(CMP.aD,CMP.aH), sA=sum(A);
+  const Bl=rango(CMP.bD,CMP.bH), sB=sum(Bl);
   document.getElementById('view').innerHTML = periodBarHTML() + `
    <div class="section">
      <h3>Comparar dos períodos <span class="small">a tu elección</span></h3>
@@ -1177,7 +1263,7 @@ function renderReportes(){
        <div class="cmprow"><span>Ingresos</span><span class="num" style="color:var(--ingreso)">${fmtCRC(s.i)}</span><span class="num" style="color:var(--ingreso)">${fmtCRC(ps.i)}</span><span>${vv(s.i,ps.i,false)}</span></div>
        <div class="cmprow"><span>Gastos</span><span class="num" style="color:var(--gasto)">${fmtCRC(s.g)}</span><span class="num" style="color:var(--gasto)">${fmtCRC(ps.g)}</span><span>${vv(s.g,ps.g,true)}</span></div>
        <div class="cmprow"><span>Saldo</span><span class="num" style="color:var(--neto);font-weight:700">${fmtCRC(s.n)}</span><span class="num" style="color:var(--neto);font-weight:700">${fmtCRC(ps.n)}</span><span>${vv(s.n,ps.n,false)}</span></div>
-       <div class="cmprow"><span>Transacciones</span><span class="num">${cur.length}</span><span class="num" style="color:var(--muted)">${prevL.length}</span><span>${vv(cur.length,prevL.length,false)}</span></div>
+       <div class="cmprow"><span>Transacciones</span><span class="num">${cur.filter(m=>!m.virt).length}</span><span class="num" style="color:var(--muted)">${prevL.filter(m=>!m.virt).length}</span><span>${vv(cur.filter(m=>!m.virt).length,prevL.filter(m=>!m.virt).length,false)}</span></div>
      </div>
      <label class="cmptoggle"><input type="checkbox" ${on?'checked':''} onchange="toggleCmp(this.checked)"> Incluir este comparativo en el PDF</label>
    </div>
@@ -1194,7 +1280,8 @@ function renderReportes(){
 }
 
 /* ---------- Vista MOVIMIENTOS ---------- */
-let MFILTER='todos', MSEARCH='', MDESDE='', MHASTA='', MSORT='fecha';
+let MFILTER='todos', MSEARCH='', MDESDE='', MHASTA='', MSORT='fecha', MCAT='todas';
+function setMCat(v){MCAT=v;render();}
 function setMFilter(f){MFILTER=f;render();}
 function setMSearch(v){MSEARCH=v.toLowerCase();renderMovs(true);}
 function setMDesde(v){MDESDE=v;render();}
@@ -1209,6 +1296,7 @@ function renderMovs(keepFocus){
 
   let list=[...base];
   if(MFILTER!=='todos') list=list.filter(m=>m.tipo===MFILTER);
+  if(MCAT!=='todas') list=list.filter(m=>m.categoria===MCAT);
   if(MSEARCH) list=list.filter(m=>((m.propiedad||'')+' '+(m.detalle||'')+' '+(m.corredor||'')+' '+m.categoria).toLowerCase().includes(MSEARCH));
   if(MSORT==='monto') list.sort((a,b)=> crc(b)-crc(a) || b.fecha.localeCompare(a.fecha));
   else list.sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id-a.id);
@@ -1234,7 +1322,7 @@ function renderMovs(keepFocus){
       <div class="stripe" style="background:${color}"></div>
       <div class="info">
         <div class="top"><span class="cat">${m.categoria}</span><span class="amt" style="color:${color}">${sign}${fmtCRC(crc(m))}</span></div>
-        <div class="meta"><span>${da}/${mo}/${y}</span>${m.propiedad?`<span>· ${m.propiedad}</span>`:''}${colocTag(m)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(m)}</span>`:''}${corredorOf(m)?`<span>· ${corredorOf(m)}</span>`:''}${orig?'· '+orig:''}</div>
+        <div class="meta"><span>${da}/${mo}/${y}</span>${m.propiedad?`<span>· ${m.propiedad}</span>`:''}${colocTag(m)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(m)}</span>`:''}${m.factura==='si'?`<span style="color:var(--gold);font-weight:700">· Fact.</span>`:''}${corredorOf(m)?`<span>· ${corredorOf(m)}</span>`:''}${orig?'· '+orig:''}</div>
         ${m.detalle?`<div class="meta" style="color:var(--muted2)">${m.detalle}</div>`:''}
       </div></div>`;
   }).join('') : emptyMsg;
@@ -1263,6 +1351,11 @@ function renderMovs(keepFocus){
         <div class="field"><span>Hasta</span><button type="button" class="wheelfield" onclick="pickMov('hasta')">${MHASTA?fmtMesAno(MHASTA):'Cualquiera'}<span class="cal">▾</span></button></div>
       </div>
     </div>
+    <select class="search" style="margin-bottom:8px" onchange="setMCat(this.value)">
+      <option value="todas" ${MCAT==='todas'?'selected':''}>Todas las categorías</option>
+      <optgroup label="Ingresos">${CATS.ingreso.map(c=>`<option value="${c}" ${MCAT===c?'selected':''}>${c}</option>`).join('')}</optgroup>
+      <optgroup label="Gastos">${CATS.gasto.map(c=>`<option value="${c}" ${MCAT===c?'selected':''}>${c}</option>`).join('')}</optgroup>
+    </select>
     <input class="search" placeholder="Buscar por propiedad, detalle o corredor…" value="${MSEARCH}" oninput="setMSearch(this.value)">
     <div id="movList">${listInner}</div>`;
 }
@@ -1505,7 +1598,8 @@ function fichaPDF(id){
 }
 
 /* ---------- Formulario ---------- */
-let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC', fColoc='propia';
+let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC', fColoc='propia', fFact='no';
+function setFact(v){fFact=v; document.querySelectorAll('#segFact button').forEach(b=>b.classList.toggle('on',b.dataset.f===v)); document.getElementById('ivaRow').classList.toggle('hide',v!=='si'); if(v==='si'&&!editId){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}}
 const COLOC_HINTS={
  propia:'',
  comp:'Tu portafolio colocado con otro corredor: ingresá la comisión COMPLETA — al guardar te ofrezco registrar el gasto del 50%.',
@@ -1592,7 +1686,7 @@ function renderChk(){
 }
 function setChk(k,v){ fCheck[k]=(fCheck[k]===v?'':v); renderChk(); }
 function setCuotaMon(m){fCuotaMon=m; document.querySelectorAll('#segCuotaMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); document.getElementById('lblCuota').textContent = m==='CRC'?'Valor de la cuota (₡)':'Valor de la cuota ($)';}
-function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock();}
+function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock(); const ie=document.getElementById('ingExtras'); if(ie)ie.classList.toggle('hide',t!=='ingreso');}
 function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   document.getElementById('lblMonto').textContent = m==='CRC'?'Monto (₡)':'Monto ($)';
   document.getElementById('tcRow').classList.toggle('show',m==='USD');
@@ -1617,6 +1711,10 @@ function openForm(id){
     document.getElementById('fProp').value=m.propiedad||'';
     document.getElementById('fCorredor').value=m.corredor||'';
     setColoc(m.coloc||'propia');
+    setFact(m.factura||'no');
+    document.getElementById('fIva').value=m.iva||'';
+    document.getElementById('fRefNombre').value=m.refNombre||'';
+    document.getElementById('fRefMonto').value=m.refMonto||'';
     document.getElementById('fDet').value=m.detalle||'';
     document.getElementById('fMonto').value=m.monto;
     setMon(m.moneda); document.getElementById('fTC').value=m.tc; updTcHint();
@@ -1642,11 +1740,11 @@ function openForm(id){
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC'); setColoc('propia'); document.getElementById('fCorredor').value='';
+    document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC'); setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto'].forEach(i=>document.getElementById(i).value='');
     fInspF=''; fInspH=''; fFotos=[]; fCheck={};
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
-  document.getElementById('fMonto').oninput=updTcHint;
+  document.getElementById('fMonto').oninput=function(){updTcHint(); if(fFact==='si'&&!editId){const mo=parseFloat(this.value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}};
   document.getElementById('fTC').oninput=updTcHint;
   document.getElementById('fCat').onchange=updRentBlock; updRentBlock();
   CHKOPEN=true; toggleChk(); /* deja cerrado y actualiza contador */
@@ -1667,7 +1765,11 @@ function saveMov(){
     propiedad:document.getElementById('fProp').value.trim(),
     detalle:document.getElementById('fDet').value.trim(),
     moneda:fMon, monto, tc,
-    coloc:fColoc, corredor:document.getElementById('fCorredor').value.trim()
+    coloc:fColoc, corredor:document.getElementById('fCorredor').value.trim(),
+    factura:fTipo==='ingreso'?fFact:'no',
+    iva:(fTipo==='ingreso'&&fFact==='si')?(parseFloat(document.getElementById('fIva').value)||0):0,
+    refNombre:fTipo==='ingreso'?document.getElementById('fRefNombre').value.trim():'',
+    refMonto:fTipo==='ingreso'?(parseFloat(document.getElementById('fRefMonto').value)||0):0
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
     rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
@@ -1680,6 +1782,14 @@ function saveMov(){
       DATA.push({id:rec.id+1,tipo:'gasto',categoria:gcat,fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:rec.moneda,monto:rec.monto/2,tc:rec.tc,coloc:'comp',corredor:rec.corredor});
       extraToast=' + gasto 50/50 registrado';
     }
+  }
+  if(!editId && rec.tipo==='ingreso' && rec.factura==='si' && rec.iva>0){
+    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true});
+    extraToast+=' + IVA a gastos';
+  }
+  if(!editId && rec.tipo==='ingreso' && rec.refMonto>0){
+    DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc});
+    extraToast+=' + gasto referido';
   }
   persist(); closeForm(); render(); toast((editId?'Movimiento actualizado':'Movimiento guardado')+extraToast);
 }
@@ -1942,10 +2052,10 @@ function printChartLight(months,ing,gas,sal){
   return `<svg viewBox="0 0 ${W} ${H}" class="rep-chart">${zl}${ln(ing,'#15805A')}${ln(gas,'#B85138')}${ln(sal,'#1C3D60')}${dots(sal,'#1C3D60')}${xl}</svg>`;
 }
 function printReport(){
-  const cur=DATA.filter(m=>inRange(m,PER.desde,PER.hasta));
+  const cur=rango(PER.desde,PER.hasta);
   const s=sum(cur);
   const months=monthsInRange(PER.desde,PER.hasta);
-  const map={}; cur.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0,ci:0,cg:0}; if(m.tipo==='ingreso'){map[k].i+=crc(m);map[k].ci++;} else {map[k].g+=crc(m);map[k].cg++;}});
+  const map={}; cur.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0,ci:0,cg:0}; if(m.tipo==='ingreso'){map[k].i+=crc(m);map[k].ci++;} else {map[k].g+=crc(m); if(!m.virt)map[k].cg++;}});
   const ing=months.map(k=>map[k]?map[k].i:0), gas=months.map(k=>map[k]?map[k].g:0), sal=months.map((k,i)=>ing[i]-gas[i]);
   const cIng=months.map(k=>map[k]?map[k].ci:0), cGas=months.map(k=>map[k]?map[k].cg:0);
   const totCi=cIng.reduce((a,b)=>a+b,0), totCg=cGas.reduce((a,b)=>a+b,0);
@@ -1956,9 +2066,9 @@ function printReport(){
   const per=fmtMesAno(PER.desde)+' \u2013 '+fmtMesAno(PER.hasta);
   var cmpHTML='';
   if(SET.cmp!==false){
-    var pvp=prevYear(PER); var prevL=DATA.filter(m=>inRange(m,pvp.desde,pvp.hasta)); var ps=sum(prevL);
-    var prevNi=prevL.filter(m=>m.tipo==='ingreso').length, prevNg=prevL.length-prevNi;
-    var curNi=cur.filter(m=>m.tipo==='ingreso').length, curNg=cur.length-curNi;
+    var pvp=prevYear(PER); var prevL=rango(pvp.desde,pvp.hasta); var ps=sum(prevL);
+    var prevNi=prevL.filter(m=>m.tipo==='ingreso').length, prevNg=prevL.filter(m=>m.tipo==='gasto'&&!m.virt).length;
+    var curNi=cur.filter(m=>m.tipo==='ingreso').length, curNg=cur.filter(m=>m.tipo==='gasto'&&!m.virt).length;
     var vp=function(a,b,inv){ if(b===0&&a===0)return '\u2014'; var p=b===0?(a>0?100:-100):Math.round((a-b)/Math.abs(b)*100); var c= p===0?'#888':((inv?p<0:p>0)?'#15805A':'#B85138'); var ar=p>0?'\u25B2':p<0?'\u25BC':''; return '<span style="color:'+c+';font-weight:700">'+ar+' '+Math.abs(p)+'%</span>'; };
     var pmap={}; prevL.forEach(function(m){var k=mkey(m.fecha); if(!pmap[k])pmap[k]={i:0,g:0}; if(m.tipo==='ingreso')pmap[k].i+=crc(m); else pmap[k].g+=crc(m);});
     var monthlyRows=months.map(function(k,i){ var sy=ing[i]-gas[i]; var pk=(parseInt(k.split('-')[0])-1)+'-'+k.split('-')[1]; var po=pmap[pk]||{i:0,g:0}; var pyv=po.i-po.g; return '<tr><td>'+fmtMesAno(k)+'</td><td class="r"><b>'+fmtCRC(sy)+'</b></td><td class="r" style="color:#888">'+fmtCRC(pyv)+'</td><td class="r">'+vp(sy,pyv,false)+'</td></tr>'; }).join('');
@@ -1967,14 +2077,14 @@ function printReport(){
       +'<tr><td>Ingresos</td><td class="r" style="color:#15805A">'+fmtCRC(s.i)+'</td><td class="r">'+fmtCRC(ps.i)+'</td><td class="r">'+vp(s.i,ps.i,false)+'</td></tr>'
       +'<tr><td>Gastos</td><td class="r" style="color:#B85138">'+fmtCRC(s.g)+'</td><td class="r">'+fmtCRC(ps.g)+'</td><td class="r">'+vp(s.g,ps.g,true)+'</td></tr>'
       +'<tr><td>Saldo</td><td class="r"><b style="color:#1C3D60">'+fmtCRC(s.n)+'</b></td><td class="r">'+fmtCRC(ps.n)+'</td><td class="r">'+vp(s.n,ps.n,false)+'</td></tr>'
-      +'<tr><td>N\u00b0 transacciones</td><td class="r">'+cur.length+' ('+curNi+' ing \u00b7 '+curNg+' gas)</td><td class="r">'+prevL.length+' ('+prevNi+' ing \u00b7 '+prevNg+' gas)</td><td class="r">'+vp(cur.length,prevL.length,false)+'</td></tr>'
+      +'<tr><td>N° transacciones</td><td class="r">'+(curNi+curNg)+' ('+curNi+' ing \u00b7 '+curNg+' gas)</td><td class="r">'+(prevNi+prevNg)+' ('+prevNi+' ing \u00b7 '+prevNg+' gas)</td><td class="r">'+vp(curNi+curNg,prevNi+prevNg,false)+'</td></tr>'
       +'</tbody></table>'
       + (months.length>1 ? '<table class="rep-tbl small" style="margin-top:10px"><thead><tr><th>Mes</th><th class="r">Saldo actual</th><th class="r">Saldo a\u00f1o ant.</th><th class="r">Var.</th></tr></thead><tbody>'+monthlyRows+'</tbody></table>' : '');
   }
   var cmp2HTML='';
   if(CMP && CMP.on){
-    var Al=DATA.filter(m=>inRange(m,CMP.aD,CMP.aH)),sa=sum(Al);
-    var Bl2=DATA.filter(m=>inRange(m,CMP.bD,CMP.bH)),sb=sum(Bl2);
+    var Al=rango(CMP.aD,CMP.aH),sa=sum(Al);
+    var Bl2=rango(CMP.bD,CMP.bH),sb=sum(Bl2);
     var la=rangeLabel(CMP.aD,CMP.aH), lb=rangeLabel(CMP.bD,CMP.bH);
     cmp2HTML='<h4>Comparaci\u00f3n \u00b7 '+la+' vs '+lb+'</h4>'
       +'<table class="rep-tbl"><thead><tr><th>Concepto</th><th class="r">A \u00b7 '+la+'</th><th class="r">B \u00b7 '+lb+'</th><th class="r">Variaci\u00f3n</th></tr></thead><tbody>'
@@ -1988,8 +2098,16 @@ function printReport(){
   var cb=colocBreak(cur);
   var colocRepHTML='';
   {
-    var cRows=['propia','comp','colega'].map(function(c){var o=cb.r[c]; var pct=cb.totI?Math.round(o.i/cb.totI*100):0; return '<tr><td>'+COLOC_NAMES[c]+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(o.g?fmtCRC(o.g):'—')+'</td></tr>';}).join('');
-    colocRepHTML='<h4>Cierres por colocación</h4><table class="rep-tbl"><thead><tr><th>Colocación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">Gastos</th></tr></thead><tbody>'+cRows+'</tbody></table>';
+    var cRows=['propia','comp','colega'].map(function(c){var o=cb.r[c]; var pct=cb.totI?Math.round(o.i/cb.totI*100):0; return '<tr><td>'+COLOC_NAMES[c]+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(o.gc?fmtCRC(o.gc):'—')+'</td><td class="r" style="color:#B85138">'+(o.go?fmtCRC(o.go):'—')+'</td></tr>';}).join('');
+    colocRepHTML='<h4>Cierres por colocación</h4><table class="rep-tbl"><thead><tr><th>Colocación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">Pago comisiones</th><th class="r">Otros gastos</th></tr></thead><tbody>'+cRows+'</tbody></table>';
+  }
+  var fb=factBreak(cur);
+  var fRows=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(function(p){var f=p[0],name=p[1],o=fb.r[f]; var pct=fb.totI?Math.round(o.i/fb.totI*100):0; return '<tr><td>'+name+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(f==='si'&&o.iva?fmtCRC(o.iva):'—')+'</td></tr>';}).join('');
+  var factRepHTML='<h4>Cierres por facturación</h4><table class="rep-tbl"><thead><tr><th>Facturación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">IVA</th></tr></thead><tbody>'+fRows+'</tbody></table>';
+  var ivaMesHTML='';
+  if(SET.ivaPag){
+    var ivaRows=months.filter(function(k){return SET.ivaPag[k]!=null&&SET.ivaPag[k]!=='';}).map(function(k){var calc=ivaCalcMonth(k); var pag=+SET.ivaPag[k]; var dif=pag-calc; return '<tr><td>'+fmtMesAno(k)+'</td><td class="r">'+(calc?fmtCRC(calc):'—')+'</td><td class="r">'+fmtCRC(pag)+'</td><td class="r" style="color:'+(dif<0?'#15805A':dif>0?'#B85138':'#333')+';font-weight:600">'+(dif===0?'—':(dif<0?'−':'+')+fmtCRC(Math.abs(dif)))+'</td></tr>';}).join('');
+    if(ivaRows) ivaMesHTML='<h4>IVA declarado a Hacienda</h4><table class="rep-tbl"><thead><tr><th>Mes</th><th class="r">IVA calculado</th><th class="r">IVA pagado</th><th class="r">Ajuste</th></tr></thead><tbody>'+ivaRows+'</tbody></table>';
   }
   var rentHTML='';
   if(rentList2.length){
@@ -2004,7 +2122,7 @@ function printReport(){
         <div><span>Ingresos</span><b style="color:#15805A">${fmtCRC(s.i)}</b></div>
         <div><span>Gastos</span><b style="color:#B85138">${fmtCRC(s.g)}</b></div>
         <div><span>Saldo</span><b style="color:#1C3D60">${fmtCRC(s.n)}</b></div>
-        <div><span>Transacciones</span><b>${cur.length}</b><small style="display:block;font-family:'Plus Jakarta Sans';font-size:10px;color:#888;margin-top:3px">${totCi} ingresos · ${totCg} gastos</small></div></div>
+        <div><span>Transacciones</span><b>${totCi+totCg}</b><small style="display:block;font-family:'Plus Jakarta Sans';font-size:10px;color:#888;margin-top:3px">${totCi} ingresos · ${totCg} gastos</small></div></div>
       <h4>Evoluci\u00f3n mensual</h4>
       ${printChartLight(months,ing,gas,sal)}
       <div class="rep-leg"><span style="color:#15805A">\u2014 Ingresos</span><span style="color:#B85138">\u2014 Gastos</span><span style="color:#1C3D60">\u2014 Saldo</span></div>
@@ -2015,6 +2133,8 @@ function printReport(){
         <tbody>${mrows||'<tr><td colspan="6">Sin datos</td></tr>'}</tbody>
         <tfoot><tr><td>Total</td><td class="r">${totCi}</td><td class="r">${fmtCRC(s.i)}</td><td class="r">${totCg}</td><td class="r">${fmtCRC(s.g)}</td><td class="r">${fmtCRC(s.n)}</td></tr></tfoot></table>
       ${colocRepHTML}
+      ${factRepHTML}
+      ${ivaMesHTML}
       <h4>Detalle de movimientos</h4>
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
         <tbody>${movs||'<tr><td colspan="7">Sin movimientos en el per\u00edodo</td></tr>'}</tbody></table>
