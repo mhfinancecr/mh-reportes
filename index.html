@@ -328,6 +328,25 @@
   .rentblock.hide{display:none}
   .rentttl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-2);font-weight:700;margin-bottom:10px}
   .rentsub{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);font-weight:700;margin:12px 0 8px;padding-top:11px;border-top:1px solid var(--line)}
+  /* Fotos de inspección */
+  .fotogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+  .fotogrid:empty{display:none}
+  .fotogrid .ft{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--line);aspect-ratio:1}
+  .fotogrid .ft img{width:100%;height:100%;object-fit:cover;display:block}
+  .fotogrid .ft button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(20,20,20,.62);color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .fotoadd{display:block;width:100%;text-align:center;border:1.5px dashed var(--line2);border-radius:10px;padding:11px;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;box-sizing:border-box}
+  .fotoadd:hover{border-color:var(--gold);background:var(--gold-soft)}
+  .fotonote{font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.4}
+  /* Checklist de entrega */
+  .chktgl{width:100%;text-align:left;background:none;border:none;color:var(--gold);font-size:13px;font-weight:700;padding:10px 0 2px}
+  .chkrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .chkrow:last-child{border-bottom:none}
+  .chkrow>span{flex:1;font-size:12.5px;color:var(--paper);line-height:1.3}
+  .chkbtns{display:flex;gap:4px;flex:0 0 auto}
+  .chkbtns button{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:8px;padding:5px 8px;font-size:10.5px;font-weight:700}
+  .chkbtns button.ok.on{background:var(--ingreso-soft);border-color:var(--ingreso);color:var(--ingreso)}
+  .chkbtns button.def.on{background:var(--gasto-soft);border-color:var(--gasto);color:var(--gasto)}
+  .chkbtns button.na.on{background:#ECECEF;border-color:#9a9aa2;color:#55555e}
   .icsbtn{width:100%;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.35;text-align:center}
   .icsbtn:hover{border-color:var(--gold);background:#fff}
   /* Alertas de contratos por vencer (Resumen) */
@@ -550,6 +569,22 @@
         <div class="formrow"><label>Teléfono</label><input type="tel" id="fTenTel" placeholder="0000-0000"></div>
       </div>
       <div class="formrow"><label>Correo del inquilino</label><input type="email" id="fTenMail" placeholder="correo@ejemplo.com"></div>
+      <div class="rentsub">Inspección de entrega</div>
+      <div class="twocol">
+        <div class="formrow"><label>Fecha de inspección</label><button type="button" class="wheelfield" id="fInspFBtn" onclick="pickInspFecha()">Elegir fecha</button></div>
+        <div class="formrow"><label>Hora de entrega</label><button type="button" class="wheelfield" id="fInspHBtn" onclick="pickInspHora()">Elegir hora</button></div>
+      </div>
+      <div class="formrow"><label>Juegos de llaves entregados</label><input type="number" id="fLlaves" inputmode="numeric" min="0" placeholder="0"></div>
+      <div class="formrow"><label>Fotos de la inspección</label>
+        <div class="fotogrid" id="fotoGrid"></div>
+        <label class="fotoadd">＋ Agregar fotos<input type="file" accept="image/*" multiple class="hide" onchange="addFotos(event)"></label>
+        <div class="fotonote">Se guardan en la app y salen en la ficha PDF (6 por página).</div>
+      </div>
+      <button type="button" class="chktgl" id="chkTgl" onclick="toggleChk()">▸ Checklist de entrega</button>
+      <div id="chkWrap" class="hide"></div>
+      <div class="formrow" style="margin-top:10px"><label>Otros · notas y comentarios</label>
+        <textarea id="fChkNotas" placeholder="Observaciones de la entrega, daños, pendientes, acuerdos…"></textarea>
+      </div>
       <button type="button" class="icsbtn" id="icsBtn" onclick="addRentToCalendar()">📅 Añadir vencimiento al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorios automáticos 3 meses y 1 mes antes</span></button>
     </div>
     <button class="saveBtn" onclick="saveMov()">Guardar</button>
@@ -635,6 +670,7 @@
     </div>
     <div class="wheels">
       <div class="wheelband"></div>
+      <div class="wheelcol days" id="wheelDay" style="display:none"></div>
       <div class="wheelcol months" id="wheelMonth"></div>
       <div class="wheelcol years" id="wheelYear"></div>
     </div>
@@ -654,7 +690,7 @@ function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]?
 let DATA = JSON.parse(load(KEY) || '[]');
 let SET  = JSON.parse(load(SKEY) || '{"tc":510}');
 let PIPE = JSON.parse(load(PKEY) || '[]');   // cartera/pipeline — NO afecta cifras reales
-function persist(){ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); }
+function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
 const LOGO_PATH=`M2238 7250 c-16 -12 -28 -27 -28 -34 0 -7 22 -60 49 -117 86 -185
 124 -313 156 -533 41 -283 39 -923 -5 -1135 -25 -124 -53 -195 -109 -281 -22
 -35 -41 -70 -41 -77 0 -27 83 -165 104 -172 11 -5 124 -5 250 -1 176 6 230 11
@@ -753,8 +789,9 @@ function buildWheelItems(){
   document.getElementById('wheelYear').innerHTML=_wheel.years.map((y,i)=>`<div class="witem" onclick="wheelTo('year',${i})">${y}</div>`).join('');
 }
 function openWheel(title,value,cb,yearOnly){
-  _wheel.cb=cb; _wheel.yearOnly=!!yearOnly; _wheel.years=yearRange();
+  _wheel.cb=cb; _wheel.mode=yearOnly?'y':'ym'; _wheel.yearOnly=!!yearOnly; _wheel.years=yearRange();
   document.getElementById('wheelTitle').textContent=title;
+  document.getElementById('wheelDay').style.display='none';
   document.getElementById('wheelMonth').style.display=yearOnly?'none':'';
   const [y,m]=(value||thisMonth()).split('-').map(Number);
   if(_wheel.years.indexOf(y)<0){_wheel.years.push(y);_wheel.years.sort((a,b)=>a-b);}
@@ -767,21 +804,68 @@ function openWheel(title,value,cb,yearOnly){
   setTimeout(apply,130);
 }
 function updWheelSel(){
-  ['wheelMonth','wheelYear'].forEach(id=>{
-    const col=document.getElementById(id); const idx=Math.round(col.scrollTop/WITEM_H);
+  ['wheelDay','wheelMonth','wheelYear'].forEach(id=>{
+    const col=document.getElementById(id); if(col.style.display==='none')return;
+    const idx=Math.round(col.scrollTop/WITEM_H);
     col.querySelectorAll('.witem').forEach((el,i)=>el.classList.toggle('sel',i===idx));
   });
 }
 function wheelTo(which,i){
-  const col=document.getElementById(which==='month'?'wheelMonth':'wheelYear');
+  const col=document.getElementById(which==='day'?'wheelDay':which==='month'?'wheelMonth':'wheelYear');
   col.scrollTo({top:i*WITEM_H,behavior:'smooth'}); setTimeout(updWheelSel,280);
 }
+function openDateWheel(title,value,cb){
+  _wheel.cb=cb; _wheel.mode='dmy'; _wheel.years=yearRange();
+  document.getElementById('wheelTitle').textContent=title;
+  const v=(value&&value.length===10)?value:new Date().toISOString().slice(0,10);
+  const [y,m,d]=v.split('-').map(Number);
+  if(_wheel.years.indexOf(y)<0){_wheel.years.push(y);_wheel.years.sort((a,b)=>a-b);}
+  const dc=document.getElementById('wheelDay');
+  dc.style.display=''; document.getElementById('wheelMonth').style.display='';
+  dc.innerHTML=Array.from({length:31},(_,i)=>`<div class="witem" onclick="wheelTo('day',${i})">${String(i+1).padStart(2,'0')}</div>`).join('');
+  buildWheelItems();
+  const yi=_wheel.years.indexOf(y), mi=Math.min(11,Math.max(0,(m||1)-1)), di=Math.min(30,Math.max(0,(d||1)-1));
+  document.getElementById('wheelMask').classList.add('open');
+  const mc=document.getElementById('wheelMonth'), yc=document.getElementById('wheelYear');
+  const apply=()=>{ void dc.offsetHeight; dc.scrollTop=di*WITEM_H; mc.scrollTop=mi*WITEM_H; yc.scrollTop=yi*WITEM_H; updWheelSel(); };
+  requestAnimationFrame(()=>requestAnimationFrame(apply));
+  setTimeout(apply,130);
+}
+function openTimeWheel(title,value,cb){
+  _wheel.cb=cb; _wheel.mode='hm';
+  document.getElementById('wheelTitle').textContent=title;
+  const v=(value&&value.indexOf(':')>0)?value:'10:00';
+  const [h,mi5]=v.split(':').map(Number);
+  document.getElementById('wheelDay').style.display='none';
+  const mc=document.getElementById('wheelMonth'), yc=document.getElementById('wheelYear');
+  mc.style.display='';
+  mc.innerHTML=Array.from({length:24},(_,i)=>`<div class="witem" onclick="wheelTo('month',${i})">${String(i).padStart(2,'0')} h</div>`).join('');
+  yc.innerHTML=Array.from({length:12},(_,i)=>`<div class="witem" onclick="wheelTo('year',${i})">${String(i*5).padStart(2,'0')} min</div>`).join('');
+  const hi=Math.min(23,Math.max(0,h||0)), mli=Math.min(11,Math.max(0,Math.round((mi5||0)/5)));
+  document.getElementById('wheelMask').classList.add('open');
+  const apply=()=>{ void mc.offsetHeight; mc.scrollTop=hi*WITEM_H; yc.scrollTop=mli*WITEM_H; updWheelSel(); };
+  requestAnimationFrame(()=>requestAnimationFrame(apply));
+  setTimeout(apply,130);
+}
 function wheelDone(){
-  const mi=Math.round(document.getElementById('wheelMonth').scrollTop/WITEM_H);
-  const yi=Math.round(document.getElementById('wheelYear').scrollTop/WITEM_H);
-  const m=Math.min(11,Math.max(0,mi))+1;
-  const y=_wheel.years[Math.min(_wheel.years.length-1,Math.max(0,yi))];
-  const val=_wheel.yearOnly ? String(y) : y+'-'+String(m).padStart(2,'0');
+  const mc=document.getElementById('wheelMonth'), yc=document.getElementById('wheelYear');
+  const mi=Math.round(mc.scrollTop/WITEM_H);
+  const yi=Math.round(yc.scrollTop/WITEM_H);
+  let val;
+  if(_wheel.mode==='hm'){
+    val=String(Math.min(23,Math.max(0,mi))).padStart(2,'0')+':'+String(Math.min(11,Math.max(0,yi))*5).padStart(2,'0');
+  } else if(_wheel.mode==='dmy'){
+    const di=Math.round(document.getElementById('wheelDay').scrollTop/WITEM_H);
+    const m=Math.min(11,Math.max(0,mi))+1;
+    const y=_wheel.years[Math.min(_wheel.years.length-1,Math.max(0,yi))];
+    const maxD=new Date(y,m,0).getDate();
+    const d=Math.min(maxD,Math.min(31,Math.max(0,di))+1);
+    val=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  } else {
+    const m=Math.min(11,Math.max(0,mi))+1;
+    const y=_wheel.years[Math.min(_wheel.years.length-1,Math.max(0,yi))];
+    val=_wheel.mode==='y' ? String(y) : y+'-'+String(m).padStart(2,'0');
+  }
   document.getElementById('wheelMask').classList.remove('open');
   const cb=_wheel.cb; _wheel.cb=null; if(cb)cb(val);
 }
@@ -1315,6 +1399,28 @@ function fichaPDF(id){
       incBlock+='<div class="fnext">Próximo ajuste: '+fmtFecha(inc.pend.date)+(inc.pend.pct!=null?' · IPC '+inc.pend.pct.toFixed(2)+'% → '+fmtCRC(inc.pend.to):' · pendiente del % IPC del MIVAH')+'</div>';
     }
   }
+  let inspBlock='';
+  const chkSrc=a.check||{};
+  const chkRows=RENT_CHECK.filter(([k])=>chkSrc[k]).map(([k,t])=>{
+    const st=chkSrc[k];
+    const lbl=st==='ok'?'<span class="cok">✓ OK</span>':st==='def'?'<span class="cdef">✕ Defectuoso</span>':'<span class="cna">No aplica</span>';
+    return '<tr><td>'+t+'</td><td class="r">'+lbl+'</td></tr>';
+  }).join('');
+  if(a.inspFecha||a.inspHora||a.llaves||chkRows||a.chkNotas){
+    inspBlock='<h4>Inspección de entrega</h4><table class="ftbl big"><tbody>'
+     +row('Fecha de inspección', a.inspFecha?fmtFecha(a.inspFecha):'')
+     +row('Hora de entrega', a.inspHora?(a.inspHora+' h'):'')
+     +row('Juegos de llaves entregados', a.llaves?String(a.llaves):'')
+     +'</tbody></table>'
+     +(chkRows?'<h4>Checklist de verificación</h4><table class="ftbl chk"><tbody>'+chkRows+'</tbody></table>':'')
+     +(a.chkNotas?'<h4>Otros · notas y comentarios</h4><div class="fnotas">'+String(a.chkNotas).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</div>':'');
+  }
+  let fotoBlock='';
+  const fotos=a.fotos||[];
+  if(fotos.length){
+    const pages=[]; for(let i=0;i<fotos.length;i+=6)pages.push(fotos.slice(i,i+6));
+    fotoBlock=pages.map((pg,pi)=>'<div class="fpage"><h4>Fotos de la inspección'+(pages.length>1?' · pág. '+(pi+1):'')+'</h4><div class="fgrid">'+pg.map(src=>'<img src="'+src+'">').join('')+'</div></div>').join('');
+  }
   const cuotaShow = a.cuota ? (cuotaMonOf(a)==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
   var INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Ficha de contrato de alquiler</div><div class="rep-period">'+(m.propiedad||'Propiedad')+' \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
@@ -1332,6 +1438,8 @@ function fichaPDF(id){
     +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
     +'</div>'
     +incBlock
+    +inspBlock
+    +fotoBlock
     +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Ficha generada '+new Date().toLocaleDateString('es-CR')+'</div></div>';
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+'</style><title>Ficha '+(m.propiedad||'alquiler')+'</title></head><body>'+INNER+'</body></html>';
   var f=document.getElementById('printFrame');
@@ -1342,6 +1450,81 @@ function fichaPDF(id){
 
 /* ---------- Formulario ---------- */
 let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC';
+let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
+const RENT_CHECK=[
+ ['elec','Disponibilidad de electricidad'],
+ ['agua','Disponibilidad de agua'],
+ ['filt','Sin filtraciones de agua'],
+ ['fuga','Sin fugas de agua'],
+ ['calen','Calentador de agua funcionando'],
+ ['bomb','Bombillos completos y funcionando'],
+ ['tomas','Tomacorrientes y apagadores'],
+ ['cocina','Cocina / plantilla y horno'],
+ ['micro','Microondas'],
+ ['refri','Refrigeradora'],
+ ['lavad','Lavadora de ropa'],
+ ['seca','Secadora / lavaseca / torre de lavado'],
+ ['extr','Extractor de grasa'],
+ ['tv','Televisores'],
+ ['ac','Aire acondicionado'],
+ ['closet','Closets y puertas'],
+ ['vent','Ventanas y cedazos'],
+ ['cerr','Cerraduras y llavines'],
+ ['pint','Pintura y paredes'],
+ ['piso','Pisos'],
+ ['banos','Baños (inodoros, duchas, grifería)'],
+ ['cort','Cortinas / persianas'],
+ ['mueb','Mobiliario (si amueblado)'],
+ ['parq','Parqueo y control de portón'],
+ ['amen','Áreas comunes / amenidades']
+];
+function pickInspFecha(){ openDateWheel('Fecha de inspección', fInspF, v=>{fInspF=v; updInspBtns();}); }
+function pickInspHora(){ openTimeWheel('Hora de entrega', fInspH, v=>{fInspH=v; updInspBtns();}); }
+function updInspBtns(){
+  document.getElementById('fInspFBtn').textContent = fInspF?fmtFecha(fInspF):'Elegir fecha';
+  document.getElementById('fInspHBtn').textContent = fInspH?(fInspH+' h'):'Elegir hora';
+}
+function addFotos(ev){
+  const files=[...ev.target.files]; ev.target.value='';
+  files.forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=900; let w=img.width,h=img.height;
+        if(w>=h&&w>MAX){h=Math.round(h*MAX/w);w=MAX;} else if(h>w&&h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        fFotos.push(c.toDataURL('image/jpeg',0.62));
+        renderFotoGrid();
+      };
+      img.src=e.target.result;
+    };
+    r.readAsDataURL(f);
+  });
+}
+function delFoto(i){ fFotos.splice(i,1); renderFotoGrid(); }
+function renderFotoGrid(){
+  document.getElementById('fotoGrid').innerHTML=fFotos.map((src,i)=>`<div class="ft"><img src="${src}" alt="Foto ${i+1}"><button type="button" onclick="delFoto(${i})">✕</button></div>`).join('');
+}
+function toggleChk(){
+  CHKOPEN=!CHKOPEN;
+  document.getElementById('chkWrap').classList.toggle('hide',!CHKOPEN);
+  const n=Object.values(fCheck).filter(Boolean).length;
+  document.getElementById('chkTgl').textContent=(CHKOPEN?'▾':'▸')+' Checklist de entrega'+(n?` (${n} marcados)`:'');
+  if(CHKOPEN)renderChk();
+}
+function renderChk(){
+  document.getElementById('chkWrap').innerHTML=RENT_CHECK.map(([k,t])=>{
+    const st=fCheck[k]||'';
+    return `<div class="chkrow"><span>${t}</span><div class="chkbtns">
+      <button type="button" class="ok ${st==='ok'?'on':''}" onclick="setChk('${k}','ok')">OK</button>
+      <button type="button" class="def ${st==='def'?'on':''}" onclick="setChk('${k}','def')">Def.</button>
+      <button type="button" class="na ${st==='na'?'on':''}" onclick="setChk('${k}','na')">N/A</button>
+    </div></div>`;
+  }).join('');
+}
+function setChk(k,v){ fCheck[k]=(fCheck[k]===v?'':v); renderChk(); }
 function setCuotaMon(m){fCuotaMon=m; document.querySelectorAll('#segCuotaMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); document.getElementById('lblCuota').textContent = m==='CRC'?'Valor de la cuota (₡)':'Valor de la cuota ($)';}
 function setTipo(t){fTipo=t; document.querySelectorAll('#segTipo button').forEach(b=>{b.classList.toggle('on',b.dataset.t===t);b.classList.toggle('i',b.dataset.t==='ingreso'&&t==='ingreso');b.classList.toggle('g',b.dataset.t==='gasto'&&t==='gasto');}); fillCats(); updRentBlock();}
 function setMon(m){fMon=m; document.querySelectorAll('#segMon button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
@@ -1376,6 +1559,10 @@ function openForm(id){
     document.getElementById('fRentEstado').value=al.estado||'vigente';
     document.getElementById('fRentCuota').value=al.cuota||'';
     setCuotaMon(al.cuotaMon||'CRC');
+    fInspF=al.inspFecha||''; fInspH=al.inspHora||'';
+    document.getElementById('fLlaves').value=al.llaves||'';
+    fFotos=(al.fotos||[]).slice(); fCheck=Object.assign({},al.check||{});
+    document.getElementById('fChkNotas').value=al.chkNotas||'';
     document.getElementById('fOwnName').value=al.ownName||'';
     document.getElementById('fOwnTel').value=al.ownTel||'';
     document.getElementById('fOwnMail').value=al.ownMail||'';
@@ -1386,13 +1573,16 @@ function openForm(id){
   } else {
     setTipo('ingreso'); fillCats(); setMon('CRC');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
-    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail'].forEach(i=>document.getElementById(i).value='');
+    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente'; setCuotaMon('CRC');
+    fInspF=''; fInspH=''; fFotos=[]; fCheck={};
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
   document.getElementById('fMonto').oninput=updTcHint;
   document.getElementById('fTC').oninput=updTcHint;
   document.getElementById('fCat').onchange=updRentBlock; updRentBlock();
+  CHKOPEN=true; toggleChk(); /* deja cerrado y actualiza contador */
+  updInspBtns(); renderFotoGrid();
 }
 function closeForm(){document.getElementById('overlay').classList.remove('open');}
 
@@ -1411,7 +1601,7 @@ function saveMov(){
     moneda:fMon, monto, tc
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   persist(); closeForm(); render(); toast(editId?'Movimiento actualizado':'Movimiento guardado');
@@ -1627,6 +1817,12 @@ const FICHA_CSS=`
   .fcols{display:flex;gap:22px}.fcols>div{flex:1}
   .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
   .fnext{margin-top:8px;font-size:11.5px;color:#9A6B1E;background:#FBF3E2;border-radius:8px;padding:8px 11px}
+  .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#888}
+  .ftbl.chk td{font-size:11.5px;padding:6px}
+  .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal}
+  .fpage{page-break-before:always}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fgrid img{width:100%;height:290px;object-fit:cover;border-radius:6px;border:1px solid #ddd;page-break-inside:avoid}
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
 function fmtFecha(f){const[y,mo,da]=f.split('-');return da+' '+MES[+mo-1]+' '+y;}
