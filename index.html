@@ -1132,9 +1132,17 @@ function renderResumen(){
 }
 
 const COLOC_NAMES={propia:'Propia · solo',comp:'Propia · 50/50',colega:'De colega'};
+function colocPropMap(){
+  const map={};
+  DATA.forEach(x=>{ if(x.tipo==='ingreso'&&(x.coloc==='comp'||x.coloc==='colega')){const p=(x.propiedad||'').trim().toLowerCase(); if(p)map[p]=x.coloc;} });
+  return map;
+}
 function colocBreak(list){
   const r={propia:{n:0,i:0,gc:0,go:0},comp:{n:0,i:0,gc:0,go:0},colega:{n:0,i:0,gc:0,go:0}}; let totI=0;
-  list.forEach(m=>{if(m.virt)return; const c=(m.coloc==='comp'||m.coloc==='colega')?m.coloc:'propia';
+  const pmap=colocPropMap();
+  list.forEach(m=>{if(m.virt)return;
+    let c=(m.coloc==='comp'||m.coloc==='colega')?m.coloc:'propia';
+    if(m.tipo==='gasto'&&c==='propia'){const p=(m.propiedad||'').trim().toLowerCase(); if(p&&pmap[p])c=pmap[p];}
     if(m.tipo==='ingreso'){r[c].n++; r[c].i+=crc(m); totI+=crc(m);}
     else { if(/^Pago de comisiones/i.test(m.categoria)) r[c].gc+=crc(m); else r[c].go+=crc(m); }});
   return {r,totI};
