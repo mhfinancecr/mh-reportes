@@ -1455,18 +1455,20 @@ function fichaPDF(id){
   }
   let inspBlock='';
   const chkSrc=a.check||{};
-  const chkRows=RENT_CHECK.filter(([k])=>chkSrc[k]).map(([k,t])=>{
+  const chkArr=RENT_CHECK.filter(([k])=>chkSrc[k]).map(([k,t])=>{
     const st=chkSrc[k];
     const lbl=st==='ok'?'<span class="cok">✓ OK</span>':st==='def'?'<span class="cdef">✕ Defectuoso</span>':'<span class="cna">No aplica</span>';
     return '<tr><td>'+t+'</td><td class="r">'+lbl+'</td></tr>';
-  }).join('');
+  });
+  const half=Math.ceil(chkArr.length/2);
+  const chkRows=chkArr.length?'<div class="fcols chkcols"><div><table class="ftbl chk"><tbody>'+chkArr.slice(0,half).join('')+'</tbody></table></div><div><table class="ftbl chk"><tbody>'+chkArr.slice(half).join('')+'</tbody></table></div></div>':'';
   if(a.inspFecha||a.inspHora||a.llaves||chkRows||a.chkNotas){
     inspBlock='<h4 class="pbreak">Inspección de entrega</h4><table class="ftbl big"><tbody>'
      +row('Fecha de inspección', a.inspFecha?fmtFecha(a.inspFecha):'')
      +row('Hora de entrega', a.inspHora?(a.inspHora+' h'):'')
      +row('Juegos de llaves entregados', a.llaves?String(a.llaves):'')
      +'</tbody></table>'
-     +(chkRows?'<h4>Checklist de verificación</h4><table class="ftbl chk"><tbody>'+chkRows+'</tbody></table>':'')
+     +(chkRows?'<h4>Checklist de verificación</h4>'+chkRows:'')
      +(a.chkNotas?'<h4>Otros · notas y comentarios</h4><div class="fnotas">'+String(a.chkNotas).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</div>':'');
   }
   let fotoBlock='';
@@ -1540,8 +1542,7 @@ const RENT_CHECK=[
  ['grif','Grifería'],
  ['cort','Cortinas / persianas'],
  ['mueb','Mobiliario (si amueblado)'],
- ['parq','Parqueo y control de portón'],
- ['amen','Áreas comunes / amenidades']
+ ['parq','Parqueo y control de portón']
 ];
 function pickInspFecha(){ openDateWheel('Fecha de inspección', fInspF, v=>{fInspF=v; updInspBtns();}); }
 function pickInspHora(){ openTimeWheel('Hora de entrega', fInspH, v=>{fInspH=v; updInspBtns();}); }
@@ -1901,7 +1902,9 @@ const FICHA_CSS=`
   .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
   .fnext{margin-top:8px;font-size:11.5px;color:#9A6B1E;background:#FBF3E2;border-radius:8px;padding:8px 11px}
   .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#1C3D60;font-weight:700}
-  .ftbl.chk td{font-size:11.5px;padding:6px}
+  .ftbl.chk td{font-size:10px;padding:4px 5px}
+  .chkcols{gap:18px}
+  .chkcols .ftbl{margin:2px 0 4px}
   .pbreak{page-break-before:always}
   .ftbl.chk tr{page-break-inside:avoid}
   .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal}
