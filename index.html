@@ -43,7 +43,8 @@
   .brand .mh{font-family:'Newsreader',serif;font-size:21px;font-weight:600}
   .brand .mh b{color:var(--gold);font-weight:600}
   .brand .sub{font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:4px}
-  .gearbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface);font-size:18px;color:var(--muted)}
+  .gearbtn{position:relative;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface);font-size:18px;color:var(--muted)}
+  .gearbtn .bdot{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:var(--gold);border:2px solid var(--bg,#fff)}
   .gearbtn:hover{color:var(--gold);border-color:var(--line2);background:var(--surface2)}
 
   main{padding:6px 16px 20px;max-width:680px;margin:0 auto}
@@ -548,7 +549,7 @@
     <span class="sub">Gestión de Negocios</span>
   </div>
   <button class="addbtn" onclick="fabAdd()">＋ Nuevo</button>
-  <button class="gearbtn" onclick="go('ajustes')">⚙︎</button>
+  <button class="gearbtn" onclick="go('ajustes')">⚙︎<span class="bdot hide" id="gearDot"></span></button>
 </header>
 
 <main id="view"></main>
@@ -1070,6 +1071,7 @@ let CURRENT='resumen';
 function go(v){CURRENT=v;['resumen','graficos','movimientos','reportes','alquileres','pipeline'].forEach(x=>{var el=document.getElementById('nav-'+x);if(el)el.classList.toggle('active',x===v);});render();window.scrollTo(0,0);}
 
 function render(){
+  try{var gd=document.getElementById('gearDot'); if(gd)gd.classList.toggle('hide',!backupOverdue());}catch(e){}
   if(CURRENT==='resumen') renderResumen();
   else if(CURRENT==='graficos') renderGraficos();
   else if(CURRENT==='movimientos') renderMovs();
@@ -1154,7 +1156,6 @@ function renderResumen(){
     <div class="card net"><div class="k">Saldo del período</div><div class="v neto num">${fmtCRC(s.n)}</div>${yoyTxt(s.n,prev.n,false)}</div>
   </div>
 
-  ${backupBannerHTML()}
   <div class="statstrip">
     <div class="stat"><div class="sv num">${nIng+nGas}</div><div class="sk">Operaciones</div></div>
     <div class="stat"><div class="sv num" style="color:var(--ingreso)">${nIng}</div><div class="sk">Ingresos</div></div>
@@ -1248,13 +1249,8 @@ function corrBreak(list){
 }
 /* ---- Nuevas secciones: respaldo, meta anual, por cobrar, ficha propiedad ---- */
 function daysSince(iso){ if(!iso)return null; return Math.floor((Date.now()-new Date(iso+'T12:00:00').getTime())/86400000); }
-function backupBannerHTML(){
-  if(DATA.length<3) return '';
-  const d=daysSince(SET.lastBackup);
-  if(d!==null&&d<15) return '';
-  const msg=d===null?'Nunca has descargado un respaldo desde este dispositivo.':'Hace '+d+' días que no descargás respaldo.';
-  return `<div class="bkbanner"><span>💾 ${msg} Tus datos viven solo en este dispositivo.</span><button onclick="exportJSON()">Respaldar ahora</button></div>`;
-}
+function backupOverdue(){ if(DATA.length<3) return false; const d=daysSince(SET.lastBackup); return d===null||d>=15; }
+function backupBannerHTML(){ return ''; }
 function metaSectionHTML(){
   const meta=+SET.meta||0; if(!meta) return '';
   const cy=new Date().getFullYear();
@@ -1282,15 +1278,15 @@ function porCobrarSectionHTML(){
 }
 function pipeEffHTML(){
   const closed=DATA.filter(m=>m.origenPipe);
-  if(!closed.length) return '';
+  if(!closed.length&&!PIPE.length) return '';
   const intentos=closed.length+PIPE.length;
-  const conv=Math.round(closed.length/intentos*100);
+  const conv=closed.length?Math.round(closed.length/intentos*100)+'%':'—';
   const dias=closed.filter(m=>m.origenPipe.creado).map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
   const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
   return `<div class="section">
-    <h3>Efectividad del pipeline <span class="small">histórico de cierres</span></h3>
+    <h3>Efectividad del pipeline <span class="small">${closed.length?'histórico de cierres':'se calcula al cerrar negocios desde el pipeline'}</span></h3>
     <div class="statstrip" style="margin-bottom:0">
-      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${conv}%</div><div class="sk">Conversión</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${conv}</div><div class="sk">Conversión</div></div>
       <div class="stat"><div class="sv num">${closed.length}<small style="font-size:12px;color:var(--muted)">/${intentos}</small></div><div class="sk">Cerrados</div></div>
       <div class="stat"><div class="sv num">${avg!==null?avg+'<small style="font-size:12px;color:var(--muted)"> días</small>':'—'}</div><div class="sk">Cierre promedio</div></div>
     </div>
