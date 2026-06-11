@@ -28,6 +28,30 @@
     --ease:cubic-bezier(.22,.61,.36,1);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  /* ===== TEMA OSCURO (elegible en Ajustes) ===== */
+  html[data-theme="dark"]{
+    --ink:#0F151E; --surface:#1A2230; --surface2:#232E40; --line:#2B3649; --line2:#3C4A63;
+    --paper:#E9EEF5; --muted:#9AA8BC; --muted2:#75839C;
+    --gold:#8FB4DC; --gold-2:#A9C8EA; --gold-soft:rgba(143,180,220,.15); --gold-glow:rgba(143,180,220,.28);
+    --ingreso:#4CC796; --gasto:#E69279; --neto:#AECDEE;
+    --ingreso-soft:rgba(76,199,150,.14); --gasto-soft:rgba(230,146,121,.14);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.45);
+    --shadow:0 8px 24px -10px rgba(0,0,0,.6);
+    --shadow-lg:0 24px 50px -20px rgba(0,0,0,.75);
+  }
+  html[data-theme="dark"] body{background-image:radial-gradient(120% 80% at 50% -10%, #1A2331 0%, var(--ink) 55%)}
+  html[data-theme="dark"] #lock{background:radial-gradient(120% 90% at 50% 0%, #1A2331 0%, var(--ink) 55%)}
+  html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{color-scheme:dark}
+  html[data-theme="dark"] .addbtn,html[data-theme="dark"] .ipcform button,html[data-theme="dark"] .cmpside .tag,html[data-theme="dark"] .corrchip.on{color:#0F151E}
+  html[data-theme="dark"] .metabar{background:var(--surface2)}
+  html[data-theme="dark"] .metabar .fill{background:linear-gradient(90deg,#6E96C6,#8FB4DC)}
+  html[data-theme="dark"] .metabar .pct{mix-blend-mode:normal;color:var(--paper);text-shadow:0 1px 3px rgba(0,0,0,.55)}
+  html[data-theme="dark"] .probchip.mid{background:rgba(230,180,90,.16);color:#E8C27A}
+  html[data-theme="dark"] .alertrow .when.mid{color:#E8C27A}
+  html[data-theme="dark"] .logoutbtn:active{background:rgba(230,146,121,.2)}
+  html[data-theme="dark"] header{background:linear-gradient(180deg,var(--ink) 60%,rgba(15,21,30,.82) 85%,transparent)}
+  html[data-theme="dark"] nav{background:rgba(20,27,38,.92)}
+  html[data-theme="dark"] .card.net{background:linear-gradient(135deg,#1E2A3C,var(--surface))}
   html,body{background:var(--ink);color:var(--paper);font-family:'Plus Jakarta Sans',-apple-system,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{padding-bottom:96px;min-height:100vh;-webkit-text-size-adjust:100%;background-image:radial-gradient(120% 80% at 50% -10%, #FFFFFF 0%, var(--ink) 55%)}
   .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -1163,6 +1187,7 @@ function renderResumen(){
     <div class="stat"><div class="sv num" style="color:var(--ingreso)">${nIng}</div><div class="sk">Ingresos</div></div>
     <div class="stat"><div class="sv num" style="color:var(--gasto)">${nGas}</div><div class="sk">Gastos</div></div>
   </div>
+  ${avgBestHTML(s,nIng)}
 
   <div class="section">
     <h3>Ingresos · Gastos · Saldo <span class="small">por mes</span></h3>
@@ -1231,6 +1256,17 @@ function factSectionHTML(cur){
   </div>`;
 }
 function isIvaGasto(m){return !!(m.ivaAuto||m.subcat==='IVA'||/IVA 13%/i.test(m.detalle||'')||(m.detalle||'').trim().toUpperCase()==='IVA');}
+function dayGap(a,b){try{return Math.abs(Math.round((new Date(a)-new Date(b))/86400000));}catch(e){return 9999;}}
+/* Busca el gasto ligado a un ingreso: primero por lid exacto; si no hay, gasto SIN lid de la misma propiedad. Nunca toca gastos de otro ingreso. */
+function findLinkedGasto(rec,pred,pK,creating){
+  const base=x=>x.tipo==='gasto'&&!x.virt&&pred(x);
+  if(!creating){
+    let r=DATA.find(x=>base(x)&&x.lid&&x.lid===rec.lid);
+    if(r) return r;
+    return DATA.find(x=>base(x)&&!x.lid&&((pK&&(x.propiedad||'').trim().toLowerCase()===pK&&dayGap(x.fecha,rec.fecha)<=60)||(!pK&&x.fecha===rec.fecha)))||null;
+  }
+  return DATA.find(x=>base(x)&&!x.lid&&pK&&(x.propiedad||'').trim().toLowerCase()===pK&&dayGap(x.fecha,rec.fecha)<=60)||null;
+}
 function corrBreak(list){
   const map={};
   const pmap={}, lmap={};
@@ -1251,6 +1287,16 @@ function corrBreak(list){
 }
 /* ---- Nuevas secciones: respaldo, meta anual, por cobrar, ficha propiedad ---- */
 function daysSince(iso){ if(!iso)return null; return Math.floor((Date.now()-new Date(iso+'T12:00:00').getTime())/86400000); }
+function avgBestHTML(s,nIng){
+  if(!DATA.some(m=>m.tipo==='ingreso'&&m.cobro!=='pend')) return '';
+  const avg=nIng?s.i/nIng:0;
+  const mm={}; DATA.forEach(m=>{ if(m.tipo==='ingreso'&&m.cobro!=='pend'){ const k=mkey(m.fecha); mm[k]=(mm[k]||0)+crc(m); } });
+  let bestK=null; Object.keys(mm).forEach(k=>{ if(bestK===null||mm[k]>mm[bestK]) bestK=k; });
+  return `<div class="statstrip" style="grid-template-columns:1fr 1fr">
+    <div class="stat"><div class="sv num">${avg?fmtCRC(Math.round(avg)):'—'}</div><div class="sk">Promedio por cierre</div></div>
+    <div class="stat"><div class="sv num">${fmtCRC(Math.round(mm[bestK]))}</div><div class="sk">Mejor mes · ${fmtMesAno(bestK)}</div></div>
+  </div>`;
+}
 function backupOverdue(){ if(DATA.length<3) return false; const d=daysSince(SET.lastBackup); return d===null||d>=15; }
 function backupBannerHTML(){ return ''; }
 function metaSectionHTML(){
@@ -1387,7 +1433,8 @@ function renderGraficos(){
   const shift=(k,o)=>{const[y,m]=k.split('-');return (parseInt(y)+o)+'-'+m;};
   const cur=months.map(mv), prev=months.map(k=>mv(shift(k,-1)));
   const totCur=cur.reduce((a,b)=>a+b,0), totPrev=prev.reduce((a,b)=>a+b,0);
-  const col=GMETRIC==='ingresos'?'#15805A':GMETRIC==='gastos'?'#B85138':'#1C3D60';
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const col=GMETRIC==='ingresos'?(dark?'#4CC796':'#15805A'):GMETRIC==='gastos'?(dark?'#E69279':'#B85138'):(dark?'#8FB4DC':'#1C3D60');
   const yEnd=parseInt(PER.hasta.split('-')[0]);
   const pct= totPrev===0?(totCur!==0?(totCur>0?100:-100):0):Math.round((totCur-totPrev)/Math.abs(totPrev)*100);
   const good= GMETRIC==='gastos'? pct<0 : pct>0; const arr=pct>0?'\u25B2':pct<0?'\u25BC':'\u2014';
@@ -1590,6 +1637,10 @@ function renderAjustes(){
     <div class="setrow">
       <div class="l">Tipo de cambio por defecto<small>Se precarga al ingresar montos en dólares (editable por movimiento)</small></div>
       <input class="miniInput num" type="number" value="${SET.tc}" onchange="SET.tc=parseFloat(this.value)||0;persist();toast('Tipo de cambio guardado')">
+    </div>
+    <div class="setrow">
+      <div class="l">Tema<small>Apariencia clara u oscura de la aplicación</small></div>
+      <div class="seg" style="flex:0 0 auto;width:170px"><button type="button" class="${SET.theme==='dark'?'':'on'}" onclick="applyTheme('light')">Claro</button><button type="button" class="${SET.theme==='dark'?'on':''}" onclick="applyTheme('dark')">Oscuro</button></div>
     </div>
     <div class="setrow">
       <div class="l">Meta anual de ingresos (₡)<small>Activá la barra de avance en el Resumen — dejala en 0 para ocultarla</small></div>
@@ -2028,7 +2079,8 @@ function saveMov(){
   if(rec.tipo==='ingreso' && rec.cobro!=='pend' && rec.coloc==='comp' && rec.colegaMonto>0){
     const fmtX=rec.moneda==='USD'?fmtUSD:fmtCRC;
     const pKc=(rec.propiedad||'').trim().toLowerCase();
-    const exCol=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&/^Pago de comisiones/.test(x.categoria)&&x.categoria!=='Pago de comisiones por referidos'&&!isIvaGasto(x)&&((x.lid&&x.lid===rec.lid)||((x.propiedad||'').trim().toLowerCase()===pKc&&(pKc||x.fecha===rec.fecha)))):null;
+    let exCol=findLinkedGasto(rec,x=>/^Pago de comisiones/.test(x.categoria)&&x.categoria!=='Pago de comisiones por referidos'&&!isIvaGasto(x),pKc,!editId);
+    if(exCol&&!editId&&!confirm('Ya existe un gasto por comisión para esta propiedad ('+(exCol.moneda==='USD'?fmtUSD(exCol.monto):fmtCRC(exCol.monto))+' del '+exCol.fecha.split('-').reverse().join('/')+').\n\n¿Vincular ese gasto a este ingreso en lugar de crear uno duplicado?')) exCol=null;
     if(exCol){
       exCol.monto=rec.colegaMonto; exCol.moneda=rec.moneda; exCol.tc=rec.tc; exCol.fecha=rec.fecha;
       exCol.coloc=rec.coloc; exCol.corredor=rec.corredor; exCol.lid=rec.lid;
@@ -2041,7 +2093,8 @@ function saveMov(){
   }
   if(rec.tipo==='ingreso' && rec.cobro!=='pend' && rec.factura==='si' && rec.iva>0){
     const pKey=(rec.propiedad||'').trim().toLowerCase();
-    const exIva=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&isIvaGasto(x)&&((x.lid&&x.lid===rec.lid)||((x.propiedad||'').trim().toLowerCase()===pKey&&(pKey||x.fecha===rec.fecha)))):null;
+    let exIva=findLinkedGasto(rec,x=>isIvaGasto(x),pKey,!editId);
+    if(exIva&&!editId&&!confirm('Ya existe un gasto de IVA para esta propiedad ('+(exIva.moneda==='USD'?fmtUSD(exIva.monto):fmtCRC(exIva.monto))+' del '+exIva.fecha.split('-').reverse().join('/')+').\n\n¿Vincularlo a este ingreso en lugar de crear uno duplicado?')) exIva=null;
     if(exIva){
       exIva.monto=rec.iva; exIva.moneda=rec.moneda; exIva.tc=rec.tc; exIva.fecha=rec.fecha;
       exIva.coloc=rec.coloc; exIva.corredor=rec.corredor; exIva.subcat='IVA'; exIva.ivaAuto=true; exIva.lid=rec.lid;
@@ -2053,7 +2106,8 @@ function saveMov(){
   }
   if(rec.tipo==='ingreso' && rec.cobro!=='pend' && rec.refMonto>0){
     const pKr=(rec.propiedad||'').trim().toLowerCase();
-    const exRef=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&x.categoria==='Pago de comisiones por referidos'&&((x.lid&&x.lid===rec.lid)||((x.propiedad||'').trim().toLowerCase()===pKr&&(pKr||x.fecha===rec.fecha)))):null;
+    let exRef=findLinkedGasto(rec,x=>x.categoria==='Pago de comisiones por referidos',pKr,!editId);
+    if(exRef&&!editId&&!confirm('Ya existe un gasto por referido para esta propiedad ('+(exRef.moneda==='USD'?fmtUSD(exRef.monto):fmtCRC(exRef.monto))+' del '+exRef.fecha.split('-').reverse().join('/')+').\n\n¿Vincularlo a este ingreso en lugar de crear uno duplicado?')) exRef=null;
     if(exRef){
       exRef.monto=rec.refMonto; exRef.moneda=rec.moneda; exRef.tc=rec.tc; exRef.fecha=rec.fecha;
       exRef.coloc=rec.coloc; exRef.corredor=rec.corredor; exRef.lid=rec.lid;
@@ -2066,7 +2120,9 @@ function saveMov(){
   if(rec.tipo==='gasto'){
     const pG=(rec.propiedad||'').trim().toLowerCase();
     if(pG||rec.lid){
-      const findIng=f=>DATA.find(x=>x.tipo==='ingreso'&&f(x)&&((rec.lid&&(x.lid||x.id)===rec.lid)||(pG&&(x.propiedad||'').trim().toLowerCase()===pG)));
+      const findIng=f=>{ let r=rec.lid?DATA.find(x=>x.tipo==='ingreso'&&f(x)&&(x.lid||x.id)===rec.lid):null;
+        if(!r&&pG) r=DATA.find(x=>x.tipo==='ingreso'&&f(x)&&(x.propiedad||'').trim().toLowerCase()===pG&&dayGap(x.fecha,rec.fecha)<=60);
+        return r||null; };
       if(rec.ivaAuto||rec.subcat==='IVA'||/IVA 13%/i.test(rec.detalle||'')){
         const n=findIng(x=>x.factura==='si'); if(n&&n.moneda===rec.moneda&&n.iva!==rec.monto){n.iva=rec.monto; extraToast+=' · IVA del ingreso sincronizado';}
       } else if(rec.categoria==='Pago de comisiones por referidos'){
@@ -2466,9 +2522,21 @@ function exportJSON(){
 }
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
+/* ---------- Tema claro / oscuro ---------- */
+function applyTheme(t,boot){
+  t=(t==='dark')?'dark':'light';
+  SET.theme=t;
+  document.documentElement.setAttribute('data-theme',t);
+  try{document.querySelector('meta[name="theme-color"]').setAttribute('content',t==='dark'?'#0F151E':'#1C3D60');}catch(e){}
+  const lc=t==='dark'?'#E9EEF5':'#1C3D60';
+  try{document.getElementById('hdrLogo').innerHTML=logoSVG(lc,44);}catch(e){}
+  try{document.getElementById('lockLogo').innerHTML=logoSVG(lc,88);}catch(e){}
+  if(!boot){persist();render();}
+}
 /* ---------- Init ---------- */
 try{ document.getElementById('hdrLogo').innerHTML=logoSVG('#1C3D60',44); }catch(e){}
 try{ document.getElementById('lockLogo').innerHTML=logoSVG('#1C3D60',88); }catch(e){}
+try{ applyTheme(SET.theme||'light',true); }catch(e){}
 function logout(){
   document.getElementById('passInput').value='';
   document.getElementById('passErr').style.display='none';
