@@ -1843,9 +1843,17 @@ function saveMov(){
       extraToast=' + gasto comisión registrado';
     }
   }
-  if(!editId && rec.tipo==='ingreso' && rec.factura==='si' && rec.iva>0){
-    DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true,subcat:'IVA',coloc:rec.coloc,corredor:rec.corredor});
-    extraToast+=' + IVA a gastos';
+  if(rec.tipo==='ingreso' && rec.factura==='si' && rec.iva>0){
+    const pKey=(rec.propiedad||'').trim().toLowerCase();
+    const exIva=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&(x.ivaAuto||/IVA 13%/i.test(x.detalle||''))&&(x.propiedad||'').trim().toLowerCase()===pKey&&(pKey||x.fecha===rec.fecha)):null;
+    if(exIva){
+      exIva.monto=rec.iva; exIva.moneda=rec.moneda; exIva.tc=rec.tc; exIva.fecha=rec.fecha;
+      exIva.coloc=rec.coloc; exIva.corredor=rec.corredor; exIva.subcat='IVA'; exIva.ivaAuto=true;
+      extraToast+=' · gasto IVA sincronizado';
+    } else if(!editId || confirm('Este ingreso facturado no tiene registrado el GASTO por IVA ('+(rec.moneda==='USD'?fmtUSD(rec.iva):fmtCRC(rec.iva))+').\n\n¿Crearlo ahora en "Otros gastos de negocio"?')){
+      DATA.push({id:rec.id+2,tipo:'gasto',categoria:'Otros gastos de negocio',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'IVA 13% · factura electrónica',moneda:rec.moneda,monto:rec.iva,tc:rec.tc,ivaAuto:true,subcat:'IVA',coloc:rec.coloc,corredor:rec.corredor});
+      extraToast+=' + IVA a gastos';
+    }
   }
   if(!editId && rec.tipo==='ingreso' && rec.refMonto>0){
     DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
