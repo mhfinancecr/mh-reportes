@@ -124,11 +124,20 @@
   .cgt.cols5 .cgpct{font-size:11.5px}
   .cgt.cols5 .cgi,.cgt.cols5 .cgg{font-size:10.5px}
   .cgt.cols5 .cgh{letter-spacing:.03em}
+  .corrchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+  .corrchip{font:inherit;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+  .corrchip.on{background:var(--paper);border-color:var(--paper);color:#fff}
+  .corrchiphint{font-size:10.5px;color:var(--muted2)}
+  .cgt.cols4c{grid-template-columns:minmax(0,1.2fr) max-content max-content max-content}
+  .cgneto{text-align:right;font-weight:700;color:var(--neto)}
   .brk.og{cursor:pointer;user-select:none}
   .ogchev{color:var(--muted2);font-size:11px;font-weight:700}
   .brk.ogsub{padding:7px 0 7px 22px;font-size:12.5px;border-bottom:none}
   .brk.ogsub .name{color:var(--muted)}
   .brk.ogsub .amt{color:var(--muted);font-weight:600;font-size:12.5px}
+  .brk.ogsub.adjline .name{color:var(--neto);font-weight:600}
+  .brk.ogsub.adjline .name small{font-size:10px;color:var(--muted2);font-weight:500;margin-left:4px}
+  .brk.ogsub.adjline .amt{color:var(--neto);font-weight:700}
   .cgt .cgname{padding-right:4px;min-width:0}
   .cgt .cgh{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line);text-align:right}
   .cgt .cgh:first-child{text-align:left}
@@ -585,7 +594,8 @@
       </div>
       <div class="colochint hide" id="colocHint"></div>
     </div>
-    <div class="formrow"><label>Corredor</label><input type="text" id="fCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
+    <div class="formrow"><label>Corredor</label><input type="text" id="fCorredor" list="corredoresList" placeholder="Nombre del corredor / colega (opcional)"></div>
+    <datalist id="corredoresList"></datalist>
     <div class="formrow hide" id="subcatRow">
       <label>Tipo de gasto</label>
       <select id="fSubcat"><option value="">— Sin clasificar</option><option>IVA</option><option>Gastos legales</option><option>Gastos de mantenimiento</option><option>Cashback</option></select>
@@ -698,7 +708,7 @@
       </div>
       <div class="colochint hide" id="pColocHint"></div>
     </div>
-    <div class="formrow"><label>Corredor</label><input type="text" id="pCorredor" placeholder="Nombre del corredor / colega (opcional)"></div>
+    <div class="formrow"><label>Corredor</label><input type="text" id="pCorredor" list="corredoresList" placeholder="Nombre del corredor / colega (opcional)"></div>
     <div class="twocol">
       <div class="formrow">
         <label id="pLblMonto">Comisión esperada (₡)</label>
@@ -863,11 +873,11 @@ if(!SET.cmp2){var _tm=thisMonth();var _py=(+_tm.slice(0,4)-1)+_tm.slice(4);SET.c
 let CMP=SET.cmp2;
 
 function inRange(m, desde, hasta){const k=mkey(m.fecha); return k>=desde && k<=hasta;}
-function sum(list){let i=0,g=0; list.forEach(m=>{ if(m.tipo==='ingreso') i+=crc(m); else g+=crc(m); }); return {i,g,n:i-g};}
+function sum(list){let i=0,g=0,adj=0; list.forEach(m=>{ if(m.tipo==='ingreso') i+=crc(m); else if(m.virt) adj+=crc(m); else g+=crc(m); }); return {i,g,adj,n:i-g-adj};}
 function prevYear(p){const f=s=>{const[y,m]=s.split('-');return (parseInt(y)-1)+'-'+m;}; return {desde:f(p.desde),hasta:f(p.hasta)};}
 
 /* ---- IVA pagado a Hacienda (ajuste mensual) ---- */
-function ivaCalcMonth(ym){let t=0; DATA.forEach(m=>{ if(m.tipo==='gasto' && mkey(m.fecha)===ym && (m.ivaAuto || /IVA 13%/i.test(m.detalle||''))) t+=crc(m); }); return t;}
+function ivaCalcMonth(ym){let t=0; DATA.forEach(m=>{ if(m.tipo==='gasto' && mkey(m.fecha)===ym && (m.ivaAuto || m.subcat==='IVA' || /IVA 13%/i.test(m.detalle||''))) t+=crc(m); }); return t;}
 function ivaAdjFor(ym){ if(!SET.ivaPag || SET.ivaPag[ym]==null || SET.ivaPag[ym]==='') return 0; return (+SET.ivaPag[ym]) - ivaCalcMonth(ym); }
 function ivaAdjTx(desde,hasta){
   const out=[];
@@ -1078,14 +1088,24 @@ function renderResumen(){
 
   // breakdown
   const OGCAT='Otros gastos de negocio';
-  const brk = (tipo,color)=>{const g={}; cur.filter(m=>m.tipo===tipo).forEach(m=>{g[m.categoria]=(g[m.categoria]||0)+crc(m);});
+  const brk = (tipo,color)=>{const g={}; cur.filter(m=>m.tipo===tipo&&!m.virt).forEach(m=>{g[m.categoria]=(g[m.categoria]||0)+crc(m);});
     let keys=Object.keys(g).sort((a,b)=>g[b]-g[a]);
     if(!keys.length) return `<div class="brk"><span class="name" style="color:var(--muted2)">Sin movimientos</span></div>`;
     if(tipo==='gasto'&&g[OGCAT]!=null){keys=keys.filter(k=>k!==OGCAT); keys.push(OGCAT);}
     return keys.map(k=>{
       if(tipo==='gasto'&&k===OGCAT){
-        const sg={}; cur.filter(m=>m.tipo==='gasto'&&m.categoria===OGCAT).forEach(m=>{const s=subcatOf(m); sg[s]=(sg[s]||0)+crc(m);});
-        const subs=OGEXP?Object.keys(sg).sort((a,b)=>sg[b]-sg[a]).map(s=>`<div class="brk ogsub"><span class="name">${s}</span><span class="amt num">${fmtCRC(sg[s])}</span></div>`).join(''):'';
+        const sg={}; cur.filter(m=>m.tipo==='gasto'&&!m.virt&&m.categoria===OGCAT).forEach(m=>{const s=subcatOf(m); sg[s]=(sg[s]||0)+crc(m);});
+        let subs='';
+        if(OGEXP){
+          const adjSum=cur.filter(m=>m.virt).reduce((a,m)=>a+crc(m),0);
+          const keysSg=Object.keys(sg).sort((a,b)=>sg[b]-sg[a]);
+          subs=keysSg.map(s=>{
+            let line=`<div class="brk ogsub"><span class="name">${s}</span><span class="amt num">${fmtCRC(sg[s])}</span></div>`;
+            if(s==='IVA'&&adjSum!==0) line+=`<div class="brk ogsub adjline"><span class="name">IVA ajustado <small>según declarado · afecta solo el saldo</small></span><span class="amt num">${fmtCRC(sg[s]+adjSum)}</span></div>`;
+            return line;
+          }).join('');
+          if(adjSum!==0&&sg['IVA']==null) subs+=`<div class="brk ogsub adjline"><span class="name">IVA ajustado <small>según declarado · afecta solo el saldo</small></span><span class="amt num">${fmtCRC(adjSum)}</span></div>`;
+        }
         return `<div class="brk og" onclick="toggleOG()"><span class="name"><span class="dot" style="background:${color}"></span>${k} <b class="ogchev">${OGEXP?'▾':'▸'}</b></span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>${subs}`;
       }
       return `<div class="brk"><span class="name"><span class="dot" style="background:${color}"></span>${k}</span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>`;
@@ -1116,6 +1136,8 @@ function renderResumen(){
   ${colocSectionHTML(cur)}
 
   ${factSectionHTML(cur)}
+
+  ${corrSectionHTML(cur)}
 
   ${ivaPagSectionHTML()}
 
@@ -1166,6 +1188,32 @@ function factSectionHTML(cur){
     </div>
   </div>`;
 }
+function corrBreak(list){
+  const map={};
+  list.forEach(m=>{ if(m.virt)return; const c=(m.corredor||'').trim(); if(!c)return; const k=c.toLowerCase();
+    if(!map[k])map[k]={name:c,n:0,i:0,g:0};
+    if(m.tipo==='ingreso'){map[k].n++; map[k].i+=crc(m);} else map[k].g+=crc(m); });
+  return Object.values(map).sort((a,b)=>(b.i+b.g)-(a.i+a.g));
+}
+function corrSel(){ if(!SET.corrRep)SET.corrRep={on:true,off:{}}; if(!SET.corrRep.off)SET.corrRep.off={}; return SET.corrRep; }
+function toggleCorrRep(v){ corrSel().on=v; persist(); render(); }
+function toggleCorrSel(k){ const s=corrSel(); s.off[k]=!s.off[k]; persist(); render(); }
+function corrSectionHTML(cur){
+  const rows=corrBreak(cur);
+  if(!rows.length) return '';
+  const s=corrSel();
+  const cells=rows.map(o=>`<span class="cgname">${o.name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.g?'−'+fmtCRC(o.g):'—'}</span><span class="num cgneto">${fmtCRC(o.i-o.g)}</span>`).join('');
+  const chips=rows.map(o=>{const k=o.name.toLowerCase(); const on=!s.off[k]; return `<button type="button" class="corrchip${on?' on':''}" onclick="toggleCorrSel('${k.replace(/'/g,"\\'")}')">${o.name}</button>`;}).join('');
+  return `<div class="section">
+    <h3>Cierres por corredor <span class="small">ingresos y gastos con cada colega</span></h3>
+    <div class="cgt cols4c">
+      <span class="cgh"></span><span class="cgh">Ingresos</span><span class="cgh">Gastos</span><span class="cgh">Neto</span>
+      ${cells}
+    </div>
+    <label class="cmptoggle"><input type="checkbox" ${s.on!==false?'checked':''} onchange="toggleCorrRep(this.checked)"> Incluir esta sección en el PDF</label>
+    <div class="corrchips${s.on!==false?'':' hide'}">${chips}<span class="corrchiphint">tocá un nombre para incluirlo u ocultarlo del PDF</span></div>
+  </div>`;
+}
 function colocSectionHTML(cur){
   const {r,totI}=colocBreak(cur);
   const cells=['propia','comp','colega'].map(c=>{
@@ -1193,7 +1241,7 @@ function renderChart(cur){
   let guard=0;
   while(d<=PER.hasta && guard<60){months.push(d); let[y,m]=d.split('-').map(Number); m++; if(m>12){m=1;y++;} d=y+'-'+String(m).padStart(2,'0'); guard++;}
   const map={}; months.forEach(k=>map[k]={i:0,g:0});
-  cur.forEach(m=>{const k=mkey(m.fecha); if(map[k]){ if(m.tipo==='ingreso')map[k].i+=crc(m); else map[k].g+=crc(m);} });
+  cur.forEach(m=>{const k=mkey(m.fecha); if(map[k]){ if(m.tipo==='ingreso')map[k].i+=crc(m); else if(!m.virt)map[k].g+=crc(m);} });
   const max=Math.max(1,...months.map(k=>Math.max(map[k].i,map[k].g)));
   if(!cur.length) return `<div class="brk"><span class="name" style="color:var(--muted2)">Sin movimientos en el período</span></div>`;
   return `<div class="chart">${months.map(k=>{
@@ -1211,9 +1259,9 @@ function monthsInRange(desde,hasta){const a=[];let d=desde,g=0;while(d<=hasta&&g
 
 function renderGraficos(){
   const months=monthsInRange(PER.desde,PER.hasta);
-  const map={}; DATA.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0}; if(m.tipo==='ingreso')map[k].i+=crc(m); else map[k].g+=crc(m);});
-  if(SET.ivaPag) Object.keys(SET.ivaPag).forEach(k=>{const d=ivaAdjFor(k); if(d){if(!map[k])map[k]={i:0,g:0}; map[k].g+=d;}});
-  const mv=k=>{const o=map[k]||{i:0,g:0}; return GMETRIC==='ingresos'?o.i:GMETRIC==='gastos'?o.g:o.i-o.g;};
+  const map={}; DATA.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0,adj:0}; if(m.tipo==='ingreso')map[k].i+=crc(m); else map[k].g+=crc(m);});
+  if(SET.ivaPag) Object.keys(SET.ivaPag).forEach(k=>{const d=ivaAdjFor(k); if(d){if(!map[k])map[k]={i:0,g:0,adj:0}; map[k].adj+=d;}});
+  const mv=k=>{const o=map[k]||{i:0,g:0,adj:0}; return GMETRIC==='ingresos'?o.i:GMETRIC==='gastos'?o.g:o.i-o.g-(o.adj||0);};
   const shift=(k,o)=>{const[y,m]=k.split('-');return (parseInt(y)+o)+'-'+m;};
   const cur=months.map(mv), prev=months.map(k=>mv(shift(k,-1)));
   const totCur=cur.reduce((a,b)=>a+b,0), totPrev=prev.reduce((a,b)=>a+b,0);
@@ -1660,6 +1708,13 @@ const COLOC_HINTS={
 };
 function colocTag(x){return x.coloc==='comp'?'50/50':x.coloc==='colega'?'De colega':'';}
 function corredorOf(x){return (x.coloc==='comp'||x.coloc==='colega')?(x.corredor||''):'';}
+function updCorredoresList(){
+  const dl=document.getElementById('corredoresList'); if(!dl)return;
+  const seen={}, names=[];
+  DATA.concat(PIPE).forEach(x=>{const c=(x.corredor||'').trim(); if(!c)return; const k=c.toLowerCase(); if(!seen[k]){seen[k]=1; names.push(c);}});
+  names.sort((a,b)=>a.localeCompare(b,'es'));
+  dl.innerHTML=names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}"></option>`).join('');
+}
 function setColoc(c){fColoc=c; updColega(); document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
 let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
 const RENT_CHECK=[
@@ -1752,6 +1807,7 @@ function updRentBlock(){ const rb=document.getElementById('rentBlock'); if(!rb)r
 function updTcHint(){const m=parseFloat(document.getElementById('fMonto').value)||0,tc=parseFloat(document.getElementById('fTC').value)||0;document.getElementById('tcHint').textContent= m&&tc?`≈ ${fmtCRC(m*tc)} en colones`:'';}
 
 function openForm(id){
+  updCorredoresList();
   editId = (typeof id==='number')?id:null;
   document.getElementById('overlay').classList.add('open');
   document.getElementById('delBtn').classList.toggle('hide', editId===null);
@@ -1835,9 +1891,15 @@ function saveMov(){
   }
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
   let extraToast='';
-  if(!editId && rec.tipo==='ingreso' && (rec.coloc==='comp'||rec.coloc==='colega') && rec.colegaMonto>0){
+  if(rec.tipo==='ingreso' && (rec.coloc==='comp'||rec.coloc==='colega') && rec.colegaMonto>0){
     const fmtX=rec.moneda==='USD'?fmtUSD:fmtCRC;
-    if(confirm('¿Registrar también el GASTO por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al colega')+' por '+fmtX(rec.colegaMonto)+'?')){
+    const pKc=(rec.propiedad||'').trim().toLowerCase();
+    const exCol=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&/^Pago de comisiones/.test(x.categoria)&&x.categoria!=='Pago de comisiones por referidos'&&(x.propiedad||'').trim().toLowerCase()===pKc&&(pKc||x.fecha===rec.fecha)):null;
+    if(exCol){
+      exCol.monto=rec.colegaMonto; exCol.moneda=rec.moneda; exCol.tc=rec.tc; exCol.fecha=rec.fecha;
+      exCol.coloc=rec.coloc; exCol.corredor=rec.corredor;
+      extraToast+=' · gasto comisión sincronizado';
+    } else if(confirm((editId?'Este ingreso no tiene registrado el GASTO por comisión al colega.\n\n':'')+'¿Registrar el GASTO por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al colega')+' por '+fmtX(rec.colegaMonto)+'?')){
       const gcat=/venta/i.test(rec.categoria)?'Pago de comisiones por ventas':/alquiler/i.test(rec.categoria)?'Pago de comisiones por alquileres':/referido/i.test(rec.categoria)?'Pago de comisiones por referidos':'Otros gastos de negocio';
       DATA.push({id:rec.id+1,tipo:'gasto',categoria:gcat,fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a colega'+(rec.corredor?' · '+rec.corredor:''),moneda:rec.moneda,monto:rec.colegaMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
       extraToast=' + gasto comisión registrado';
@@ -1855,9 +1917,30 @@ function saveMov(){
       extraToast+=' + IVA a gastos';
     }
   }
-  if(!editId && rec.tipo==='ingreso' && rec.refMonto>0){
-    DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
-    extraToast+=' + gasto referido';
+  if(rec.tipo==='ingreso' && rec.refMonto>0){
+    const pKr=(rec.propiedad||'').trim().toLowerCase();
+    const exRef=editId?DATA.find(x=>x.tipo==='gasto'&&!x.virt&&x.categoria==='Pago de comisiones por referidos'&&(x.propiedad||'').trim().toLowerCase()===pKr&&(pKr||x.fecha===rec.fecha)):null;
+    if(exRef){
+      exRef.monto=rec.refMonto; exRef.moneda=rec.moneda; exRef.tc=rec.tc; exRef.fecha=rec.fecha;
+      exRef.coloc=rec.coloc; exRef.corredor=rec.corredor;
+      extraToast+=' · gasto referido sincronizado';
+    } else if(!editId || confirm('Este ingreso tiene comisión por referido ('+(rec.moneda==='USD'?fmtUSD(rec.refMonto):fmtCRC(rec.refMonto))+') sin gasto registrado.\n\n¿Crearlo ahora?')){
+      DATA.push({id:rec.id+3,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
+      extraToast+=' + gasto referido';
+    }
+  }
+  if(rec.tipo==='gasto'){
+    const pG=(rec.propiedad||'').trim().toLowerCase();
+    if(pG){
+      const findIng=f=>DATA.find(x=>x.tipo==='ingreso'&&(x.propiedad||'').trim().toLowerCase()===pG&&f(x));
+      if(rec.ivaAuto||rec.subcat==='IVA'||/IVA 13%/i.test(rec.detalle||'')){
+        const n=findIng(x=>x.factura==='si'); if(n&&n.moneda===rec.moneda&&n.iva!==rec.monto){n.iva=rec.monto; extraToast+=' · IVA del ingreso sincronizado';}
+      } else if(rec.categoria==='Pago de comisiones por referidos'){
+        const n=findIng(x=>x.refMonto>0); if(n&&n.moneda===rec.moneda&&n.refMonto!==rec.monto){n.refMonto=rec.monto; extraToast+=' · referido del ingreso sincronizado';}
+      } else if(/^Pago de comisiones/.test(rec.categoria)){
+        const n=findIng(x=>(x.coloc==='comp'||x.coloc==='colega')&&x.colegaMonto>0); if(n&&n.moneda===rec.moneda&&n.colegaMonto!==rec.monto){n.colegaMonto=rec.monto; extraToast+=' · comisión del ingreso sincronizada';}
+      }
+    }
   }
   persist(); closeForm(); render(); toast((editId?'Movimiento actualizado':'Movimiento guardado')+extraToast);
 }
@@ -1978,6 +2061,7 @@ function pBuildSegs(){
   document.getElementById('pSegMeses').innerHTML=[1,2,3].map(v=>`<button type="button" data-v="${v}" onclick="pSetMeses(${v})">${v} ${v===1?'mes':'meses'}</button>`).join('');
 }
 function openPipe(id){
+  updCorredoresList();
   pEditId=(typeof id==='number')?id:null;
   pBuildSegs();
   document.getElementById('poverlay').classList.add('open');
@@ -2123,8 +2207,8 @@ function printReport(){
   const cur=rango(PER.desde,PER.hasta);
   const s=sum(cur);
   const months=monthsInRange(PER.desde,PER.hasta);
-  const map={}; cur.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0,ci:0,cg:0}; if(m.tipo==='ingreso'){map[k].i+=crc(m);map[k].ci++;} else {map[k].g+=crc(m); if(!m.virt)map[k].cg++;}});
-  const ing=months.map(k=>map[k]?map[k].i:0), gas=months.map(k=>map[k]?map[k].g:0), sal=months.map((k,i)=>ing[i]-gas[i]);
+  const map={}; cur.forEach(m=>{const k=mkey(m.fecha); if(!map[k])map[k]={i:0,g:0,adj:0,ci:0,cg:0}; if(m.tipo==='ingreso'){map[k].i+=crc(m);map[k].ci++;} else if(m.virt){map[k].adj+=crc(m);} else {map[k].g+=crc(m); map[k].cg++;}});
+  const ing=months.map(k=>map[k]?map[k].i:0), gas=months.map(k=>map[k]?map[k].g:0), adjM=months.map(k=>map[k]?map[k].adj:0), sal=months.map((k,i)=>ing[i]-gas[i]-adjM[i]);
   const cIng=months.map(k=>map[k]?map[k].ci:0), cGas=months.map(k=>map[k]?map[k].cg:0);
   const totCi=cIng.reduce((a,b)=>a+b,0), totCg=cGas.reduce((a,b)=>a+b,0);
   const mrows=months.map((k,i)=>`<tr><td>${fmtMesAno(k)}</td><td class="r c">${cIng[i]}</td><td class="r" style="color:#15805A">${fmtCRC(ing[i])}</td><td class="r c">${cGas[i]}</td><td class="r" style="color:#B85138">${fmtCRC(gas[i])}</td><td class="r"><b>${fmtCRC(sal[i])}</b></td></tr>`).join('');
@@ -2138,8 +2222,8 @@ function printReport(){
     var prevNi=prevL.filter(m=>m.tipo==='ingreso').length, prevNg=prevL.filter(m=>m.tipo==='gasto'&&!m.virt).length;
     var curNi=cur.filter(m=>m.tipo==='ingreso').length, curNg=cur.filter(m=>m.tipo==='gasto'&&!m.virt).length;
     var vp=function(a,b,inv){ if(b===0&&a===0)return '\u2014'; var p=b===0?(a>0?100:-100):Math.round((a-b)/Math.abs(b)*100); var c= p===0?'#888':((inv?p<0:p>0)?'#15805A':'#B85138'); var ar=p>0?'\u25B2':p<0?'\u25BC':''; return '<span style="color:'+c+';font-weight:700">'+ar+' '+Math.abs(p)+'%</span>'; };
-    var pmap={}; prevL.forEach(function(m){var k=mkey(m.fecha); if(!pmap[k])pmap[k]={i:0,g:0}; if(m.tipo==='ingreso')pmap[k].i+=crc(m); else pmap[k].g+=crc(m);});
-    var monthlyRows=months.map(function(k,i){ var sy=ing[i]-gas[i]; var pk=(parseInt(k.split('-')[0])-1)+'-'+k.split('-')[1]; var po=pmap[pk]||{i:0,g:0}; var pyv=po.i-po.g; return '<tr><td>'+fmtMesAno(k)+'</td><td class="r"><b>'+fmtCRC(sy)+'</b></td><td class="r" style="color:#888">'+fmtCRC(pyv)+'</td><td class="r">'+vp(sy,pyv,false)+'</td></tr>'; }).join('');
+    var pmap={}; prevL.forEach(function(m){var k=mkey(m.fecha); if(!pmap[k])pmap[k]={i:0,g:0,adj:0}; if(m.tipo==='ingreso')pmap[k].i+=crc(m); else if(m.virt)pmap[k].adj+=crc(m); else pmap[k].g+=crc(m);});
+    var monthlyRows=months.map(function(k,i){ var sy=ing[i]-gas[i]-adjM[i]; var pk=(parseInt(k.split('-')[0])-1)+'-'+k.split('-')[1]; var po=pmap[pk]||{i:0,g:0,adj:0}; var pyv=po.i-po.g-(po.adj||0); return '<tr><td>'+fmtMesAno(k)+'</td><td class="r"><b>'+fmtCRC(sy)+'</b></td><td class="r" style="color:#888">'+fmtCRC(pyv)+'</td><td class="r">'+vp(sy,pyv,false)+'</td></tr>'; }).join('');
     cmpHTML='<h4>Comparativo \u00b7 '+cmpLabel()+'</h4>'
       +'<table class="rep-tbl"><thead><tr><th>Concepto</th><th class="r">Actual</th><th class="r">A\u00f1o anterior</th><th class="r">Variaci\u00f3n</th></tr></thead><tbody>'
       +'<tr><td>Ingresos</td><td class="r" style="color:#15805A">'+fmtCRC(s.i)+'</td><td class="r">'+fmtCRC(ps.i)+'</td><td class="r">'+vp(s.i,ps.i,false)+'</td></tr>'
@@ -2172,6 +2256,15 @@ function printReport(){
   var fb=factBreak(cur);
   var fRows=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(function(p){var f=p[0],name=p[1],o=fb.r[f]; var pct=fb.totI?Math.round(o.i/fb.totI*100):0; return '<tr><td>'+name+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(f==='si'&&o.iva?fmtCRC(o.iva):'—')+'</td></tr>';}).join('');
   var factRepHTML='<h4>Cierres por facturación</h4><table class="rep-tbl"><thead><tr><th>Facturación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">IVA</th></tr></thead><tbody>'+fRows+'</tbody></table>';
+  var corrRepHTML='';
+  if(!SET.corrRep||SET.corrRep.on!==false){
+    var corrOff=(SET.corrRep&&SET.corrRep.off)||{};
+    var crws=corrBreak(cur).filter(function(o){return !corrOff[o.name.toLowerCase()];});
+    if(crws.length){
+      var crr=crws.map(function(o){return '<tr><td>'+o.name+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(o.g?fmtCRC(o.g):'—')+'</td><td class="r"><b style="color:#1C3D60">'+fmtCRC(o.i-o.g)+'</b></td></tr>';}).join('');
+      corrRepHTML='<h4>Cierres por corredor</h4><table class="rep-tbl"><thead><tr><th>Corredor</th><th class="r">N° cierres</th><th class="r">Ingresos</th><th class="r">Gastos</th><th class="r">Neto</th></tr></thead><tbody>'+crr+'</tbody></table>';
+    }
+  }
   var ivaMesHTML='';
   if(SET.ivaPag){
     var ivaRows=months.filter(function(k){return SET.ivaPag[k]!=null&&SET.ivaPag[k]!=='';}).map(function(k){var calc=ivaCalcMonth(k); var pag=+SET.ivaPag[k]; var dif=pag-calc; return '<tr><td>'+fmtMesAno(k)+'</td><td class="r">'+(calc?fmtCRC(calc):'—')+'</td><td class="r">'+fmtCRC(pag)+'</td><td class="r" style="color:'+(dif<0?'#15805A':dif>0?'#B85138':'#333')+';font-weight:600">'+(dif===0?'—':(dif<0?'−':'+')+fmtCRC(Math.abs(dif)))+'</td></tr>';}).join('');
@@ -2202,6 +2295,7 @@ function printReport(){
         <tfoot><tr><td>Total</td><td class="r">${totCi}</td><td class="r">${fmtCRC(s.i)}</td><td class="r">${totCg}</td><td class="r">${fmtCRC(s.g)}</td><td class="r">${fmtCRC(s.n)}</td></tr></tfoot></table>
       ${colocRepHTML}
       ${factRepHTML}
+      ${corrRepHTML}
       ${ivaMesHTML}
       <h4>Detalle de movimientos</h4>
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
