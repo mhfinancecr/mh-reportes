@@ -450,10 +450,18 @@
   .pipe-main{display:flex;gap:12px;align-items:center;cursor:pointer;padding:13px 14px}
   .pipe.venc{border-color:rgba(184,81,56,.3);background:#FCF6F4}
   .pipe.venc .pmonths{background:var(--gasto-soft);color:var(--gasto)}
+  .pdias{color:var(--gold);font-weight:600;white-space:nowrap}
   .closebtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:11px;font-size:13px;font-weight:600;color:var(--ingreso);background:transparent;width:100%;border-radius:0 0 14px 14px}
   .closebtn .ck{width:17px;height:17px;border:1.6px solid var(--ingreso);border-radius:5px;display:inline-block;position:relative;flex:0 0 auto}
   .closebtn:hover{background:var(--ingreso-soft)}
   .closebtn:active{background:#D9ECE2}
+  .lostbtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:10px;font-size:12.5px;font-weight:600;color:var(--gasto);background:transparent;width:100%;border-radius:0 0 var(--radius) var(--radius);cursor:pointer}
+  .lostbtn:hover{background:var(--gasto-soft)}
+  .restorebtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:10px;font-size:12.5px;font-weight:600;color:var(--gold);background:transparent;width:100%;border-radius:0 0 var(--radius) var(--radius);cursor:pointer}
+  .restorebtn:hover{background:var(--gold-soft)}
+  .pipe.lostp{opacity:.78}
+  .lostbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 10px;padding:10px 13px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  .lostbar b{font-weight:800;color:var(--paper)}
   /* Bloque de alquiler en formulario */
   .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
   .rentblock.hide{display:none}
@@ -862,6 +870,7 @@
       <label>Fecha de cierre</label>
       <input type="date" id="closeDate">
     </div>
+    <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
     <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:-2px 0 16px">Al cerrar, este negocio se <b style="color:var(--paper)">suma a tus transacciones reales</b> y al gráfico principal con la fecha indicada, y sale del pipeline. No tenés que digitarlo de nuevo.</p>
     <button class="saveBtn" onclick="confirmClose()">Cerrar y trasladar a transacciones</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCloseModal()">Cancelar</button>
@@ -892,7 +901,7 @@
 <script>
 /* ---------- Almacenamiento (localStorage con respaldo en memoria) ---------- */
 const PASS='MHFi240312';  // Contraseña de ingreso — cambiala por la que quieras
-const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1';
+const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1';
 let mem={}; // respaldo si localStorage no está disponible (p.ej. previsualización)
 function store(k,v){ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} }
 function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]??null)}catch(e){return mem[k]??null} }
@@ -900,7 +909,8 @@ function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]?
 let DATA = JSON.parse(load(KEY) || '[]');
 let SET  = JSON.parse(load(SKEY) || '{"tc":510}');
 let PIPE = JSON.parse(load(PKEY) || '[]');   // cartera/pipeline — NO afecta cifras reales
-function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
+let LOST = JSON.parse(load(LKEY) || '[]');   // negocios perdidos — histórico, no suma en pipeline ni en cifras reales
+function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
 const LOGO_PATH=`M2238 7250 c-16 -12 -28 -27 -28 -34 0 -7 22 -60 49 -117 86 -185
 124 -313 156 -533 41 -283 39 -923 -5 -1135 -25 -124 -53 -195 -109 -281 -22
 -35 -41 -70 -41 -77 0 -27 83 -165 104 -172 11 -5 124 -5 250 -1 176 6 230 11
@@ -1414,16 +1424,25 @@ function porCobrarSectionHTML(){
 }
 function pipeEffHTML(){
   const closed=DATA.filter(m=>m.origenPipe);
-  if(!closed.length&&!PIPE.length) return '';
-  const intentos=closed.length+PIPE.length;
-  const conv=closed.length?Math.round(closed.length/intentos*100)+'%':'—';
+  if(!closed.length&&!PIPE.length&&!LOST.length) return '';
+  const lostTot=LOST.reduce((a,p)=>a+crc(p),0);
+  const closedTot=closed.reduce((a,m)=>a+crc(m),0);
+  const decididos=closed.length+LOST.length;
+  const pCierre=decididos?Math.round(closed.length/decididos*100):null;
+  const pPerd=pCierre!==null?100-pCierre:null;
+  const efect=(closedTot+lostTot)>0?Math.round(closedTot/(closedTot+lostTot)*100):null;
   const dias=closed.filter(m=>m.origenPipe.creado).map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
   const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
   return `<div class="section">
-    <h3>Efectividad del pipeline <span class="small">${closed.length?'histórico de cierres':'se calcula al cerrar negocios desde el pipeline'}</span></h3>
+    <h3>Efectividad del pipeline <span class="small">${decididos?'cerrados vs. perdidos':'se calcula al cerrar o perder negocios'}</span></h3>
+    <div class="statstrip" style="margin-bottom:10px">
+      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${pCierre!==null?pCierre+'%':'—'}</div><div class="sk">% de cierre</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${pPerd!==null?pPerd+'%':'—'}</div><div class="sk">% perdido</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--neto)">${efect!==null?efect+'%':'—'}</div><div class="sk">Efectividad ₡</div></div>
+    </div>
     <div class="statstrip" style="margin-bottom:0">
-      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${conv}</div><div class="sk">Conversión</div></div>
-      <div class="stat"><div class="sv num">${closed.length}<small style="font-size:12px;color:var(--muted)">/${intentos}</small></div><div class="sk">Cerrados</div></div>
+      <div class="stat"><div class="sv num">${closed.length}<small style="font-size:12px;color:var(--muted)">/${decididos}</small></div><div class="sk">Cerrados</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${fmtC(lostTot)}</div><div class="sk">No percibido</div></div>
       <div class="stat"><div class="sv num">${avg!==null?avg+'<small style="font-size:12px;color:var(--muted)"> días</small>':'—'}</div><div class="sk">Cierre promedio</div></div>
     </div>
   </div>`;
@@ -2327,6 +2346,7 @@ function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else openForm(); }
 /* helpers de pipeline */
 const PIPE_TO_CAT={'Comisión por venta':'Comisión por venta de propiedad','Comisión por alquiler':'Comisión por alquiler de propiedad','Comisión por referido':'Comisión por referido','Otro':'Otro ingreso'};
 const pchip=p=>p>=70?'hi':p>=40?'mid':'lo';
+function diasEnPipe(p,hasta){ const d=Math.max(0,Math.round(((hasta?new Date(hasta):new Date())-new Date(pipeCreado(p)))/86400000)); return d; }
 function pipeCreado(p){ return p.creado || new Date(p.id||Date.now()).toISOString().slice(0,10); }
 function isVencido(p){ const c=new Date(pipeCreado(p)); const lim=new Date(c); lim.setMonth(lim.getMonth()+3); return new Date() > lim; }
 function pipeRow(p,venc){
@@ -2337,11 +2357,37 @@ function pipeRow(p,venc){
       ${p.foto?`<img class="pthumb" src="${p.foto}" alt="">`:''}
       <div class="pmonths"><b>${p.meses||1}</b><span>${(p.meses||1)===1?'mes':'meses'}</span></div>
       <div class="pinfo"><div class="pcat">${p.propiedad||p.concepto}</div>
-        <div class="pmeta"><span>${p.concepto}</span>${colocTag(p)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(p)}</span>`:''}${corredorOf(p)?`<span>· ${corredorOf(p)}</span>`:''}${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
+        <div class="pmeta"><span>${p.concepto}</span><span class="pdias">· ⏱ ${diasEnPipe(p)} ${diasEnPipe(p)===1?'día':'días'} en pipeline</span>${colocTag(p)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(p)}</span>`:''}${corredorOf(p)?`<span>· ${corredorOf(p)}</span>`:''}${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
       <div class="pright"><div class="pamt">${fmtCRC(crc(p))}</div><div class="pprob"><span class="probchip ${pchip(pr)}">${pr}%</span></div></div>
     </div>
-    <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Marcar como negocio cerrado</button>
+    <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Negocio cerrado</button>
+    <button class="lostbtn" onclick="markLost(${p.id})">✕ Negocio perdido</button>
   </div>`;
+}
+function lostRow(p){
+  const orig=p.moneda==='USD'?`<span>· ${fmtUSD(p.monto)} · TC ${p.tc}</span>`:'';
+  return `<div class="pipe lostp">
+    <div class="pipe-main" style="cursor:default">
+      ${p.foto?`<img class="pthumb" src="${p.foto}" alt="">`:''}
+      <div class="pinfo"><div class="pcat">${p.propiedad||p.concepto}</div>
+        <div class="pmeta"><span>${p.concepto}</span><span>· perdido ${(p.perdido||'').split('-').reverse().join('/')}</span><span class="pdias">· ⏱ ${diasEnPipe(p,p.perdido)} días gestionado</span>${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
+      <div class="pright"><div class="pamt" style="text-decoration:line-through;color:var(--muted)">${fmtCRC(crc(p))}</div></div>
+    </div>
+    <button class="restorebtn" onclick="restoreLost(${p.id})">↩ Devolver al pipeline</button>
+  </div>`;
+}
+function markLost(id){
+  const p=PIPE.find(x=>x.id===id); if(!p)return;
+  if(!confirm('¿Marcar «'+(p.propiedad||p.concepto)+'» como negocio PERDIDO?\n\nSale del pipeline y se suma al histórico de no percibido. Podés devolverlo al pipeline cuando querás.'))return;
+  LOST.push(Object.assign({},p,{perdido:new Date().toISOString().slice(0,10)}));
+  PIPE=PIPE.filter(x=>x.id!==id);
+  persist();render();toast('Marcado como negocio perdido');
+}
+function restoreLost(id){
+  const p=LOST.find(x=>x.id===id); if(!p)return;
+  LOST=LOST.filter(x=>x.id!==id);
+  const r=Object.assign({},p); delete r.perdido; PIPE.push(r);
+  persist();render();toast('↩ Devuelto al pipeline');
 }
 
 function renderPipeline(){
@@ -2386,7 +2432,8 @@ function renderPipeline(){
    ${pipeEffHTML()}
    ${activeList.length ? `<div class="sortbar"><div class="res"><b>${activeList.length}</b> por cerrar · Total <b>${fmtCRC(porCerrar)}</b></div></div>`+activeList.map(p=>pipeRow(p,false)).join('')
       : (PIPE.length ? '' : `<div class="empty"><div class="big">⇗</div>Tu pipeline está vacío.<br>Agregá las propiedades en proceso o en cartera para proyectar tu crecimiento.</div>`)}
-   ${vencList.length ? `<div class="vencbar"><span>⚠︎ Pipeline vencido</span><span><b>${vencList.length}</b> sin cerrar tras 3 meses · <b>${fmtCRC(vencidoTot)}</b></span></div>`+vencList.map(p=>pipeRow(p,true)).join('') : ''}`;
+   ${vencList.length ? `<div class="vencbar"><span>⚠︎ Pipeline vencido</span><span><b>${vencList.length}</b> sin cerrar tras 3 meses · <b>${fmtCRC(vencidoTot)}</b></span></div>`+vencList.map(p=>pipeRow(p,true)).join('') : ''}
+   ${LOST.length ? `<div class="lostbar"><span>✕ Negocios perdidos</span><span><b>${LOST.length}</b> no ${LOST.length===1?'cerrado':'cerrados'} · no percibido <b>${fmtCRC(LOST.reduce((a,p)=>a+crc(p),0))}</b></span></div>`+[...LOST].sort((a,b)=>(b.perdido||'').localeCompare(a.perdido||'')).map(lostRow).join('') : ''}`;
 }
 
 /* Formulario de pipeline */
@@ -2445,6 +2492,12 @@ function openClose(id){
   closeId=id; const p=PIPE.find(x=>x.id===id); if(!p)return;
   document.getElementById('closeName').textContent=(p.propiedad||p.concepto)+' · '+fmtCRC(crc(p));
   document.getElementById('closeDate').value=new Date().toISOString().slice(0,10);
+  const dd=diasEnPipe(p);
+  const closed=DATA.filter(m=>m.origenPipe&&m.origenPipe.creado);
+  const dias=closed.map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
+  const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
+  const cmp=avg!==null?(dd<=avg?`<b style="color:var(--ingreso)">más rápido que tu promedio (${avg} días)</b>`:`<b style="color:var(--gasto)">sobre tu promedio (${avg} días)</b>`):'';
+  document.getElementById('closeDias').innerHTML=`⏱ Gestionado <b>${dd} ${dd===1?'día':'días'}</b> en pipeline${cmp?' · '+cmp:''}`;
   document.getElementById('closeOverlay').classList.add('open');
 }
 function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
@@ -2665,7 +2718,7 @@ function exportCSV(){
 }
 function exportJSON(){
   var name='MH_Reportes_respaldo.json';
-  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE},null,2);
+  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST},null,2);
   try{ var file=new File([content],name,{type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       navigator.share({files:[file],title:'MH Reportes — respaldo'}).then(function(){toast('Respaldo listo');SET.lastBackup=new Date().toISOString().slice(0,10);persist();}).catch(function(){}); return;
@@ -2673,7 +2726,7 @@ function exportJSON(){
   dl(name,content,'application/json'); toast('Respaldo descargado');
   SET.lastBackup=new Date().toISOString().slice(0,10); persist();
 }
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;if(Array.isArray(o.lost))LOST=o.lost;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
 /* ---------- Tema claro / oscuro / auto ---------- */
 function effTheme(){
