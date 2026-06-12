@@ -337,7 +337,12 @@
     .card.net .v{font-size:30px}
     .twocols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
     .twocols .section{margin-bottom:0}
-    .statstrip{max-width:520px}
+    .statstrip{max-width:none}
+    /* Resumen: los 8 recuadros de stats en 2 filas de 4, aprovechando el ancho */
+    .statwrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+    .statwrap .statstrip{display:contents}
+    .statwrap .stat{margin:0}
+    .statwrap .statstrip.avgs .sv,.statwrap .statstrip.duo .sv{font-size:18px;padding-top:2px}
     .mov{padding:15px 17px}
   }
   @media (min-width:1040px){
@@ -1198,12 +1203,14 @@ function renderResumen(){
 
   ${metaSectionHTML()}
 
+  <div class="statwrap">
   <div class="statstrip">
     <div class="stat"><div class="sv num">${nIng+nGas}</div><div class="sk">Operaciones</div></div>
     <div class="stat"><div class="sv num" style="color:var(--ingreso)">${nIng}</div><div class="sk">Ingresos</div></div>
     <div class="stat"><div class="sv num" style="color:var(--gasto)">${nGas}</div><div class="sk">Gastos</div></div>
   </div>
   ${avgBestHTML(s,nIng)}
+  </div>
 
   <div class="section" data-fold="chart">
     <h3>Ingresos · Gastos · Saldo <span class="small">por mes</span></h3>
@@ -1321,7 +1328,7 @@ function avgBestHTML(s,nIng){
   const mm={}; DATA.forEach(m=>{ if(m.tipo==='ingreso'&&m.cobro!=='pend'){ const k=mkey(m.fecha); mm[k]=(mm[k]||0)+crc(m); } });
   let bestK=null; Object.keys(mm).forEach(k=>{ if(bestK===null||mm[k]>mm[bestK]) bestK=k; });
   const nM=monthsInRange(PER.desde,PER.hasta).length||1;
-  return `<div class="statstrip" style="grid-template-columns:1fr 1fr">
+  return `<div class="statstrip duo" style="grid-template-columns:1fr 1fr">
     <div class="stat"><div class="sv num">${avg?fmtCRC(Math.round(avg)):'—'}</div><div class="sk">Promedio por cierre</div></div>
     <div class="stat"><div class="sv num">${fmtCRC(Math.round(mm[bestK]))}</div><div class="sk">Mejor mes · ${fmtMesAno(bestK)}</div></div>
   </div>
