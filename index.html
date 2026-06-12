@@ -462,6 +462,10 @@
   .pipe.lostp{opacity:.78}
   .lostbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:20px 0 10px;padding:10px 13px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
   .lostbar b{font-weight:800;color:var(--paper)}
+  .effsplit{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;margin-top:14px;font-size:12.5px;border-top:1px solid var(--line)}
+  .effsplit>div{padding:7px 4px;border-bottom:1px solid var(--line);color:var(--muted)}
+  .effsplit>div:nth-child(4n+2),.effsplit>div:nth-child(4n+3),.effsplit>div:nth-child(4n){text-align:right;font-weight:700;color:var(--paper)}
+  .effsplit>.h{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);font-weight:700;padding-top:10px}
   /* Bloque de alquiler en formulario */
   .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
   .rentblock.hide{display:none}
@@ -809,6 +813,11 @@
     <div class="formrow">
       <label>Propiedad / negocio</label>
       <input type="text" id="pProp" placeholder="Ej: Escazú Distrito 4 · Lote Santa Ana">
+    </div>
+    <div class="formrow">
+      <label>Fecha de ingreso a pipeline</label>
+      <input type="date" id="pCreado">
+      <div class="fotonote">Si la captás días después, poné la fecha real — los días de gestión y el promedio de cierre se calculan sobre esta fecha.</div>
     </div>
     <div class="formrow">
       <label>Foto de portada <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
@@ -1425,26 +1434,46 @@ function porCobrarSectionHTML(){
 function pipeEffHTML(){
   const closed=DATA.filter(m=>m.origenPipe);
   if(!closed.length&&!PIPE.length&&!LOST.length) return '';
-  const lostTot=LOST.reduce((a,p)=>a+crc(p),0);
-  const closedTot=closed.reduce((a,m)=>a+crc(m),0);
-  const decididos=closed.length+LOST.length;
-  const pCierre=decididos?Math.round(closed.length/decididos*100):null;
-  const pPerd=pCierre!==null?100-pCierre:null;
-  const efect=(closedTot+lostTot)>0?Math.round(closedTot/(closedTot+lostTot)*100):null;
-  const dias=closed.filter(m=>m.origenPipe.creado).map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
-  const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
+  const stats=(cl,lo)=>{
+    const lostTot=lo.reduce((a,p)=>a+crc(p),0);
+    const closedTot=cl.reduce((a,m)=>a+crc(m),0);
+    const dec=cl.length+lo.length;
+    const pC=dec?Math.round(cl.length/dec*100):null;
+    const ef=(closedTot+lostTot)>0?Math.round(closedTot/(closedTot+lostTot)*100):null;
+    const dias=cl.filter(m=>m.origenPipe.creado).map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
+    const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
+    return {pC,pP:pC!==null?100-pC:null,ef,n:cl.length,dec,closedTot,lostTot,avg};
+  };
+  const g=stats(closed,LOST);
+  const isAlq=t=>/alquiler/i.test(t||''), isVen=t=>/venta/i.test(t||'');
+  const cOf=m=>m.origenPipe.concepto||m.categoria||'';
+  const sV=stats(closed.filter(m=>isVen(cOf(m))),LOST.filter(p=>isVen(p.concepto)));
+  const sA=stats(closed.filter(m=>isAlq(cOf(m))),LOST.filter(p=>isAlq(p.concepto)));
+  const f=(v,suf)=>v!==null&&v!==undefined?v+(suf||''):'—';
+  const split=(sV.dec||sA.dec)?`
+    <div class="effsplit">
+      <div class="h"></div><div class="h">Ventas</div><div class="h">Alquileres</div><div class="h">Total</div>
+      <div>% de cierre</div><div class="num" style="color:var(--ingreso)">${f(sV.pC,'%')}</div><div class="num" style="color:var(--ingreso)">${f(sA.pC,'%')}</div><div class="num" style="color:var(--ingreso)">${f(g.pC,'%')}</div>
+      <div>% perdido</div><div class="num" style="color:var(--gasto)">${f(sV.pP,'%')}</div><div class="num" style="color:var(--gasto)">${f(sA.pP,'%')}</div><div class="num" style="color:var(--gasto)">${f(g.pP,'%')}</div>
+      <div>Efectividad ₡</div><div class="num" style="color:var(--neto)">${f(sV.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(sA.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(g.ef,'%')}</div>
+      <div>Cerrados</div><div class="num">${sV.n}/${sV.dec}</div><div class="num">${sA.n}/${sA.dec}</div><div class="num">${g.n}/${g.dec}</div>
+      <div>Monto cerrado</div><div class="num" style="color:var(--ingreso)">${fmtC(sV.closedTot)}</div><div class="num" style="color:var(--ingreso)">${fmtC(sA.closedTot)}</div><div class="num" style="color:var(--ingreso)">${fmtC(g.closedTot)}</div>
+      <div>No percibido</div><div class="num" style="color:var(--gasto)">${fmtC(sV.lostTot)}</div><div class="num" style="color:var(--gasto)">${fmtC(sA.lostTot)}</div><div class="num" style="color:var(--gasto)">${fmtC(g.lostTot)}</div>
+      <div>Cierre promedio</div><div class="num">${f(sV.avg,' días')}</div><div class="num">${f(sA.avg,' días')}</div><div class="num">${f(g.avg,' días')}</div>
+    </div>`:'';
   return `<div class="section">
-    <h3>Efectividad del pipeline <span class="small">${decididos?'cerrados vs. perdidos':'se calcula al cerrar o perder negocios'}</span></h3>
+    <h3>Efectividad del pipeline <span class="small">${g.dec?'cerrados vs. perdidos':'se calcula al cerrar o perder negocios'}</span></h3>
     <div class="statstrip" style="margin-bottom:10px">
-      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${pCierre!==null?pCierre+'%':'—'}</div><div class="sk">% de cierre</div></div>
-      <div class="stat"><div class="sv num" style="color:var(--gasto)">${pPerd!==null?pPerd+'%':'—'}</div><div class="sk">% perdido</div></div>
-      <div class="stat"><div class="sv num" style="color:var(--neto)">${efect!==null?efect+'%':'—'}</div><div class="sk">Efectividad ₡</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${f(g.pC,'%')}</div><div class="sk">% de cierre</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${f(g.pP,'%')}</div><div class="sk">% perdido</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--neto)">${f(g.ef,'%')}</div><div class="sk">Efectividad ₡</div></div>
     </div>
     <div class="statstrip" style="margin-bottom:0">
-      <div class="stat"><div class="sv num">${closed.length}<small style="font-size:12px;color:var(--muted)">/${decididos}</small></div><div class="sk">Cerrados</div></div>
-      <div class="stat"><div class="sv num" style="color:var(--gasto)">${fmtC(lostTot)}</div><div class="sk">No percibido</div></div>
-      <div class="stat"><div class="sv num">${avg!==null?avg+'<small style="font-size:12px;color:var(--muted)"> días</small>':'—'}</div><div class="sk">Cierre promedio</div></div>
+      <div class="stat"><div class="sv num">${g.n}<small style="font-size:12px;color:var(--muted)">/${g.dec}</small></div><div class="sk">Cerrados</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${fmtC(g.lostTot)}</div><div class="sk">No percibido</div></div>
+      <div class="stat"><div class="sv num">${g.avg!==null?g.avg+'<small style="font-size:12px;color:var(--muted)"> días</small>':'—'}</div><div class="sk">Cierre promedio</div></div>
     </div>
+    ${split}
   </div>`;
 }
 function propFicha(name){
@@ -2465,9 +2494,11 @@ function openPipe(id){
     document.getElementById('pMonto').value=p.monto;
     pSetMon(p.moneda); document.getElementById('pTC').value=p.tc;
     pSetProb(p.prob??100); pSetMeses(p.meses||1);
+    document.getElementById('pCreado').value=pipeCreado(p);
     pCover=p.foto||'';
   } else {
     ['pProp','pDet','pMonto','pTC','pCorredor'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('pCreado').value=new Date().toISOString().slice(0,10);
     pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
     pCover='';
   }
@@ -2479,7 +2510,7 @@ function savePipe(){
   if(!monto||monto<=0){toast('Ingresá la comisión esperada');return;}
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
   const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
-  const creado=(ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10);
+  const creado=document.getElementById('pCreado').value||((ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10));
   const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||''};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
