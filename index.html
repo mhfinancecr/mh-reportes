@@ -104,7 +104,15 @@
   .up{color:var(--ingreso)} .down{color:var(--gasto)}
 
   /* STAT STRIP — conteo de transacciones */
-  .statstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .statstrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .statstrip .stat{min-width:0}
+  .statstrip.avgs .sv{font-size:16px;padding-top:3px}
+  @media (max-width:430px){
+    .statstrip.avgs{gap:7px}
+    .statstrip.avgs .stat{padding:11px 7px}
+    .statstrip.avgs .sv{font-size:13.5px;letter-spacing:-.02em}
+    .statstrip.avgs .sk{font-size:9px}
+  }
   .stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 13px;text-align:center;box-shadow:var(--shadow-sm)}
   .stat .sv{font-family:'Newsreader',serif;font-size:21px;font-weight:600}
   .stat .sk{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);margin-top:4px;font-weight:600}
@@ -254,6 +262,12 @@
   .metabar .fill{height:100%;background:linear-gradient(90deg,#1C3D60,#27557F);border-radius:999px;transition:width .4s}
   .metabar .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--paper);mix-blend-mode:multiply}
   .metainfo{display:flex;flex-wrap:wrap;gap:5px;font-size:12.5px;color:var(--muted)}
+  .metagrow{margin-left:auto;font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;background:var(--gold-soft);color:var(--gold);border-radius:999px;padding:3px 10px;letter-spacing:.02em}
+  .secfold{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+  .secfold .foldchev{margin-left:auto;color:var(--muted2);font-size:13px;font-weight:400}
+  .section.foldclosed h3{margin-bottom:0}
+  .monsplit{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;font-size:12.5px;color:var(--muted)}
+  .monsplit b{color:var(--paper)}
   .metainfo b{color:var(--neto)}.metainfo .hit{color:var(--ingreso);font-weight:700}
   .proplink{display:inline-block;margin-top:7px;background:none;border:none;font:inherit;font-size:12px;font-weight:600;color:var(--paper);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
   .overlay{position:fixed;inset:0;z-index:40;background:rgba(10,8,6,.6);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
@@ -962,7 +976,7 @@ function ivaPagSectionHTML(){
     const adj=!has?'—':(dif===0?'sin ajuste':(dif<0?'−':'+')+fmtCRC(Math.abs(dif)));
     return `<div class="ivarow"><span class="ivames">${fmtMesAno(ym)} <small>calc. ${calc?fmtCRC(calc):'—'}</small></span><input type="number" inputmode="decimal" class="ivain" value="${pag}" placeholder="pagado" onchange="setIvaPag('${ym}',this.value)"><span class="ivaadj num" style="color:${!has||dif===0?'var(--muted2)':dif<0?'#15805A':'#B85138'}">${adj}</span></div>`;
   }).join('');
-  return `<div class="section">
+  return `<div class="section" data-fold="ivapag">
     <h3>IVA pagado a Hacienda <span class="small">declaración mensual · reajusta el gasto y el saldo del período</span></h3>
     <div class="ivarow ivahead"><span>Mes · IVA calculado</span><span>IVA pagado</span><span>Ajuste</span></div>
     ${rows}
@@ -1182,6 +1196,8 @@ function renderResumen(){
     <div class="card net"><div class="k">Saldo del período</div><div class="v neto num">${fmtCRC(s.n)}</div>${yoyTxt(s.n,prev.n,false)}</div>
   </div>
 
+  ${metaSectionHTML()}
+
   <div class="statstrip">
     <div class="stat"><div class="sv num">${nIng+nGas}</div><div class="sk">Operaciones</div></div>
     <div class="stat"><div class="sv num" style="color:var(--ingreso)">${nIng}</div><div class="sk">Ingresos</div></div>
@@ -1189,7 +1205,7 @@ function renderResumen(){
   </div>
   ${avgBestHTML(s,nIng)}
 
-  <div class="section">
+  <div class="section" data-fold="chart">
     <h3>Ingresos · Gastos · Saldo <span class="small">por mes</span></h3>
     <div class="legend"><span><i style="background:var(--ingreso)"></i>Ingresos</span><span><i style="background:var(--gasto)"></i>Gastos</span><span><i style="background:var(--neto)"></i>Saldo</span></div>
     ${renderChart(cur)}
@@ -1201,22 +1217,21 @@ function renderResumen(){
 
   ${corrSectionHTML(cur)}
 
-  ${metaSectionHTML()}
-
   ${porCobrarSectionHTML()}
 
   ${ivaPagSectionHTML()}
 
   <div class="twocols">
-    <div class="section">
+    <div class="section" data-fold="bki">
       <h3>Ingresos por categoría</h3>
       ${brk('ingreso','var(--ingreso)')}
     </div>
-    <div class="section">
+    <div class="section" data-fold="bkg">
       <h3>Gastos por categoría</h3>
       ${brk('gasto','var(--gasto)')}
     </div>
   </div>`;
+  foldApply();
 }
 
 const COLOC_NAMES={propia:'Propia · solo',comp:'Propia · 50/50',colega:'De colega'};
@@ -1247,7 +1262,7 @@ function factSectionHTML(cur){
     const o=r[f]; const pct=totI?Math.round(o.i/totI*100):0;
     return `<span class="cgname">${name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${f==='si'&&o.iva?'−'+fmtCRC(o.iva):'—'}</span>`;
   }).join('');
-  return `<div class="section">
+  return `<div class="section" data-fold="fact">
     <h3>Cierres por facturación <span class="small">ingresos brutos · IVA del período</span></h3>
     <div class="cgt cols4">
       <span class="cgh"></span><span class="cgh">%</span><span class="cgh">Ingresos</span><span class="cgh">IVA</span>
@@ -1287,14 +1302,33 @@ function corrBreak(list){
 }
 /* ---- Nuevas secciones: respaldo, meta anual, por cobrar, ficha propiedad ---- */
 function daysSince(iso){ if(!iso)return null; return Math.floor((Date.now()-new Date(iso+'T12:00:00').getTime())/86400000); }
+function rsecOpen(k){ if(!SET.rsec)SET.rsec={}; return !!SET.rsec[k]; }
+function toggleRsec(k){ if(!SET.rsec)SET.rsec={}; SET.rsec[k]=!SET.rsec[k]; persist(); render(); }
+function foldApply(){
+  document.querySelectorAll('#view .section[data-fold]').forEach(sec=>{
+    const k=sec.getAttribute('data-fold'); const open=rsecOpen(k);
+    const h=sec.querySelector('h3'); if(!h)return;
+    if(!h.querySelector('.foldchev')){const b=document.createElement('b');b.className='foldchev';h.appendChild(b);}
+    h.classList.add('secfold'); h.onclick=function(){toggleRsec(k);};
+    h.querySelector('.foldchev').textContent=open?'▾':'▸';
+    Array.prototype.forEach.call(sec.children,function(ch){ if(ch!==h) ch.style.display=open?'':'none'; });
+    sec.classList.toggle('foldclosed',!open);
+  });
+}
 function avgBestHTML(s,nIng){
   if(!DATA.some(m=>m.tipo==='ingreso'&&m.cobro!=='pend')) return '';
   const avg=nIng?s.i/nIng:0;
   const mm={}; DATA.forEach(m=>{ if(m.tipo==='ingreso'&&m.cobro!=='pend'){ const k=mkey(m.fecha); mm[k]=(mm[k]||0)+crc(m); } });
   let bestK=null; Object.keys(mm).forEach(k=>{ if(bestK===null||mm[k]>mm[bestK]) bestK=k; });
+  const nM=monthsInRange(PER.desde,PER.hasta).length||1;
   return `<div class="statstrip" style="grid-template-columns:1fr 1fr">
     <div class="stat"><div class="sv num">${avg?fmtCRC(Math.round(avg)):'—'}</div><div class="sk">Promedio por cierre</div></div>
     <div class="stat"><div class="sv num">${fmtCRC(Math.round(mm[bestK]))}</div><div class="sk">Mejor mes · ${fmtMesAno(bestK)}</div></div>
+  </div>
+  <div class="statstrip avgs">
+    <div class="stat"><div class="sv num" style="color:var(--ingreso)">${fmtCRC(Math.round(s.i/nM))}</div><div class="sk">Ingreso prom./mes</div></div>
+    <div class="stat"><div class="sv num" style="color:var(--gasto)">${fmtCRC(Math.round(s.g/nM))}</div><div class="sk">Gasto prom./mes</div></div>
+    <div class="stat"><div class="sv num">${fmtCRC(Math.round(s.n/nM))}</div><div class="sk">Saldo prom./mes</div></div>
   </div>`;
 }
 function backupOverdue(){ if(DATA.length<3) return false; const d=daysSince(SET.lastBackup); return d===null||d>=15; }
@@ -1307,10 +1341,18 @@ function metaSectionHTML(){
   const falta=Math.max(0,meta-ing);
   const mesesRest=12-(new Date().getMonth()+1)+1;
   const porMes=falta>0&&mesesRest>0?`<span>· necesitás ${fmtCRC(Math.ceil(falta/mesesRest))}/mes</span>`:'';
-  return `<div class="section">
-    <h3>Meta anual ${cy} <span class="small">ingresos cobrados vs. meta</span></h3>
-    <div class="metabar"><div class="fill" style="width:${p}%"></div><span class="pct">${p}%</span></div>
-    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> de ${fmtCRC(meta)}</span>${falta>0?`<span>· faltan ${fmtCRC(falta)}</span>${porMes}`:'<span class="hit">· ¡Meta alcanzada! 🎉</span>'}</div>
+  const prevMeta=(SET.metas&&+SET.metas[cy-1])||0;
+  const prevReal=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&+m.fecha.slice(0,4)===cy-1).reduce((a,m)=>a+crc(m),0);
+  const base=prevMeta||prevReal;
+  const grow=base>0?Math.round((meta/base-1)*100):null;
+  const growTxt=grow===null?'':`<span class="metagrow">${grow>=0?'+':''}${grow}% vs ${prevMeta?('meta '+(cy-1)):('real '+(cy-1))}</span>`;
+  const frac=(new Date().getMonth()+1)/12;
+  const ratio=frac>0?(ing/meta)/frac:0;
+  const grad=ratio>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratio>=0.6?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  return `<div class="section" style="margin-bottom:14px">
+    <h3>Meta anual ${cy} <span class="small">ingresos cobrados vs. meta</span>${growTxt}</h3>
+    <div class="metabar"><div class="fill" style="width:${p}%;background:${grad}"></div><span class="pct">${p}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${p}%)</span>${falta>0?`<span>· pendiente ${fmtCRC(falta)} (${100-p}%)</span>${porMes}`:'<span class="hit">· ¡Meta alcanzada! 🎉</span>'}</div>
   </div>`;
 }
 function porCobrarSectionHTML(){
@@ -1318,7 +1360,7 @@ function porCobrarSectionHTML(){
   if(!pend.length) return '';
   const tot=pend.reduce((a,m)=>a+crc(m),0);
   const rows=pend.map(m=>`<div class="brk pcrow" onclick="openForm(${m.id})"><span class="name">${m.propiedad||m.categoria} <small>${m.fecha.split('-').reverse().join('/')}</small></span><span class="amt num">${fmtCRC(crc(m))}</span></div>`).join('');
-  return `<div class="section pcsec">
+  return `<div class="section pcsec" data-fold="pc">
     <h3>Por cobrar <span class="small">cierres pendientes de pago · no suman en tus cifras</span></h3>
     ${rows}
     <div class="brk pctotal"><span class="name">Total por cobrar (${pend.length})</span><span class="amt num">${fmtCRC(tot)}</span></div>
@@ -1372,7 +1414,7 @@ function corrSectionHTML(cur){
   const s=corrSel();
   const cells=rows.map(o=>`<span class="cgname">${o.name} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.gc?'−'+fmtCRC(o.gc):'—'}</span><span class="cgg num">${o.giva?'−'+fmtCRC(o.giva):'—'}</span><span class="num cgneto">${fmtCRC(o.i-o.gc-o.giva)}</span>`).join('');
   const chips=rows.map(o=>{const k=o.name.toLowerCase(); const on=!s.off[k]; return `<button type="button" class="corrchip${on?' on':''}" onclick="toggleCorrSel('${k.replace(/'/g,"\\'")}')">${o.name}</button>`;}).join('');
-  return `<div class="section">
+  return `<div class="section" data-fold="corr">
     <h3>Cierres por corredor <span class="small">comisión e IVA de cada cierre compartido</span></h3>
     <div class="cgtwrap"><div class="cgt cols5">
       <span class="cgh"></span><span class="cgh">Ingresos</span><span class="cgh">Comisión</span><span class="cgh">IVA</span><span class="cgh">Neto</span>
@@ -1388,7 +1430,7 @@ function colocSectionHTML(cur){
     const o=r[c]; const pct=totI?Math.round(o.i/totI*100):0;
     return `<span class="cgname">${COLOC_NAMES[c]} <small>${o.n} cierre${o.n===1?'':'s'}</small></span><span class="cgpct num">${pct}%</span><span class="cgi num">${o.i?'+'+fmtCRC(o.i):'—'}</span><span class="cgg num">${o.gc?'−'+fmtCRC(o.gc):'—'}</span><span class="cgg num">${o.go?'−'+fmtCRC(o.go):'—'}</span>`;
   }).join('');
-  return `<div class="section">
+  return `<div class="section" data-fold="coloc">
     <h3>Cierres por colocación <span class="small">% sobre ingresos del período</span></h3>
     <div class="cgtwrap"><div class="cgt cols5">
       <span class="cgh"></span><span class="cgh">%</span><span class="cgh">Ingresos</span><span class="cgh">Comis.</span><span class="cgh">Otros</span>
@@ -1644,7 +1686,7 @@ function renderAjustes(){
     </div>
     <div class="setrow">
       <div class="l">Meta anual de ingresos (₡)<small>Activá la barra de avance en el Resumen — dejala en 0 para ocultarla</small></div>
-      <input class="miniInput num" type="number" value="${SET.meta||''}" placeholder="0" onchange="SET.meta=parseFloat(this.value)||0;persist();toast('Meta guardada')">
+      <input class="miniInput num" type="number" value="${SET.meta||''}" placeholder="0" onchange="SET.meta=parseFloat(this.value)||0;if(!SET.metas)SET.metas={};SET.metas[new Date().getFullYear()]=SET.meta;persist();toast('Meta guardada')">
     </div>
     <div class="setrow"><div class="l">Último respaldo<small>${SET.lastBackup?SET.lastBackup.split('-').reverse().join('/'):'Nunca desde este dispositivo'}</small></div><button class="ghostbtn" onclick="exportJSON()">Respaldar</button></div>
     <div class="setrow"><div class="l">Movimientos registrados<small>${DATA.length} en total</small></div><div class="num" style="color:var(--gold);font-weight:600">${DATA.length}</div></div>
@@ -1702,6 +1744,34 @@ function rentIncrease(m){
 }
 
 /* ---------- Vista ALQUILERES ---------- */
+function rentPortfolio(){
+  const props={};
+  rentList().forEach(m=>{ if(m.coloc==='colega')return; const k=(m.propiedad||'').trim().toLowerCase(); if(!k||props[k])return;
+    const a=m.alquiler||{};
+    props[k]={name:m.propiedad,estado:a.estado==='cancelado'?'desocupada':'vigente',mon:(a.cuota&&a.cuotaMon)?a.cuotaMon:m.moneda};
+  });
+  PIPE.forEach(p=>{ if(!/alquiler/i.test(p.concepto||''))return; if(p.coloc==='colega')return; const k=(p.propiedad||'').trim().toLowerCase(); if(!k||props[k])return;
+    props[k]={name:p.propiedad,estado:'desocupada',mon:p.moneda,pipe:true};
+  });
+  const all=Object.values(props), vig=all.filter(x=>x.estado==='vigente'), des=all.filter(x=>x.estado==='desocupada');
+  const usdN=vig.filter(x=>x.mon==='USD').length, crcN=vig.length-usdN;
+  return {all,vig,des,crcN,usdN};
+}
+function rentPortfolioHTML(){
+  const pf=rentPortfolio();
+  if(!pf.all.length) return '';
+  const pCrc=pf.vig.length?Math.round(pf.crcN/pf.vig.length*100):0;
+  const pUsd=pf.vig.length?100-pCrc:0;
+  return `<div class="section" style="margin:4px 0 14px">
+    <h3>Portafolio propio <span class="small">propiedades de tu cartera en alquiler · incluye pipeline</span></h3>
+    <div class="statstrip" style="margin-bottom:0">
+      <div class="stat"><div class="sv num">${pf.all.length}</div><div class="sk">Propiedades</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${pf.vig.length}</div><div class="sk">Alquileres vigentes</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${pf.des.length}</div><div class="sk">Desocupadas</div></div>
+    </div>
+    ${pf.vig.length?`<div class="monsplit"><span>Colocadas en <b>₡ CRC: ${pf.crcN}</b> (${pCrc}%)</span><span>·</span><span>en <b>$ USD: ${pf.usdN}</b> (${pUsd}%)</span></div>`:''}
+  </div>`;
+}
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
 let RENTQ='', RENTCRIT='todos', RENTMONTH=null;
@@ -1745,6 +1815,7 @@ function renderAlquileres(keepFocus){
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
+   ${rentPortfolioHTML()}
    <div class="statstrip" style="margin-top:4px">
      <div class="stat"><div class="sv num">${all.length}</div><div class="sk">Contratos</div></div>
      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${vig.length}</div><div class="sk">Vigentes</div></div>
