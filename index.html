@@ -262,6 +262,7 @@
   .metabar .fill{height:100%;background:linear-gradient(90deg,#1C3D60,#27557F);border-radius:999px;transition:width .4s}
   .metabar .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--paper);mix-blend-mode:multiply}
   .metainfo{display:flex;flex-wrap:wrap;gap:5px;font-size:12.5px;color:var(--muted)}
+  .metalbl{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);font-weight:700;margin-bottom:6px}
   .metagrow{margin-left:auto;font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;background:var(--gold-soft);color:var(--gold);border-radius:999px;padding:3px 10px;letter-spacing:.02em}
   .secfold{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
   .secfold .foldchev{margin-left:auto;color:var(--muted2);font-size:13px;font-weight:400}
@@ -449,6 +450,15 @@
   .rentblock.hide{display:none}
   .rentttl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-2);font-weight:700;margin-bottom:10px}
   .rentsub{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);font-weight:700;margin:12px 0 8px;padding-top:11px;border-top:1px solid var(--line)}
+  /* Foto de portada de la propiedad */
+  .coverwrap{display:flex;align-items:center;gap:12px}
+  .coverprev{width:86px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+  .coverbtns{display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+  .coverdel{font:inherit;font-size:12px;font-weight:600;color:var(--gasto);background:none;border:none;padding:0;cursor:pointer}
+  .pthumb{width:56px;height:56px;border-radius:11px;object-fit:cover;flex:0 0 56px;border:1px solid var(--line)}
+  .movthumb{width:44px;height:44px;border-radius:9px;object-fit:cover;flex:0 0 44px;border:1px solid var(--line);align-self:center;margin-left:11px}
+  .rentthumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:0 0 48px;border:1px solid var(--line)}
+  .propcover{width:100%;height:150px;object-fit:cover;border-radius:13px;border:1px solid var(--line);margin:6px 0 10px}
   /* Fotos de inspección */
   .fotogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
   .fotogrid:empty{display:none}
@@ -656,6 +666,11 @@
       <button type="button" class="proplink" onclick="propFicha(document.getElementById('fProp').value)">⌂ Ver historial de esta propiedad</button>
     </div>
     <div class="formrow">
+      <label>Foto de portada <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
+      <div class="coverwrap" id="fCoverWrap"></div>
+      <div class="fotonote">Portada visual de la propiedad en la app — no sale en la ficha PDF ni en los reportes.</div>
+    </div>
+    <div class="formrow">
       <label>Colocación</label>
       <div class="seg" id="segColoc">
         <button type="button" data-c="propia" class="on" onclick="setColoc('propia')">Propia · solo</button>
@@ -777,6 +792,11 @@
     <div class="formrow">
       <label>Propiedad / negocio</label>
       <input type="text" id="pProp" placeholder="Ej: Escazú Distrito 4 · Lote Santa Ana">
+    </div>
+    <div class="formrow">
+      <label>Foto de portada <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
+      <div class="coverwrap" id="pCoverWrap"></div>
+      <div class="fotonote">Al cerrar el negocio, la foto viaja con la transacción.</div>
     </div>
     <div class="formrow">
       <label>Colocación</label>
@@ -1356,10 +1376,20 @@ function metaSectionHTML(){
   const frac=(new Date().getMonth()+1)/12;
   const ratio=frac>0?(ing/meta)/frac:0;
   const grad=ratio>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratio>=0.6?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const nowM=new Date().getMonth()+1;
+  const metaYtd=Math.round(meta/12*nowM);
+  const pY=metaYtd?Math.min(100,Math.round(ing/metaYtd*100)):0;
+  const faltaY=Math.max(0,metaYtd-ing);
+  const ratioY=metaYtd?ing/metaYtd:0;
+  const gradY=ratioY>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratioY>=0.6?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
   return `<div class="section" style="margin-bottom:14px">
-    <h3>Meta anual ${cy} <span class="small">ingresos cobrados vs. meta</span>${growTxt}</h3>
+    <h3>Meta anual ${cy} <span class="small">meta ${fmtCRC(meta)}</span>${growTxt}</h3>
+    <div class="metalbl">Año completo · ${fmtCRC(meta)}</div>
     <div class="metabar"><div class="fill" style="width:${p}%;background:${grad}"></div><span class="pct">${p}%</span></div>
     <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${p}%)</span>${falta>0?`<span>· pendiente ${fmtCRC(falta)} (${100-p}%)</span>${porMes}`:'<span class="hit">· ¡Meta alcanzada! 🎉</span>'}</div>
+    <div class="metalbl" style="margin-top:13px">A la fecha · YTD ${nowM} ${nowM===1?'mes':'meses'} · ${fmtCRC(metaYtd)}</div>
+    <div class="metabar"><div class="fill" style="width:${pY}%;background:${gradY}"></div><span class="pct">${pY}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${pY}%)</span>${faltaY>0?`<span>· pendiente ${fmtCRC(faltaY)} (${100-pY}%)</span>`:`<span class="hit">· ¡Al día con la meta! ✓</span>`}</div>
   </div>`;
 }
 function porCobrarSectionHTML(){
@@ -1403,8 +1433,10 @@ function propFicha(name){
   const fD=d=>d?d.split('-').reverse().join('/'):'—';
   const rentInfo=rentas.length?`<div class="brk" style="border-bottom:none;padding-bottom:2px"><span class="name" style="font-weight:700;color:var(--paper)">Alquilada ${rentas.length} ${rentas.length===1?'vez':'veces'}</span></div>`+rentas.map((m,ix)=>{const a=m.alquiler;const canc=a.estado==='cancelado';
     return `<div class="brk pcrow" onclick="closePropFicha();openForm(${m.id})"><span class="name">Contrato ${ix+1} · ${canc?'cancelado':'vigente'} <small>${fD(a.inicio)} → ${canc?(fD(a.cancelado||a.vencimiento)+' (cancelación)'):fD(a.vencimiento)}</small></span><span class="amt num">${a.cuota?fmtCRC(a.cuotaMon==='USD'?a.cuota*(m.tc||SET.tc||1):a.cuota)+'/mes':''}</span></div>`;}).join(''):'';;
+  const cov=((txs.find(m=>m.foto)||{}).foto)||((pipes.find(p=>p.foto)||{}).foto)||'';
   document.getElementById('propSheet').innerHTML=`<div class="grab"></div>
     <h2 style="font-family:'Newsreader',serif;font-size:21px;margin:8px 0 2px">⌂ ${name}</h2>
+    ${cov?`<img class="propcover" src="${cov}" alt="">`:''}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${txs.length} ${txs.length===1?'transacción':'transacciones'} · Neto <b style="color:var(--neto)">${fmtCRC(i-g)}</b>${pend?` · Por cobrar <b style="color:var(--gold)">${fmtCRC(pend)}</b>`:''}</div>
     ${rentInfo}${rows}${pipeRows}
     <button class="ghostbtn" style="width:100%;margin-top:14px" onclick="closePropFicha()">Cerrar</button>`;
@@ -1637,6 +1669,7 @@ function renderMovs(keepFocus){
     const[y,mo,da]=m.fecha.split('-');
     return `<div class="mov" onclick="openForm(${m.id})">
       <div class="stripe" style="background:${color}"></div>
+      ${m.foto?`<img class="movthumb" src="${m.foto}" alt="">`:''}
       <div class="info">
         <div class="top"><span class="cat">${m.categoria}</span><span class="amt" style="color:${color}">${sign}${fmtCRC(crc(m))}</span></div>
         <div class="meta"><span>${da}/${mo}/${y}</span>${m.cobro==='pend'?`<span class="pendtag">· POR COBRAR</span>`:''}${m.propiedad?`<span>· ${m.propiedad}</span>`:''}${colocTag(m)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(m)}</span>`:''}${m.factura==='si'?`<span style="color:var(--gold);font-weight:700">· Fact.</span>`:''}${corredorOf(m)?`<span>· ${corredorOf(m)}</span>`:''}${orig?'· '+orig:''}</div>
@@ -1688,8 +1721,8 @@ function renderAjustes(){
       <input class="miniInput num" type="number" value="${SET.tc}" onchange="SET.tc=parseFloat(this.value)||0;persist();toast('Tipo de cambio guardado')">
     </div>
     <div class="setrow">
-      <div class="l">Tema<small>Apariencia clara u oscura de la aplicación</small></div>
-      <div class="seg" style="flex:0 0 auto;width:170px"><button type="button" class="${SET.theme==='dark'?'':'on'}" onclick="applyTheme('light')">Claro</button><button type="button" class="${SET.theme==='dark'?'on':''}" onclick="applyTheme('dark')">Oscuro</button></div>
+      <div class="l">Tema<small>Auto: oscuro de 6 pm a 6 am y claro de día · Claro/Oscuro lo fijan manual</small></div>
+      <div class="seg" style="flex:0 0 auto;width:225px"><button type="button" class="${SET.theme==='light'?'on':''}" onclick="applyTheme('light')">Claro</button><button type="button" class="${(SET.theme!=='light'&&SET.theme!=='dark')?'on':''}" onclick="applyTheme('auto')">Auto</button><button type="button" class="${SET.theme==='dark'?'on':''}" onclick="applyTheme('dark')">Oscuro</button></div>
     </div>
     <div class="setrow">
       <div class="l">Meta anual de ingresos (₡)<small>Activá la barra de avance en el Resumen — dejala en 0 para ocultarla</small></div>
@@ -1804,6 +1837,7 @@ function renderAlquileres(keepFocus){
     const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:'', colocTag(m)?`Corredor: ${corredorOf(m)||'—'} (${colocTag(m)})`:''].filter(Boolean).join(' · ');
     return `<div class="rent ${cancel?'cancel':''}" onclick="openForm(${m.id})">
       <div class="rent-top">
+        ${m.foto?`<img class="rentthumb" src="${m.foto}" alt="">`:''}
         <div class="rent-prop">${m.propiedad||'(Sin propiedad)'}</div>
         <span class="estchip ${cancel?'off':'on'}">${cancel?'Cancelado':'Vigente'}</span>
       </div>
@@ -1975,6 +2009,32 @@ function updCorredoresList(){
 function setColoc(c){fColoc=c; updColega(); document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
 function updRentCanc(){var r=document.getElementById('rentCancRow'); if(r)r.classList.toggle('hide',document.getElementById('fRentEstado').value!=='cancelado');}
 let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
+let fCover='', pCover='';
+function pickCover(ev,which){
+  const f=ev.target.files[0]; ev.target.value=''; if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{ const img=new Image();
+    img.onload=()=>{
+      const M=900; let w=img.width,h=img.height;
+      if(w>M){h=Math.round(h*M/w);w=M;} if(h>M){w=Math.round(w*M/h);h=M;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const d=c.toDataURL('image/jpeg',0.62);
+      if(which==='f')fCover=d; else pCover=d;
+      renderCover(which);
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+function delCover(which){ if(which==='f')fCover=''; else pCover=''; renderCover(which); }
+function renderCover(which){
+  const el=document.getElementById(which==='f'?'fCoverWrap':'pCoverWrap'); if(!el)return;
+  const d=which==='f'?fCover:pCover;
+  el.innerHTML=d
+   ?`<img class="coverprev" src="${d}" alt="Portada"><div class="coverbtns"><label class="fotoadd">⟳ Cambiar foto<input type="file" accept="image/*" class="hide" onchange="pickCover(event,'${which}')"></label><button type="button" class="coverdel" onclick="delCover('${which}')">✕ Quitar</button></div>`
+   :`<label class="fotoadd">＋ Agregar foto<input type="file" accept="image/*" class="hide" onchange="pickCover(event,'${which}')"></label>`;
+}
 const RENT_CHECK=[
  ['elec','Disponibilidad de electricidad'],
  ['agua','Disponibilidad de agua'],
@@ -2099,6 +2159,7 @@ function openForm(id){
     fInspF=al.inspFecha||''; fInspH=al.inspHora||'';
     document.getElementById('fLlaves').value=al.llaves||'';
     fFotos=(al.fotos||[]).slice(); fCheck=Object.assign({},al.check||{});
+    fCover=m.foto||''; renderCover('f');
     document.getElementById('fChkNotas').value=al.chkNotas||'';
     document.getElementById('fOwnName').value=al.ownName||'';
     document.getElementById('fOwnTel').value=al.ownTel||'';
@@ -2114,7 +2175,7 @@ function openForm(id){
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
-    fInspF=''; fInspH=''; fFotos=[]; fCheck={};
+    fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
   document.getElementById('fMonto').oninput=function(){updTcHint(); if(fFact==='si'){const mo=parseFloat(this.value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';} updColega();};
@@ -2146,7 +2207,8 @@ function saveMov(){
     iva:(fTipo==='ingreso'&&fFact==='si')?(parseFloat(document.getElementById('fIva').value)||0):0,
     refNombre:fTipo==='ingreso'?document.getElementById('fRefNombre').value.trim():'',
     refMonto:fTipo==='ingreso'?(parseFloat(document.getElementById('fRefMonto').value)||0):0,
-    cobro:fTipo==='ingreso'?fCobro:''
+    cobro:fTipo==='ingreso'?fCobro:'',
+    foto:fCover||''
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
     rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
@@ -2263,6 +2325,7 @@ function pipeRow(p,venc){
   const orig=p.moneda==='USD'?`<span>· ${fmtUSD(p.monto)} · TC ${p.tc}</span>`:'';
   return `<div class="pipe ${venc?'venc':''}">
     <div class="pipe-main" onclick="openPipe(${p.id})">
+      ${p.foto?`<img class="pthumb" src="${p.foto}" alt="">`:''}
       <div class="pmonths"><b>${p.meses||1}</b><span>${(p.meses||1)===1?'mes':'meses'}</span></div>
       <div class="pinfo"><div class="pcat">${p.propiedad||p.concepto}</div>
         <div class="pmeta"><span>${p.concepto}</span>${colocTag(p)?`<span style="color:var(--gold);font-weight:700">· ${colocTag(p)}</span>`:''}${corredorOf(p)?`<span>· ${corredorOf(p)}</span>`:''}${orig}${p.detalle?`<span>· ${p.detalle}</span>`:''}</div></div>
@@ -2346,10 +2409,13 @@ function openPipe(id){
     document.getElementById('pMonto').value=p.monto;
     pSetMon(p.moneda); document.getElementById('pTC').value=p.tc;
     pSetProb(p.prob??100); pSetMeses(p.meses||1);
+    pCover=p.foto||'';
   } else {
     ['pProp','pDet','pMonto','pTC','pCorredor'].forEach(i=>document.getElementById(i).value='');
     pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
+    pCover='';
   }
+  renderCover('p');
 }
 function closePipe(){document.getElementById('poverlay').classList.remove('open');}
 function savePipe(){
@@ -2358,7 +2424,7 @@ function savePipe(){
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
   const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
   const creado=(ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10);
-  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim()};
+  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||''};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
 }
@@ -2378,7 +2444,7 @@ function confirmClose(){
   const d=document.getElementById('closeDate').value; if(!d){toast('Elegí la fecha de cierre');return;}
   const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
   const newId=Date.now();
-  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
+  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
   DATA.push(rec);
   if(rec.coloc==='comp' && confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
@@ -2600,10 +2666,16 @@ function exportJSON(){
 }
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
-/* ---------- Tema claro / oscuro ---------- */
-function applyTheme(t,boot){
-  t=(t==='dark')?'dark':'light';
-  SET.theme=t;
+/* ---------- Tema claro / oscuro / auto ---------- */
+function effTheme(){
+  const m=SET.theme||'auto';
+  if(m==='light'||m==='dark') return m;
+  const h=new Date().getHours();
+  return (h>=18||h<6)?'dark':'light';
+}
+function applyTheme(mode,boot){
+  if(mode) SET.theme=(mode==='dark'||mode==='light')?mode:'auto';
+  const t=effTheme();
   document.documentElement.setAttribute('data-theme',t);
   try{document.querySelector('meta[name="theme-color"]').setAttribute('content',t==='dark'?'#0F151E':'#1C3D60');}catch(e){}
   const lc=t==='dark'?'#E9EEF5':'#1C3D60';
@@ -2611,10 +2683,11 @@ function applyTheme(t,boot){
   try{document.getElementById('lockLogo').innerHTML=logoSVG(lc,88);}catch(e){}
   if(!boot){persist();render();}
 }
+setInterval(function(){ try{ if(document.documentElement.getAttribute('data-theme')!==effTheme()) applyTheme(null,false); }catch(e){} },60000);
 /* ---------- Init ---------- */
 try{ document.getElementById('hdrLogo').innerHTML=logoSVG('#1C3D60',44); }catch(e){}
 try{ document.getElementById('lockLogo').innerHTML=logoSVG('#1C3D60',88); }catch(e){}
-try{ applyTheme(SET.theme||'light',true); }catch(e){}
+try{ if(!SET.themeAuto2){SET.themeAuto2=1; SET.theme='auto';} applyTheme(SET.theme||'auto',true); }catch(e){}
 function logout(){
   document.getElementById('passInput').value='';
   document.getElementById('passErr').style.display='none';
