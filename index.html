@@ -244,11 +244,12 @@
   /* BOTTOM NAV */
   nav{position:fixed;bottom:0;left:0;right:0;z-index:25;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom))}
   nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted2);font-size:10.5px;letter-spacing:.04em;padding:5px 4px;position:relative}
-  nav button .ic{font-size:19px;transition:transform .2s var(--ease)}
+  nav button .ic{font-size:18px;transition:transform .2s var(--ease)}
+  nav button{font-size:9.5px}
   nav button:hover{color:var(--muted)}
   nav button.active{color:var(--gold)}
   nav button.active .ic{transform:translateY(-1px) scale(1.08)}
-  nav button.active::before{content:"";position:absolute;top:-8px;width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--gold);box-shadow:0 0 8px var(--gold-glow)}
+  nav button.active::before{content:"";position:absolute;top:-8px;width:20px;height:3px;border-radius:0 0 3px 3px;background:var(--gold);box-shadow:0 0 8px var(--gold-glow)}
   #logoSlot{display:block;margin-bottom:4px}
   #lock{position:fixed;inset:0;z-index:100;background:radial-gradient(120% 90% at 50% 0%, #FFFFFF 0%, var(--ink) 55%);display:flex;align-items:center;justify-content:center;padding:24px}
   .lockbox{display:flex;flex-direction:column;align-items:center;gap:13px;width:100%;max-width:300px;text-align:center;animation:viewIn .5s var(--ease)}
@@ -466,6 +467,37 @@
   .effsplit>div{padding:7px 4px;border-bottom:1px solid var(--line);color:var(--muted)}
   .effsplit>div:nth-child(4n+2),.effsplit>div:nth-child(4n+3),.effsplit>div:nth-child(4n){text-align:right;font-weight:700;color:var(--paper)}
   .effsplit>.h{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted2);font-weight:700;padding-top:10px}
+  /* CITAS */
+  .citahead{margin-bottom:10px}
+  .scr-title{font-family:'Newsreader',serif;font-size:23px;font-weight:600;color:var(--paper);line-height:1.1}
+  .scr-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .citacards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0 10px}
+  .ccard{border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;background:var(--surface)}
+  .ccard .cv{font-family:'Newsreader',serif;font-size:25px;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums}
+  .ccard .ck{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  .ccard.g .cv{color:var(--ingreso)} .ccard.y .cv{color:var(--gold)} .ccard.r .cv{color:var(--gasto)}
+  .efeccita{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:12px;background:linear-gradient(135deg,var(--gold-soft),var(--surface))}
+  .efeccita .ef-k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .efeccita .ef-v{font-family:'Newsreader',serif;font-size:30px;font-weight:600;color:var(--gold);line-height:1.05}
+  .efeccita .ef-d{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .citarow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+  .citarow:hover{border-color:var(--gold)}
+  .citadot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;display:block}
+  .citadot.g{background:#15805A} .citadot.y{background:#C99A33} .citadot.r{background:#C75A3C}
+  .cita-m{flex:1;min-width:0}
+  .cita-prop{font-weight:700;color:var(--paper);font-size:14px}
+  .cita-tipo{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:5px;padding:1px 6px;margin-left:4px;text-transform:uppercase;letter-spacing:.04em}
+  .cita-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .citachip{font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;text-align:center}
+  .citachip.g{background:rgba(21,128,90,.15);color:var(--ingreso)} .citachip.y{background:rgba(201,154,51,.18);color:var(--gold)} .citachip.r{background:rgba(199,90,60,.15);color:var(--gasto)}
+  .cita-r{flex:0 0 auto;max-width:42%}
+  .citareps{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  .citareps .crlbl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .citareps button{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:7px;color:var(--paper);font-size:13px;font-weight:600;cursor:pointer}
+  .citareps button:hover{border-color:var(--gold);background:var(--gold-soft)}
+  .citabtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:10px;font-size:12.5px;font-weight:600;color:var(--navy,#1C3D60);background:transparent;width:100%;border-radius:0 0 var(--radius) var(--radius);cursor:pointer}
+  html[data-theme="dark"] .citabtn{color:var(--paper)}
+  .citabtn:hover{background:var(--gold-soft)}
   /* Bloque de alquiler en formulario */
   .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
   .rentblock.hide{display:none}
@@ -636,6 +668,7 @@
   <button id="nav-reportes" onclick="go('reportes')"><span class="ic">⤓</span>Reportes</button>
   <button id="nav-alquileres" onclick="go('alquileres')"><span class="ic">⌂</span>Alquil.</button>
   <button id="nav-pipeline" onclick="go('pipeline')"><span class="ic">⇗</span>Pipeline</button>
+  <button id="nav-citas" onclick="go('citas')"><span class="ic">◷</span>Citas</button>
 </nav>
 
 <!-- FORM SHEET -->
@@ -767,15 +800,21 @@
       <div class="rentsub">Propietario</div>
       <div class="twocol">
         <div class="formrow"><label>Nombre del propietario</label><input type="text" id="fOwnName" placeholder="Nombre completo"></div>
-        <div class="formrow"><label>Teléfono</label><input type="tel" id="fOwnTel" placeholder="0000-0000"></div>
+        <div class="formrow"><label>Cédula del propietario</label><input type="text" id="fOwnCed" placeholder="0-0000-0000"></div>
       </div>
-      <div class="formrow"><label>Correo del propietario</label><input type="email" id="fOwnMail" placeholder="correo@ejemplo.com"></div>
+      <div class="twocol">
+        <div class="formrow"><label>Teléfono</label><input type="tel" id="fOwnTel" placeholder="0000-0000"></div>
+        <div class="formrow"><label>Correo del propietario</label><input type="email" id="fOwnMail" placeholder="correo@ejemplo.com"></div>
+      </div>
       <div class="rentsub">Inquilino</div>
       <div class="twocol">
         <div class="formrow"><label>Nombre del inquilino</label><input type="text" id="fTenName" placeholder="Nombre completo"></div>
-        <div class="formrow"><label>Teléfono</label><input type="tel" id="fTenTel" placeholder="0000-0000"></div>
+        <div class="formrow"><label>Cédula del inquilino</label><input type="text" id="fTenCed" placeholder="0-0000-0000"></div>
       </div>
-      <div class="formrow"><label>Correo del inquilino</label><input type="email" id="fTenMail" placeholder="correo@ejemplo.com"></div>
+      <div class="twocol">
+        <div class="formrow"><label>Teléfono</label><input type="tel" id="fTenTel" placeholder="0000-0000"></div>
+        <div class="formrow"><label>Correo del inquilino</label><input type="email" id="fTenMail" placeholder="correo@ejemplo.com"></div>
+      </div>
       <div class="rentsub">Cuenta para el pago de la cuota</div>
       <div class="formrow"><label>Número de cuenta IBAN</label><input type="text" id="fIban" placeholder="CR00 0000 0000 0000 0000 00" oninput="this.value=this.value.toUpperCase()"></div>
       <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 12px;cursor:pointer"><input type="checkbox" id="fTitSame" onchange="updTitSame()" style="width:18px;height:18px;accent-color:var(--gold)"> El titular de la cuenta es el propietario</label>
@@ -894,10 +933,39 @@
       <input type="date" id="closeDate">
     </div>
     <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
+    <div class="formrow hide" id="closeCitaRow"><label>Cita que cerró este negocio</label><select id="closeCitaSel"></select></div>
     <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 14px;cursor:pointer"><input type="checkbox" id="closePend" style="width:18px;height:18px;accent-color:var(--gold)"> Comisión aún no cobrada · queda en «por cobrar»</label>
     <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:-2px 0 16px">Al cerrar, este negocio se <b style="color:var(--paper)">suma a tus transacciones reales</b> y al gráfico principal con la fecha indicada, y sale del pipeline. No tenés que digitarlo de nuevo.</p>
     <button class="saveBtn" onclick="confirmClose()">Cerrar y trasladar a transacciones</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCloseModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- CITA / VISITA -->
+<div class="overlay" id="citaOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2 id="citaTitle">Nueva cita</h2>
+    <div class="formrow">
+      <label>Tipo de negocio</label>
+      <div class="seg" id="segCitaTipo">
+        <button type="button" data-t="venta" class="on" onclick="setCitaTipo('venta')">Venta</button>
+        <button type="button" data-t="alquiler" onclick="setCitaTipo('alquiler')">Alquiler</button>
+      </div>
+    </div>
+    <div class="formrow"><label>Propiedad</label><input type="text" id="citaProp" list="propsList" placeholder="Nombre de la propiedad"></div>
+    <datalist id="propsList"></datalist>
+    <div class="formrow"><label>Cliente / prospecto</label><input type="text" id="citaCli" placeholder="Nombre del comprador o inquilino"></div>
+    <div class="formrow"><label>Ingreso del prospecto</label><button type="button" class="wheelfield" id="citaIngBtn" onclick="pickCitaIng()">Elegir fecha</button></div>
+    <div class="twocol">
+      <div class="formrow"><label>Fecha de la cita</label><button type="button" class="wheelfield" id="citaFecBtn" onclick="pickCitaFec()">Elegir fecha</button></div>
+      <div class="formrow"><label>Hora</label><button type="button" class="wheelfield" id="citaHorBtn" onclick="pickCitaHor()">Elegir hora</button></div>
+    </div>
+    <div class="formrow"><label>Estado</label><select id="citaEstado"></select></div>
+    <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:-2px 0 14px">🟢 verde = cerró · 🟡 amarillo = viva / en proceso · 🔴 rojo = no concretó. Las citas son seguimiento comercial de tu portafolio propio; no afectan tus cifras reales.</p>
+    <button class="saveBtn" onclick="saveCita()">Guardar cita</button>
+    <button class="delBtn" id="citaDelBtn" style="color:var(--gasto);border-color:var(--line)" onclick="delCita()">Eliminar</button>
+    <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCita()">Cancelar</button>
   </div>
 </div>
 
@@ -925,7 +993,7 @@
 <script>
 /* ---------- Almacenamiento (localStorage con respaldo en memoria) ---------- */
 const PASS='MHFi240312';  // Contraseña de ingreso — cambiala por la que quieras
-const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1';
+const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1', CKEY='mh_citas_v1';
 let mem={}; // respaldo si localStorage no está disponible (p.ej. previsualización)
 function store(k,v){ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} }
 function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]??null)}catch(e){return mem[k]??null} }
@@ -934,7 +1002,8 @@ let DATA = JSON.parse(load(KEY) || '[]');
 let SET  = JSON.parse(load(SKEY) || '{"tc":510}');
 let PIPE = JSON.parse(load(PKEY) || '[]');   // cartera/pipeline — NO afecta cifras reales
 let LOST = JSON.parse(load(LKEY) || '[]');   // negocios perdidos — histórico, no suma en pipeline ni en cifras reales
-function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
+let CITAS = JSON.parse(load(CKEY) || '[]');  // citas / visitas — solo seguimiento comercial de portafolio PROPIO, no afecta cifras reales
+function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); store(CKEY, JSON.stringify(CITAS)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
 const LOGO_PATH=`M2238 7250 c-16 -12 -28 -27 -28 -34 0 -7 22 -60 49 -117 86 -185
 124 -313 156 -533 41 -283 39 -923 -5 -1135 -25 -124 -53 -195 -109 -281 -22
 -35 -41 -70 -41 -77 0 -27 83 -165 104 -172 11 -5 124 -5 250 -1 176 6 230 11
@@ -1176,7 +1245,7 @@ function swapCmp(){const d=CMP.aD,h=CMP.aH;CMP.aD=CMP.bD;CMP.aH=CMP.bH;CMP.bD=d;
 
 /* ---------- Navegación ---------- */
 let CURRENT='resumen';
-function go(v){CURRENT=v;['resumen','graficos','movimientos','reportes','alquileres','pipeline'].forEach(x=>{var el=document.getElementById('nav-'+x);if(el)el.classList.toggle('active',x===v);});render();window.scrollTo(0,0);}
+function go(v){CURRENT=v;['resumen','graficos','movimientos','reportes','alquileres','pipeline','citas'].forEach(x=>{var el=document.getElementById('nav-'+x);if(el)el.classList.toggle('active',x===v);});render();window.scrollTo(0,0);}
 
 function render(){
   try{var gd=document.getElementById('gearDot'); if(gd)gd.classList.toggle('hide',!backupOverdue());}catch(e){}
@@ -1186,6 +1255,7 @@ function render(){
   else if(CURRENT==='reportes') renderReportes();
   else if(CURRENT==='alquileres') renderAlquileres();
   else if(CURRENT==='pipeline') renderPipeline();
+  else if(CURRENT==='citas') renderCitas();
   else renderAjustes();
 }
 
@@ -1479,7 +1549,7 @@ function pipeEffHTML(){
       <div class="h"></div><div class="h">Ventas</div><div class="h">Alquileres</div><div class="h">Total</div>
       <div>% de cierre</div><div class="num" style="color:var(--ingreso)">${f(sV.pC,'%')}</div><div class="num" style="color:var(--ingreso)">${f(sA.pC,'%')}</div><div class="num" style="color:var(--ingreso)">${f(g.pC,'%')}</div>
       <div>% perdido</div><div class="num" style="color:var(--gasto)">${f(sV.pP,'%')}</div><div class="num" style="color:var(--gasto)">${f(sA.pP,'%')}</div><div class="num" style="color:var(--gasto)">${f(g.pP,'%')}</div>
-      <div>Efectividad ₡</div><div class="num" style="color:var(--neto)">${f(sV.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(sA.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(g.ef,'%')}</div>
+      <div>Efectividad (₡)</div><div class="num" style="color:var(--neto)">${f(sV.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(sA.ef,'%')}</div><div class="num" style="color:var(--neto)">${f(g.ef,'%')}</div>
       <div>Cerrados</div><div class="num">${sV.n}/${sV.dec}</div><div class="num">${sA.n}/${sA.dec}</div><div class="num">${g.n}/${g.dec}</div>
       <div>Monto cerrado</div><div class="num" style="color:var(--ingreso)">${fmtC(sV.closedTot)}</div><div class="num" style="color:var(--ingreso)">${fmtC(sA.closedTot)}</div><div class="num" style="color:var(--ingreso)">${fmtC(g.closedTot)}</div>
       <div>No percibido</div><div class="num" style="color:var(--gasto)">${fmtC(sV.lostTot)}</div><div class="num" style="color:var(--gasto)">${fmtC(sA.lostTot)}</div><div class="num" style="color:var(--gasto)">${fmtC(g.lostTot)}</div>
@@ -1490,11 +1560,11 @@ function pipeEffHTML(){
     <div class="statstrip" style="margin-bottom:10px">
       <div class="stat"><div class="sv num" style="color:var(--ingreso)">${f(g.pC,'%')}</div><div class="sk">% de cierre</div></div>
       <div class="stat"><div class="sv num" style="color:var(--gasto)">${f(g.pP,'%')}</div><div class="sk">% perdido</div></div>
-      <div class="stat"><div class="sv num" style="color:var(--neto)">${f(g.ef,'%')}</div><div class="sk">Efectividad ₡</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--neto)">${f(g.ef,'%')}</div><div class="sk">Efectividad (₡)</div></div>
     </div>
     <div class="statstrip" style="margin-bottom:0">
       <div class="stat"><div class="sv num">${g.n}<small style="font-size:12px;color:var(--muted)">/${g.dec}</small></div><div class="sk">Cerrados</div></div>
-      <div class="stat"><div class="sv num" style="color:var(--gasto)">${fmtC(g.lostTot)}</div><div class="sk">No percibido</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gasto)">${LOST.length}<small style="font-size:12px;color:var(--muted)">/${g.dec}</small></div><div class="sk">Perdidos</div></div>
       <div class="stat"><div class="sv num">${g.avg!==null?g.avg+'<small style="font-size:12px;color:var(--muted)"> días</small>':'—'}</div><div class="sk">Cierre promedio</div></div>
     </div>
     ${split}
@@ -1520,7 +1590,8 @@ function propFicha(name){
     ${cov?`<img class="propcover" src="${cov}" alt="">`:''}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${txs.length} ${txs.length===1?'transacción':'transacciones'} · Neto <b style="color:var(--neto)">${fmtCRC(i-g)}</b>${pend?` · Por cobrar <b style="color:var(--gold)">${fmtCRC(pend)}</b>`:''}</div>
     ${rentInfo}${rows}${pipeRows}
-    <button class="ghostbtn" style="width:100%;margin-top:14px" onclick="closePropFicha()">Cerrar</button>`;
+    ${CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===key)?`<button class="ghostbtn" style="width:100%;margin-top:14px;border-color:var(--gold);color:var(--gold)" onclick="closePropFicha();reporteGestion('${name.replace(/'/g,"\\'")}')">📄 Reporte de gestión</button>`:''}
+    <button class="ghostbtn" style="width:100%;margin-top:10px" onclick="closePropFicha()">Cerrar</button>`;
   document.getElementById('propOverlay').classList.add('open');
 }
 function closePropFicha(){document.getElementById('propOverlay').classList.remove('open');}
@@ -1933,7 +2004,7 @@ function renderAlquileres(keepFocus){
       </div>
       ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
-      <button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen para el propietario</button>
+      ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen para el propietario</button>`}
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
@@ -2026,13 +2097,14 @@ function fichaPDF(id){
   const half=Math.ceil(chkArr.length/2);
   const chkRows=chkArr.length?'<div class="fcols chkcols"><div><table class="ftbl chk"><tbody>'+chkArr.slice(0,half).join('')+'</tbody></table></div><div><table class="ftbl chk"><tbody>'+chkArr.slice(half).join('')+'</tbody></table></div></div>':'';
   if(a.inspFecha||a.inspHora||a.llaves||chkRows||a.chkNotas){
-    inspBlock='<h4 class="pbreak">Inspección de entrega</h4><table class="ftbl big"><tbody>'
+    inspBlock='<div class="fsheet"><h4>Inspección de entrega</h4><table class="ftbl big"><tbody>'
      +row('Fecha de inspección', a.inspFecha?fmtFecha(a.inspFecha):'')
      +row('Hora de entrega', a.inspHora?(a.inspHora+' h'):'')
      +row('Juegos de llaves entregados', a.llaves?String(a.llaves):'')
      +'</tbody></table>'
      +(chkRows?'<h4>Checklist de verificación</h4>'+chkRows:'')
-     +(a.chkNotas?'<h4>Otros · notas y comentarios</h4><div class="fnotas">'+String(a.chkNotas).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</div>':'');
+     +(a.chkNotas?'<h4>Otros · notas y comentarios</h4><div class="fnotas">'+String(a.chkNotas).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</div>':'')
+     +'</div>';
   }
   let fotoBlock='';
   const fotos=a.fotos||[];
@@ -2071,8 +2143,8 @@ function fichaPDF(id){
     +cuentaBlock
     +servBlock
     +'<div class="fcols">'
-    +'<div><h4>Propietario</h4><table class="ftbl"><tbody>'+row('Nombre',a.ownName)+row('Teléfono',a.ownTel)+row('Correo',a.ownMail)+'</tbody></table></div>'
-    +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
+    +'<div><h4>Propietario</h4><table class="ftbl"><tbody>'+row('Nombre',a.ownName)+row('Cédula',a.ownCed)+row('Teléfono',a.ownTel)+row('Correo',a.ownMail)+'</tbody></table></div>'
+    +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Cédula',a.tenCed)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
     +'</div>'
     +incBlock
     +inspBlock
@@ -2265,9 +2337,11 @@ function openForm(id){
     fCover=m.foto||''; renderCover('f');
     document.getElementById('fChkNotas').value=al.chkNotas||'';
     document.getElementById('fOwnName').value=al.ownName||'';
+    document.getElementById('fOwnCed').value=al.ownCed||'';
     document.getElementById('fOwnTel').value=al.ownTel||'';
     document.getElementById('fOwnMail').value=al.ownMail||'';
     document.getElementById('fTenName').value=al.tenName||'';
+    document.getElementById('fTenCed').value=al.tenCed||'';
     document.getElementById('fTenTel').value=al.tenTel||'';
     document.getElementById('fTenMail').value=al.tenMail||'';
     document.getElementById('fIban').value=al.iban||'';
@@ -2283,7 +2357,7 @@ function openForm(id){
     setTipo('ingreso'); fillCats(); setMon('CRC');
     setCobro('ok');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
-    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
+    ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnCed','fOwnTel','fOwnMail','fTenName','fTenCed','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
     document.getElementById('fIban').value=''; document.getElementById('fTitName').value=''; document.getElementById('fTitCed').value=''; document.getElementById('fNise').value=''; document.getElementById('fNis').value=''; document.getElementById('fTitSame').checked=false; updTitSame();
@@ -2322,7 +2396,7 @@ function saveMov(){
     foto:fCover||''
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim(), iban:document.getElementById('fIban').value.trim().toUpperCase(), titSame:document.getElementById('fTitSame').checked, titName:document.getElementById('fTitName').value.trim(), titCed:document.getElementById('fTitCed').value.trim(), nise:document.getElementById('fNise').value.trim(), nis:document.getElementById('fNis').value.trim() };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownCed:document.getElementById('fOwnCed').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenCed:document.getElementById('fTenCed').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim(), iban:document.getElementById('fIban').value.trim().toUpperCase(), titSame:document.getElementById('fTitSame').checked, titName:document.getElementById('fTitName').value.trim(), titCed:document.getElementById('fTitCed').value.trim(), nise:document.getElementById('fNise').value.trim(), nis:document.getElementById('fNis').value.trim() };
   }
   if(rec.tipo==='ingreso'&&!rec.lid) rec.lid=rec.id;
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; if(old&&old.lid) rec.lid=old.lid; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
@@ -2445,6 +2519,7 @@ function pipeRow(p,venc){
     </div>
     <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Negocio cerrado</button>
     <button class="lostbtn" onclick="markLost(${p.id})">✕ Negocio perdido</button>
+    ${p.coloc==='colega'?'':`<button class="citabtn" onclick="agendarDesdePipe(${p.id})">📅 Agendar cita</button>`}
   </div>`;
 }
 function lostRow(p){
@@ -2464,6 +2539,7 @@ function markLost(id){
   if(!confirm('¿Marcar «'+(p.propiedad||p.concepto)+'» como negocio PERDIDO?\n\nSale del pipeline y se suma al histórico de no percibido. Podés devolverlo al pipeline cuando querás.'))return;
   LOST.push(Object.assign({},p,{perdido:new Date().toISOString().slice(0,10)}));
   PIPE=PIPE.filter(x=>x.id!==id);
+  loseLinkedCitas(id);
   persist();render();toast('Marcado como negocio perdido');
 }
 function restoreLost(id){
@@ -2584,6 +2660,15 @@ function openClose(id){
   const cmp=avg!==null?(dd<=avg?`<b style="color:var(--ingreso)">más rápido que tu promedio (${avg} días)</b>`:`<b style="color:var(--gasto)">sobre tu promedio (${avg} días)</b>`):'';
   document.getElementById('closeDias').innerHTML=`⏱ Gestionado <b>${dd} ${dd===1?'día':'días'}</b> en pipeline${cmp?' · '+cmp:''}`;
   var cpEl=document.getElementById('closePend'); if(cpEl) cpEl.checked=false;
+  // Selector de cita que cerró el negocio (solo si hay citas vivas ligadas a este pipeline)
+  var linked=CITAS.filter(c=>c.lid===id && CITA_VIVAS.indexOf(c.estado)>=0);
+  var row=document.getElementById('closeCitaRow'), sel=document.getElementById('closeCitaSel');
+  if(row&&sel){
+    if(linked.length){
+      sel.innerHTML=linked.map(c=>`<option value="${c.id}">${(c.cliente||'Cliente')}${c.fecha?' · '+fmtFecha(c.fecha):''}</option>`).join('')+'<option value="0">Ninguna en particular</option>';
+      row.classList.remove('hide');
+    } else { row.classList.add('hide'); sel.innerHTML=''; }
+  }
   document.getElementById('closeOverlay').classList.add('open');
 }
 function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
@@ -2601,9 +2686,214 @@ function confirmClose(){
     DATA.push({id:newId+1,tipo:'gasto',categoria:gcat,fecha:d,propiedad:p.propiedad||'',detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:p.moneda,monto:p.monto/2,tc:p.tc,coloc:'comp',corredor:rec.corredor});
   }
   PIPE=PIPE.filter(x=>x.id!==closeId);
+  var _cs=document.getElementById('closeCitaSel'); var _cid=(_cs&&_cs.options.length)?parseInt(_cs.value):null;
+  closeLinkedCitas(closeId,_cid);
   persist();closeCloseModal();render();
   if(rec.alquiler){ toast('✓ Cerrado · agregá las fechas del contrato'); openForm(newId); }
   else toast('✓ Negocio cerrado y sumado a transacciones');
+}
+
+/* ====================== CITAS / VISITAS (seguimiento comercial · portafolio propio) ====================== */
+const CITA_ESTADOS=[
+ ['cerro','Cerró negocio','g'],
+ ['agendada','Agendada','y'],
+ ['espera','Cita efectuada — en espera de respuesta','y'],
+ ['poragendar','Por agendar','y'],
+ ['noshow','No se presentó','r'],
+ ['cancelada','Cancelada por el cliente','r'],
+ ['nocontinua','Cliente no continúa','r'],
+ ['rechazopost','Perfil rechazado — posterior a la cita','r'],
+ ['rechazopre','Perfil rechazado — sin coordinar cita','r'],
+ ['cerradoantes','Negocio cerrado antes de concretar','r']
+];
+const CITA_LBL={}, CITA_COL={};
+CITA_ESTADOS.forEach(([k,l,c])=>{CITA_LBL[k]=l;CITA_COL[k]=c;});
+const CITA_VIVAS=['agendada','espera','poragendar'];
+function citaStats(list){
+  list=list||CITAS;
+  const cierres=list.filter(c=>c.estado==='cerro').length;
+  const vivas=list.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0).length;
+  const rojas=list.filter(c=>CITA_COL[c.estado]==='r').length;
+  const noCont=list.filter(c=>c.estado==='nocontinua').length;   // cita efectuada, resuelta sin cierre
+  const conResultado=cierres+noCont;                              // base de efectividad
+  const efec=conResultado>0?Math.round(cierres/conResultado*100):null;
+  return {total:list.length,cierres,vivas,rojas,noCont,conResultado,efec};
+}
+let CITAS_TIPO='todos', CITAS_Q='';
+function setCitasTipo(t){CITAS_TIPO=t;renderCitas();}
+function citasSearch(v){CITAS_Q=(v||'').toLowerCase().trim();renderCitas();}
+function citasFiltered(){
+  let l=CITAS.slice();
+  if(CITAS_TIPO!=='todos') l=l.filter(c=>c.tipo===CITAS_TIPO);
+  if(CITAS_Q) l=l.filter(c=>((c.propiedad||'')+' '+(c.cliente||'')).toLowerCase().indexOf(CITAS_Q)>=0);
+  l.sort((a,b)=>(b.fecha||b.ingreso||'').localeCompare(a.fecha||a.ingreso||''));
+  return l;
+}
+function citaRow(c){
+  const col=CITA_COL[c.estado]||'y';
+  const fec=c.fecha?fmtFecha(c.fecha):(c.estado==='poragendar'||c.estado==='rechazopre'?'Sin fecha':'—');
+  const hr=c.hora?(' · '+c.hora):'';
+  return `<div class="citarow" onclick="openCita(${c.id})">
+    <div class="cita-l"><span class="citadot ${col}"></span></div>
+    <div class="cita-m">
+      <div class="cita-prop">${c.propiedad||'(Sin propiedad)'} <span class="cita-tipo">${c.tipo==='alquiler'?'Alquiler':'Venta'}</span></div>
+      <div class="cita-sub">${c.cliente?c.cliente+' · ':''}${fec}${hr}${c.lid?' · 🔗 pipeline':''}</div>
+    </div>
+    <div class="cita-r"><span class="citachip ${col}">${CITA_LBL[c.estado]||c.estado}</span></div>
+  </div>`;
+}
+function renderCitas(){
+  const list=citasFiltered();
+  const s=citaStats(CITAS);
+  const props=[...new Set(CITAS.map(c=>c.propiedad).filter(Boolean))];
+  const repBtns=props.length?`<div class="citareps"><div class="crlbl">Reporte de gestión por propiedad</div>${props.map(p=>`<button onclick="reporteGestion('${p.replace(/'/g,"\\'")}')">📄 ${p}</button>`).join('')}</div>`:'';
+  document.getElementById('view').innerHTML=`
+    <div class="citahead">
+      <div><h2 class="scr-title">Citas y visitas</h2><p class="scr-sub">Seguimiento comercial de tu portafolio propio · no afecta tus cifras reales</p></div>
+    </div>
+    <button class="addpipe" onclick="openCita()">＋  Nueva cita</button>
+    <div class="citacards">
+      <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
+      <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
+      <div class="ccard y"><div class="cv">${s.vivas}</div><div class="ck">Vivas / en proceso</div></div>
+      <div class="ccard r"><div class="cv">${s.rojas}</div><div class="ck">No concretaron</div></div>
+    </div>
+    <div class="efeccita">
+      <div><div class="ef-k">Efectividad de citas</div><div class="ef-v">${s.efec!==null?s.efec+'%':'—'}</div><div class="ef-d">${s.conResultado?`${s.cierres} ${s.cierres===1?'cierre':'cierres'} de ${s.conResultado} citas con resultado`:'se calcula al cerrar o descartar visitas concretadas'}</div></div>
+    </div>
+    <div class="rentsearch">
+      <input type="search" placeholder="Buscar por propiedad o cliente…" value="${CITAS_Q.replace(/"/g,'&quot;')}" oninput="citasSearch(this.value)">
+      <div class="rentchips">
+        ${[['todos','Todas'],['venta','Ventas'],['alquiler','Alquileres']].map(([k,l])=>`<button class="${CITAS_TIPO===k?'on':''}" onclick="setCitasTipo('${k}')">${l}</button>`).join('')}
+      </div>
+    </div>
+    ${list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin resultados para tu búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`}
+    ${repBtns}
+  `;
+}
+
+/* ----- Formulario de cita ----- */
+let citaEditId=null, citaTipo='venta', citaIng='', citaFec='', citaHor='';
+function setCitaTipo(t){citaTipo=t;document.querySelectorAll('#segCitaTipo button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
+function ownProps(){ const seen={},out=[]; DATA.concat(PIPE).forEach(x=>{ if(x.coloc==='colega')return; const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out.sort((a,b)=>a.localeCompare(b,'es')); }
+function openCita(id,pre){
+  pre=pre||{};
+  document.getElementById('citaEstado').innerHTML=CITA_ESTADOS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');
+  document.getElementById('propsList').innerHTML=ownProps().map(p=>`<option value="${p.replace(/"/g,'&quot;')}"></option>`).join('');
+  if(id){
+    const c=CITAS.find(x=>x.id===id); if(!c)return;
+    citaEditId=id; setCitaTipo(c.tipo||'venta');
+    document.getElementById('citaProp').value=c.propiedad||'';
+    document.getElementById('citaCli').value=c.cliente||'';
+    citaIng=c.ingreso||''; citaFec=c.fecha||''; citaHor=c.hora||'';
+    document.getElementById('citaEstado').value=c.estado||'agendada';
+    document.getElementById('citaTitle').textContent='Editar cita';
+    document.getElementById('citaDelBtn').style.display='';
+  } else {
+    citaEditId=null; setCitaTipo(pre.tipo||'venta');
+    document.getElementById('citaProp').value=pre.propiedad||'';
+    document.getElementById('citaCli').value='';
+    citaIng=new Date().toISOString().slice(0,10); citaFec=''; citaHor='';
+    document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
+    document.getElementById('citaTitle').textContent='Nueva cita';
+    document.getElementById('citaDelBtn').style.display='none';
+  }
+  citaLid=pre.lid||(id?(CITAS.find(x=>x.id===id)||{}).lid:null)||null;
+  updCitaBtns();
+  document.getElementById('citaOverlay').classList.add('open');
+}
+let citaLid=null;
+function updCitaBtns(){
+  document.getElementById('citaIngBtn').textContent=citaIng?fmtFecha(citaIng):'Elegir fecha';
+  document.getElementById('citaFecBtn').textContent=citaFec?fmtFecha(citaFec):'Elegir fecha';
+  document.getElementById('citaHorBtn').textContent=citaHor?citaHor:'Elegir hora';
+}
+function pickCitaIng(){ openDateWheel('Ingreso del prospecto', citaIng, v=>{citaIng=v;updCitaBtns();}); }
+function pickCitaFec(){ openDateWheel('Fecha de la cita', citaFec, v=>{citaFec=v;updCitaBtns();}); }
+function pickCitaHor(){ openTimeWheel('Hora de la cita', citaHor, v=>{citaHor=v;updCitaBtns();}); }
+function closeCita(){document.getElementById('citaOverlay').classList.remove('open');citaEditId=null;citaLid=null;}
+function saveCita(){
+  const prop=document.getElementById('citaProp').value.trim();
+  if(!prop){toast('Indicá la propiedad');return;}
+  const rec={ id:citaEditId||Date.now(), lid:citaLid||null, tipo:citaTipo,
+    propiedad:prop, cliente:document.getElementById('citaCli').value.trim(),
+    ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
+    estado:document.getElementById('citaEstado').value };
+  if(citaEditId){ const i=CITAS.findIndex(x=>x.id===citaEditId); CITAS[i]=rec; } else CITAS.push(rec);
+  persist();closeCita();render();toast('✓ Cita guardada');
+}
+function delCita(){
+  if(!citaEditId)return;
+  if(!confirm('¿Eliminar esta cita?'))return;
+  CITAS=CITAS.filter(x=>x.id!==citaEditId);
+  persist();closeCita();render();toast('Cita eliminada');
+}
+function agendarDesdePipe(id){
+  const p=PIPE.find(x=>x.id===id); if(!p)return;
+  if(p.coloc==='colega'){toast('Las citas son solo para tu portafolio propio');return;}
+  openCita(null,{propiedad:p.propiedad||p.concepto, tipo:/alquiler/i.test(p.concepto)?'alquiler':'venta', lid:id});
+}
+/* Al cerrar/perder en pipeline, actualiza las citas vinculadas (sin doble digitación) */
+function closeLinkedCitas(pipeId,chosenId){
+  const linked=CITAS.filter(c=>c.lid===pipeId && CITA_VIVAS.indexOf(c.estado)>=0);
+  if(!linked.length)return;
+  let winner=null;
+  if(chosenId&&chosenId>0) winner=linked.find(c=>c.id===chosenId);
+  if(!winner){ linked.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')); winner=(chosenId===0)?null:linked[0]; }
+  linked.forEach(c=>{ c.estado = (winner&&c.id===winner.id) ? 'cerro' : 'cerradoantes'; });
+}
+function loseLinkedCitas(pipeId){
+  CITAS.forEach(c=>{ if(c.lid===pipeId && CITA_VIVAS.indexOf(c.estado)>=0) c.estado='nocontinua'; });
+}
+
+/* ----- Reporte de gestión por propiedad (PDF) ----- */
+function reporteGestion(prop){
+  prop=(prop||'').trim();
+  const cs=CITAS.filter(c=>(c.propiedad||'').trim().toLowerCase()===prop.toLowerCase());
+  if(!cs.length){toast('Sin citas registradas para esta propiedad');return;}
+  cs.sort((a,b)=>(a.ingreso||a.fecha||'').localeCompare(b.ingreso||b.fecha||''));
+  const pipe=PIPE.concat(LOST).find(p=>(p.propiedad||'').trim().toLowerCase()===prop.toLowerCase());
+  const tx=DATA.find(m=>(m.propiedad||'').trim().toLowerCase()===prop.toLowerCase() && m.origenPipe);
+  const s=citaStats(cs);
+  const realizadas=cs.filter(c=>['cerro','espera','nocontinua','rechazopost'].indexOf(c.estado)>=0).length;
+  const canc=cs.filter(c=>c.estado==='cancelada').length;
+  const pend=cs.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0).length;
+  let ingreso=''; if(pipe) ingreso=pipeCreado(pipe); else if(tx&&tx.origenPipe) ingreso=tx.origenPipe.creado;
+  const dias=ingreso?Math.max(0,Math.round((new Date()-new Date(ingreso))/86400000)):null;
+  const owner = tx&&tx.alquiler&&tx.alquiler.ownName ? tx.alquiler.ownName : '';
+  const SCOL={g:'#15805A',y:'#9A6B1E',r:'#BE3A22'};
+  const SBG={g:'#E4F3EC',y:'#FBF1DD',r:'#FBE7E1'};
+  const rows=cs.map(c=>{
+    const col=CITA_COL[c.estado]||'y';
+    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span></td></tr>';
+  }).join('');
+  const cerrada=cs.find(c=>c.estado==='cerro');
+  const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
+  const GEST_CSS=`.gcards{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid;page-break-inside:avoid}.gcard{border:1px solid #E2E6EE;border-radius:11px;padding:11px 12px;text-align:center;break-inside:avoid}.gcard .v{font-family:'Newsreader',serif;font-size:24px;font-weight:600;color:#1C3D60}.gcard .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:3px}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin:2px 0 6px}.gst{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid;page-break-inside:avoid}.ficha h4{break-after:avoid;page-break-after:avoid}`;
+  const INNER='<div class="rep ficha">'
+    +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de gestión de la propiedad</div><div class="rep-period">'+prop+' · '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
+    +(dias!==null?'<div class="gsince">⏱ En gestión desde el '+fmtFecha(ingreso)+' · '+dias+' días</div>':'')
+    +'<h4>Datos</h4><table class="ftbl big"><tbody>'
+    +'<tr><td class="fl">Propiedad</td><td class="fv">'+prop+'</td></tr>'
+    +(owner?'<tr><td class="fl">Propietario</td><td class="fv">'+owner+'</td></tr>':'')
+    +'<tr><td class="fl">Tipo de negocio</td><td class="fv">'+(cs[0].tipo==='alquiler'?'Alquiler':'Venta')+'</td></tr>'
+    +(ingreso?'<tr><td class="fl">Ingreso al portafolio</td><td class="fv">'+fmtFecha(ingreso)+'</td></tr>':'')
+    +'</tbody></table>'
+    +'<div class="gcards">'
+      +'<div class="gcard"><div class="v">'+s.total+'</div><div class="k">Prospectos</div></div>'
+      +'<div class="gcard"><div class="v">'+realizadas+'</div><div class="k">Visitas realizadas</div></div>'
+      +'<div class="gcard"><div class="v">'+canc+'</div><div class="k">Canceladas</div></div>'
+      +'<div class="gcard"><div class="v">'+pend+'</div><div class="k">Pendientes</div></div>'
+    +'</div>'
+    +'<h4>Bitácora de citas y visitas</h4>'
+    +'<table class="ftbl"><thead><tr><th>Ingreso del prospecto</th><th>Fecha de cita</th><th>Hora</th><th>Cliente</th><th class="r">Resultado</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
+    +'<div class="rep-foot">MH Finance Costa Rica · Reporte de gestión generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
+  const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+GEST_CSS+'</style><title>Gestión '+prop+'</title></head><body>'+INNER+'</body></html>';
+  let f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
 }
 
 /* ---------- Reporte PDF (impresión) ---------- */
@@ -2651,12 +2941,16 @@ const FICHA_CSS=`
   .ftbl.chk td{font-size:10px;padding:4px 5px}
   .chkcols{gap:18px}
   .chkcols .ftbl{margin:2px 0 4px}
-  .pbreak{page-break-before:always}
-  .ftbl.chk tr{page-break-inside:avoid}
-  .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal}
-  .fpage{page-break-before:always}
-  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;page-break-inside:avoid}
-  .fgrid img{width:100%;height:228px;object-fit:cover;border-radius:6px;border:1px solid #ddd;page-break-inside:avoid}
+  .ficha h4{break-after:avoid;page-break-after:avoid}
+  .ftbl tr{break-inside:avoid;page-break-inside:avoid}
+  .pbreak,.fsheet{break-before:page;page-break-before:always}
+  .fsheet{break-inside:avoid}
+  .ftbl.chk tr{break-inside:avoid;page-break-inside:avoid}
+  .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal;break-inside:avoid;page-break-inside:avoid}
+  .fpage{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;break-inside:avoid;page-break-inside:avoid}
+  .fgrid img{width:100%;height:74mm;object-fit:cover;border-radius:6px;border:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
+  @media print{ .ficha .rep-foot{page-break-before:avoid} }
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
 function fmtFecha(f){const[y,mo,da]=f.split('-');return da+' '+MES[+mo-1]+' '+y;}
@@ -2805,7 +3099,7 @@ function exportCSV(){
 }
 function exportJSON(){
   var name='MH_Reportes_respaldo.json';
-  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST},null,2);
+  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST,citas:CITAS},null,2);
   try{ var file=new File([content],name,{type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       navigator.share({files:[file],title:'MH Reportes — respaldo'}).then(function(){toast('Respaldo listo');SET.lastBackup=new Date().toISOString().slice(0,10);persist();}).catch(function(){}); return;
@@ -2813,7 +3107,7 @@ function exportJSON(){
   dl(name,content,'application/json'); toast('Respaldo descargado');
   SET.lastBackup=new Date().toISOString().slice(0,10); persist();
 }
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;if(Array.isArray(o.lost))LOST=o.lost;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;if(Array.isArray(o.lost))LOST=o.lost;if(Array.isArray(o.citas))CITAS=o.citas;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
 /* ---------- Tema claro / oscuro / auto ---------- */
 function effTheme(){
