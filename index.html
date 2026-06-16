@@ -575,6 +575,10 @@
   .rentmclear:hover{background:#F1E4CF}
   .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
   .fichabtn{width:100%;margin-top:12px;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:700;letter-spacing:.01em}
+  .rentbtns{display:flex;gap:8px;margin-top:12px}
+  .rentbtns .fichabtn{margin-top:0;flex:1}
+  .fichabtn.recibo{color:var(--navy,#1C3D60)}
+  html[data-theme="dark"] .fichabtn.recibo{color:var(--paper)}
   .fichabtn:hover{border-color:var(--gold);background:var(--gold-soft)}
   .fichabtn:active{background:#F1E4CF}
   .cuotaup{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:600;color:var(--ingreso);margin-left:4px}
@@ -2004,7 +2008,7 @@ function renderAlquileres(keepFocus){
       </div>
       ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
-      ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen para el propietario</button>`}
+      ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<div class="rentbtns"><button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen</button><button class="fichabtn recibo" onclick="event.stopPropagation();reciboPago(${m.id})">🧾  Recibo de pago</button></div>`}
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
@@ -2114,12 +2118,13 @@ function fichaPDF(id){
   }
   const cuotaShow = a.cuota ? (cuotaMonOf(a)==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
   const titNom = a.titSame ? (a.ownName||'') : (a.titName||'');
+  const titCedR = a.titSame ? (a.ownCed||'') : (a.titCed||'');
   let cuentaBlock='';
-  if(a.iban||titNom||a.titCed){
+  if(a.iban||titNom||titCedR){
     cuentaBlock='<h4>Cuenta para el pago de la cuota</h4><table class="ftbl big"><tbody>'
       +row('Cuenta IBAN', a.iban)
       +row('Titular de la cuenta', titNom)
-      +row('Cédula del titular', a.titCed)
+      +row('Cédula del titular', titCedR)
       +'</tbody></table>';
   }
   let servBlock='';
@@ -2896,6 +2901,59 @@ function reporteGestion(prop){
   setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
 }
 
+/* ----- Recibo de pago de comisión (PDF para el propietario) ----- */
+function numeroALetras(num){
+  num=Math.floor(Math.abs(num||0));
+  if(num===0) return 'cero';
+  const uni=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte'];
+  const dec=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+  const cen=['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+  function grupo(n){
+    if(n===100) return 'cien';
+    let s='', c=Math.floor(n/100), r=n%100, d=Math.floor(r/10), u=r%10;
+    if(c) s+=cen[c]+' ';
+    if(r<=20) s+=uni[r];
+    else if(r<30) s+= (u? 'veinti'+(u===2?'dós':u===3?'trés':u===6?'séis':uni[u]) : 'veinte');
+    else s+=dec[d]+(u?' y '+uni[u]:'');
+    return s.trim();
+  }
+  let s='', mill=Math.floor(num/1000000), miles=Math.floor((num%1000000)/1000), resto=num%1000;
+  if(mill) s+= (mill===1?'un millón':grupo(mill)+' millones')+' ';
+  if(miles) s+= (miles===1?'mil':grupo(miles)+' mil')+' ';
+  if(resto) s+=grupo(resto);
+  return s.trim();
+}
+function reciboPago(id){
+  const m=DATA.find(x=>x.id===id); if(!m){toast('No encontrado');return;}
+  const a=m.alquiler||{};
+  const mon=m.moneda==='USD'?'USD':'CRC';
+  const monto=m.monto||0;
+  const montoFmt=mon==='USD'?fmtUSD(monto):fmtCRC(monto);
+  const cents=Math.round((monto-Math.floor(monto))*100);
+  const letras=(numeroALetras(monto)+' '+(mon==='USD'?'dólares':'colones')+(cents?(' con '+cents+'/100'):' exactos')).replace(/^\w/,c=>c.toUpperCase());
+  const tipo=/alquiler/i.test(m.categoria)?'alquiler':'venta';
+  const owner=a.ownName||'__________________________';
+  const ownCed=a.ownCed?(' · cédula '+a.ownCed):'';
+  const num='R-'+new Date(m.fecha).getFullYear()+'-'+String(id).slice(-5);
+  const hoy=new Date().toLocaleDateString('es-CR',{day:'2-digit',month:'long',year:'numeric'});
+  const REC_CSS=`.recibo-wrap{max-width:560px;margin:0 auto;padding:6mm 2mm}.rec-num{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#6E7886;margin:6px 0 18px}.rec-num b{color:#1C3D60}.rec-title{font-family:'Newsreader',serif;font-size:30px;font-weight:600;color:#1C3D60;text-align:center;margin:6px 0 2px}.rec-mon{text-align:center;font-family:'Newsreader',serif;font-size:34px;font-weight:600;color:#15805A;margin:14px 0 4px}.rec-body{font-size:14px;line-height:1.9;color:#1E2A38;margin:18px 0}.rec-body b{color:#1C3D60}.rec-letras{background:#F4F8F4;border:1px solid #CFE5D8;border-radius:10px;padding:11px 14px;font-size:13px;color:#1E2A38;margin:10px 0 4px;font-style:italic}.rec-firma{margin-top:54px;text-align:center}.rec-firma .line{width:260px;border-top:1px solid #1C3D60;margin:0 auto 6px}.rec-firma .nm{font-weight:700;color:#1C3D60}.rec-firma .rl{font-size:11.5px;color:#6E7886}`;
+  const INNER='<div class="rep"><div class="recibo-wrap">'
+    +'<div class="rep-head" style="justify-content:center;border-bottom:2px solid #1C3D60">'+logoSVG('#1C3D60',56)+'</div>'
+    +'<div class="rec-num"><span>Recibo N.º <b>'+num+'</b></span><span>'+hoy+'</span></div>'
+    +'<div class="rec-title">Recibo de pago</div>'
+    +'<div class="rec-mon">'+montoFmt+'</div>'
+    +'<div class="rec-body">Recibí conforme de <b>'+owner+'</b>'+ownCed+' la suma de <b>'+montoFmt+'</b>,<br>por concepto de <b>comisión por '+tipo+'</b> de la propiedad <b>'+(m.propiedad||'________')+'</b>.</div>'
+    +'<div class="rec-letras">Son: '+letras+'.</div>'
+    +'<div class="rec-firma"><div class="line"></div><div class="nm">MH Finance Costa Rica</div><div class="rl">Recibido por la correduría</div></div>'
+    +'<div class="rep-foot">MH Finance Costa Rica · Recibo emitido el '+hoy+'</div>'
+    +'</div></div>';
+  const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+REC_CSS+'</style><title>Recibo '+num+'</title></head><body>'+INNER+'</body></html>';
+  let f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
+}
+
 /* ---------- Reporte PDF (impresión) ---------- */
 const REP_CSS=`
   body{margin:0;background:#fff;color:#1a1a1a;font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
@@ -2948,8 +3006,10 @@ const FICHA_CSS=`
   .ftbl.chk tr{break-inside:avoid;page-break-inside:avoid}
   .fnotas{font-size:12px;color:#333;line-height:1.55;border:1px solid #e3e3e3;border-radius:8px;padding:10px 12px;white-space:normal;break-inside:avoid;page-break-inside:avoid}
   .fpage{break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid}
-  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;break-inside:avoid;page-break-inside:avoid}
-  .fgrid img{width:100%;height:74mm;object-fit:cover;border-radius:6px;border:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
+  .fpage:last-child{break-after:avoid;page-break-after:avoid}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;break-inside:avoid;page-break-inside:avoid}
+  .fgrid img{width:100%;height:60mm;object-fit:cover;border-radius:6px;border:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
+  .ficha .rep-foot{margin-top:14px;break-before:avoid;page-break-before:avoid}
   @media print{ .ficha .rep-foot{page-break-before:avoid} }
 `;
 function fmtMesAno(mk){const[y,m]=mk.split('-');return MES[+m-1]+' '+y;}
