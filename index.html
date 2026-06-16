@@ -776,6 +776,20 @@
         <div class="formrow"><label>Teléfono</label><input type="tel" id="fTenTel" placeholder="0000-0000"></div>
       </div>
       <div class="formrow"><label>Correo del inquilino</label><input type="email" id="fTenMail" placeholder="correo@ejemplo.com"></div>
+      <div class="rentsub">Cuenta para el pago de la cuota</div>
+      <div class="formrow"><label>Número de cuenta IBAN</label><input type="text" id="fIban" placeholder="CR00 0000 0000 0000 0000 00" oninput="this.value=this.value.toUpperCase()"></div>
+      <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 12px;cursor:pointer"><input type="checkbox" id="fTitSame" onchange="updTitSame()" style="width:18px;height:18px;accent-color:var(--gold)"> El titular de la cuenta es el propietario</label>
+      <div id="titRows">
+        <div class="twocol">
+          <div class="formrow"><label>Nombre del titular</label><input type="text" id="fTitName" placeholder="Nombre completo"></div>
+          <div class="formrow"><label>Cédula del titular</label><input type="text" id="fTitCed" placeholder="0-0000-0000"></div>
+        </div>
+      </div>
+      <div class="rentsub">Servicios de la propiedad</div>
+      <div class="twocol">
+        <div class="formrow"><label>NISE · servicio eléctrico</label><input type="text" id="fNise" placeholder="Número NISE"></div>
+        <div class="formrow"><label>NIS · servicio de agua</label><input type="text" id="fNis" placeholder="Número NIS"></div>
+      </div>
       <div class="rentsub">Inspección de entrega</div>
       <div class="twocol">
         <div class="formrow"><label>Fecha de inspección</label><button type="button" class="wheelfield" id="fInspFBtn" onclick="pickInspFecha()">Elegir fecha</button></div>
@@ -880,6 +894,7 @@
       <input type="date" id="closeDate">
     </div>
     <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
+    <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 14px;cursor:pointer"><input type="checkbox" id="closePend" style="width:18px;height:18px;accent-color:var(--gold)"> Comisión aún no cobrada · queda en «por cobrar»</label>
     <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:-2px 0 16px">Al cerrar, este negocio se <b style="color:var(--paper)">suma a tus transacciones reales</b> y al gráfico principal con la fecha indicada, y sale del pipeline. No tenés que digitarlo de nuevo.</p>
     <button class="saveBtn" onclick="confirmClose()">Cerrar y trasladar a transacciones</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCloseModal()">Cancelar</button>
@@ -1424,9 +1439,18 @@ function porCobrarSectionHTML(){
   const pend=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro==='pend').sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(!pend.length) return '';
   const tot=pend.reduce((a,m)=>a+crc(m),0);
-  const rows=pend.map(m=>`<div class="brk pcrow" onclick="openForm(${m.id})"><span class="name">${m.propiedad||m.categoria} <small>${m.fecha.split('-').reverse().join('/')}</small></span><span class="amt num">${fmtCRC(crc(m))}</span></div>`).join('');
+  const cptOf=m=>(m.origenPipe&&m.origenPipe.concepto)||m.categoria||'';
+  const isAlq=m=>isAlquilerCat(m.categoria)||/alquiler/i.test(cptOf(m));
+  const isVen=m=>/venta/i.test(m.categoria)||/venta/i.test(cptOf(m));
+  const pv=pend.filter(isVen), pa=pend.filter(isAlq);
+  const totV=pv.reduce((a,m)=>a+crc(m),0), totA=pa.reduce((a,m)=>a+crc(m),0);
+  const rows=pend.map(m=>`<div class="brk pcrow" onclick="openForm(${m.id})"><span class="name">${m.propiedad||m.categoria}${isAlq(m)?' <small class="pendtag" style="background:#1C3D60">ALQ</small>':isVen(m)?' <small class="pendtag" style="background:var(--gold)">VENTA</small>':''} <small>${m.fecha.split('-').reverse().join('/')}</small></span><span class="amt num">${fmtCRC(crc(m))}</span></div>`).join('');
   return `<div class="section pcsec" data-fold="pc">
-    <h3>Por cobrar <span class="small">cierres pendientes de pago · no suman en tus cifras</span></h3>
+    <h3>Comisiones por cobrar <span class="small">cierres pendientes de pago · no suman en tus cifras</span></h3>
+    <div class="statstrip duo" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+      <div class="stat"><div class="sv num" style="color:var(--gold)">${fmtC(totV)}</div><div class="sk">Ventas (${pv.length})</div></div>
+      <div class="stat"><div class="sv num" style="color:var(--gold)">${fmtC(totA)}</div><div class="sk">Alquileres (${pa.length})</div></div>
+    </div>
     ${rows}
     <div class="brk pctotal"><span class="name">Total por cobrar (${pend.length})</span><span class="amt num">${fmtCRC(tot)}</span></div>
   </div>`;
@@ -2017,6 +2041,22 @@ function fichaPDF(id){
     fotoBlock=pages.map((pg,pi)=>'<div class="fpage"><h4>Fotos de la inspección'+(pages.length>1?' · pág. '+(pi+1):'')+'</h4><div class="fgrid">'+pg.map(src=>'<img src="'+src+'">').join('')+'</div></div>').join('');
   }
   const cuotaShow = a.cuota ? (cuotaMonOf(a)==='CRC'?fmtCRC(inc.applies&&inc.years>0?inc.current:a.cuota):fmtUSD(a.cuota)) : '\u2014';
+  const titNom = a.titSame ? (a.ownName||'') : (a.titName||'');
+  let cuentaBlock='';
+  if(a.iban||titNom||a.titCed){
+    cuentaBlock='<h4>Cuenta para el pago de la cuota</h4><table class="ftbl big"><tbody>'
+      +row('Cuenta IBAN', a.iban)
+      +row('Titular de la cuenta', titNom)
+      +row('Cédula del titular', a.titCed)
+      +'</tbody></table>';
+  }
+  let servBlock='';
+  if(a.nise||a.nis){
+    servBlock='<h4>Servicios de la propiedad</h4><table class="ftbl big"><tbody>'
+      +row('NISE · servicio eléctrico', a.nise)
+      +row('NIS · servicio de agua', a.nis)
+      +'</tbody></table>';
+  }
   var INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Ficha de contrato de alquiler</div><div class="rep-period">'+(m.propiedad||'Propiedad')+' \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
     +'<div class="festado '+(a.estado==='cancelado'?'off':'on')+'">'+(a.estado==='cancelado'?'Contrato cancelado':'Contrato vigente')+'</div>'
@@ -2028,6 +2068,8 @@ function fichaPDF(id){
     +row('Día de pago', fmtDiaPago(a.pago))
     +row('Valor de la cuota de alquiler', cuotaShow)
     +'</tbody></table>'
+    +cuentaBlock
+    +servBlock
     +'<div class="fcols">'
     +'<div><h4>Propietario</h4><table class="ftbl"><tbody>'+row('Nombre',a.ownName)+row('Teléfono',a.ownTel)+row('Correo',a.ownMail)+'</tbody></table></div>'
     +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
@@ -2046,6 +2088,10 @@ function fichaPDF(id){
 /* ---------- Formulario ---------- */
 let editId=null, fTipo='ingreso', fMon='CRC', fCuotaMon='CRC', fColoc='propia', fFact='no', fCobro='ok';
 function setCobro(v){fCobro=v;document.querySelectorAll('#segCobro button').forEach(b=>b.classList.toggle('on',b.dataset.cb===v));var h=document.getElementById('cobroHint');if(h)h.classList.toggle('hide',v!=='pend');}
+function updTitSame(){
+  var same=document.getElementById('fTitSame').checked;
+  document.getElementById('titRows').classList.toggle('hide', same);
+}
 function setFact(v,noCalc){fFact=v; document.querySelectorAll('#segFact button').forEach(b=>b.classList.toggle('on',b.dataset.f===v)); document.getElementById('ivaRow').classList.toggle('hide',v!=='si'); if(v==='si'&&!noCalc){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';}}
 let fColegaDirty=false;
 function updColega(){const row=document.getElementById('colegaRow'); if(!row)return; const show=(fTipo==='ingreso'&&fColoc==='comp'); row.classList.toggle('hide',!show); if(show&&!fColegaDirty){const mo=parseFloat(document.getElementById('fMonto').value)||0; document.getElementById('fColegaMonto').value=mo?mo/2:'';}}
@@ -2224,6 +2270,13 @@ function openForm(id){
     document.getElementById('fTenName').value=al.tenName||'';
     document.getElementById('fTenTel').value=al.tenTel||'';
     document.getElementById('fTenMail').value=al.tenMail||'';
+    document.getElementById('fIban').value=al.iban||'';
+    document.getElementById('fTitSame').checked=!!al.titSame;
+    document.getElementById('fTitName').value=al.titName||'';
+    document.getElementById('fTitCed').value=al.titCed||'';
+    document.getElementById('fNise').value=al.nise||'';
+    document.getElementById('fNis').value=al.nis||'';
+    updTitSame();
     document.getElementById('undoPipeBtn').classList.toggle('hide', !m.origenPipe);
     setCobro(m.cobro==='pend'?'pend':'ok');
   } else {
@@ -2233,6 +2286,7 @@ function openForm(id){
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnTel','fOwnMail','fTenName','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
+    document.getElementById('fIban').value=''; document.getElementById('fTitName').value=''; document.getElementById('fTitCed').value=''; document.getElementById('fNise').value=''; document.getElementById('fNis').value=''; document.getElementById('fTitSame').checked=false; updTitSame();
     document.getElementById('undoPipeBtn').classList.add('hide');
   }
   document.getElementById('fMonto').oninput=function(){updTcHint(); if(fFact==='si'){const mo=parseFloat(this.value)||0; document.getElementById('fIva').value=mo?Math.round(mo*0.13*100)/100:'';} updColega();};
@@ -2268,7 +2322,7 @@ function saveMov(){
     foto:fCover||''
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim() };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim(), iban:document.getElementById('fIban').value.trim().toUpperCase(), titSame:document.getElementById('fTitSame').checked, titName:document.getElementById('fTitName').value.trim(), titCed:document.getElementById('fTitCed').value.trim(), nise:document.getElementById('fNise').value.trim(), nis:document.getElementById('fNis').value.trim() };
   }
   if(rec.tipo==='ingreso'&&!rec.lid) rec.lid=rec.id;
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; if(old&&old.lid) rec.lid=old.lid; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
@@ -2529,6 +2583,7 @@ function openClose(id){
   const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
   const cmp=avg!==null?(dd<=avg?`<b style="color:var(--ingreso)">más rápido que tu promedio (${avg} días)</b>`:`<b style="color:var(--gasto)">sobre tu promedio (${avg} días)</b>`):'';
   document.getElementById('closeDias').innerHTML=`⏱ Gestionado <b>${dd} ${dd===1?'día':'días'}</b> en pipeline${cmp?' · '+cmp:''}`;
+  var cpEl=document.getElementById('closePend'); if(cpEl) cpEl.checked=false;
   document.getElementById('closeOverlay').classList.add('open');
 }
 function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
@@ -2539,8 +2594,9 @@ function confirmClose(){
   const newId=Date.now();
   const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
+  var cpEl=document.getElementById('closePend'); if(cpEl&&cpEl.checked) rec.cobro='pend';
   DATA.push(rec);
-  if(rec.coloc==='comp' && confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
+  if(rec.cobro!=='pend' && rec.coloc==='comp' && confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
     const gcat=/venta/i.test(cat)?'Pago de comisiones por ventas':/alquiler/i.test(cat)?'Pago de comisiones por alquileres':/referido/i.test(cat)?'Pago de comisiones por referidos':'Otros gastos de negocio';
     DATA.push({id:newId+1,tipo:'gasto',categoria:gcat,fecha:d,propiedad:p.propiedad||'',detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:p.moneda,monto:p.monto/2,tc:p.tc,coloc:'comp',corredor:rec.corredor});
   }
