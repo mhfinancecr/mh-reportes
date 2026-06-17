@@ -2728,12 +2728,34 @@ function citaStats(list){
 let CITAS_TIPO='todos', CITAS_Q='';
 function setCitasTipo(t){CITAS_TIPO=t;renderCitas();}
 function citasSearch(v){CITAS_Q=(v||'').toLowerCase().trim();renderCitas();}
+function citaDate(c){ return c.fecha || c.ingreso || ''; }
+function citasInPeriod(list,desde,hasta){ return list.filter(c=>{ const d=citaDate(c); if(!d) return false; const k=d.slice(0,7); return k>=desde && k<=hasta; }); }
+function citasShiftYear(ym,n){ const p=ym.split('-'); return (+p[0]+n)+'-'+p[1]; }
+function citasPerLabel(desde,hasta){ return desde===hasta?fmtMesAno(desde):fmtMesAno(desde)+' – '+fmtMesAno(hasta); }
 function citasFiltered(){
-  let l=CITAS.slice();
+  let l=citasInPeriod(CITAS,PER.desde,PER.hasta);
   if(CITAS_TIPO!=='todos') l=l.filter(c=>c.tipo===CITAS_TIPO);
   if(CITAS_Q) l=l.filter(c=>((c.propiedad||'')+' '+(c.cliente||'')).toLowerCase().indexOf(CITAS_Q)>=0);
   l.sort((a,b)=>(b.fecha||b.ingreso||'').localeCompare(a.fecha||a.ingreso||''));
   return l;
+}
+function toggleCitasCmp(v){ SET.citasCmp=v; persist(); renderCitas(); }
+function citaDeltaSpan(cur,prev,isPct){
+  if(cur==null&&prev==null) return '<span><b>—</b></span>';
+  const a=(cur==null?0:cur), b=(prev==null?0:prev), d=a-b;
+  const cls=d>0?'up':d<0?'down':'', sign=d>0?'+':'';
+  return `<span><b class="${cls}">${d===0?'—':sign+d+(isPct?' pp':'')}</b></span>`;
+}
+function citasCmpHTML(s,sp,pd,ph){
+  return `<div class="section" style="margin-bottom:14px">
+    <h3>Comparativo <span class="small">mismo período, año anterior</span></h3>
+    <div class="cmptbl">
+      <div class="cmprow head"><span>Métrica</span><span>${citasPerLabel(PER.desde,PER.hasta)}</span><span>${citasPerLabel(pd,ph)}</span><span>Δ</span></div>
+      <div class="cmprow"><span>Prospectos</span><span>${s.total}</span><span>${sp.total}</span>${citaDeltaSpan(s.total,sp.total)}</div>
+      <div class="cmprow"><span>Cerró negocio</span><span>${s.cierres}</span><span>${sp.cierres}</span>${citaDeltaSpan(s.cierres,sp.cierres)}</div>
+      <div class="cmprow"><span>Efectividad</span><span>${s.efec!==null?s.efec+'%':'—'}</span><span>${sp.efec!==null?sp.efec+'%':'—'}</span>${citaDeltaSpan(s.efec,sp.efec,true)}</div>
+    </div>
+  </div>`;
 }
 function citaRow(c){
   const col=CITA_COL[c.estado]||'y';
@@ -2750,14 +2772,23 @@ function citaRow(c){
 }
 function renderCitas(){
   const list=citasFiltered();
-  const s=citaStats(CITAS);
-  const props=[...new Set(CITAS.map(c=>c.propiedad).filter(Boolean))];
+  const periodList=citasInPeriod(CITAS,PER.desde,PER.hasta).filter(c=>CITAS_TIPO==='todos'||c.tipo===CITAS_TIPO);
+  const s=citaStats(periodList);
+  const props=[...new Set(periodList.map(c=>c.propiedad).filter(Boolean))];
   const repBtns=props.length?`<div class="citareps"><div class="crlbl">Reporte de gestión por propiedad</div>${props.map(p=>`<button onclick="reporteGestion('${p.replace(/'/g,"\\'")}')">📄 ${p}</button>`).join('')}</div>`:'';
+  const cmpOn=SET.citasCmp;
+  let cmpBlock='';
+  if(cmpOn){
+    const pd=citasShiftYear(PER.desde,-1), ph=citasShiftYear(PER.hasta,-1);
+    const prevList=citasInPeriod(CITAS,pd,ph).filter(c=>CITAS_TIPO==='todos'||c.tipo===CITAS_TIPO);
+    cmpBlock=citasCmpHTML(s,citaStats(prevList),pd,ph);
+  }
   document.getElementById('view').innerHTML=`
     <div class="citahead">
       <div><h2 class="scr-title">Citas y visitas</h2><p class="scr-sub">Seguimiento comercial de tu portafolio propio · no afecta tus cifras reales</p></div>
     </div>
     <button class="addpipe" onclick="openCita()">＋  Nueva cita</button>
+    ${periodBarHTML()}
     <div class="citacards">
       <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
       <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
@@ -2767,13 +2798,15 @@ function renderCitas(){
     <div class="efeccita">
       <div><div class="ef-k">Efectividad de citas</div><div class="ef-v">${s.efec!==null?s.efec+'%':'—'}</div><div class="ef-d">${s.conResultado?`${s.cierres} ${s.cierres===1?'cierre':'cierres'} de ${s.conResultado} citas con resultado`:'se calcula al cerrar o descartar visitas concretadas'}</div></div>
     </div>
+    <label class="cmptoggle" style="margin-bottom:10px"><input type="checkbox" ${cmpOn?'checked':''} onchange="toggleCitasCmp(this.checked)"> Comparar con el mismo período del año anterior</label>
+    ${cmpBlock}
     <div class="rentsearch">
       <input type="search" placeholder="Buscar por propiedad o cliente…" value="${CITAS_Q.replace(/"/g,'&quot;')}" oninput="citasSearch(this.value)">
       <div class="rentchips">
         ${[['todos','Todas'],['venta','Ventas'],['alquiler','Alquileres']].map(([k,l])=>`<button class="${CITAS_TIPO===k?'on':''}" onclick="setCitasTipo('${k}')">${l}</button>`).join('')}
       </div>
     </div>
-    ${list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin resultados para tu búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`}
+    ${list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin citas en este período o búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`}
     ${repBtns}
   `;
 }
