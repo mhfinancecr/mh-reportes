@@ -583,13 +583,19 @@
   .icsbtn{width:100%;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.35;text-align:center}
   .icsbtn:hover{border-color:var(--gold);background:#fff}
   /* Alertas de contratos por vencer (Resumen) */
-  .vsemwrap{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 14px;cursor:pointer}
-  .vsem{border-radius:13px;padding:12px 10px;text-align:center;border:1px solid var(--line);background:var(--surface)}
+  .vsemsec{margin:0 0 14px}
+  .vsemttl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:0 2px 8px}
+  .vsemttl small{text-transform:none;letter-spacing:0;font-weight:600;opacity:.8}
+  .vsemttl .vsemclear{color:var(--gold);font-weight:700;cursor:pointer;text-decoration:underline}
+  .vsemwrap{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .vsem{border-radius:13px;padding:12px 10px;text-align:center;border:1px solid var(--line);background:var(--surface);cursor:pointer;transition:transform .1s,box-shadow .15s}
+  .vsem:active{transform:scale(.97)}
+  .vsem.sel{box-shadow:0 0 0 2px var(--paper) inset, var(--shadow-sm)}
   .vsem b{display:block;font-family:'Newsreader',serif;font-size:25px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
   .vsem span{display:block;font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:5px;line-height:1.25}
-  .vsem.rojo{border-color:rgba(199,90,60,.4);background:var(--gasto-soft)} .vsem.rojo b{color:var(--gasto)}
-  .vsem.amar{border-color:rgba(185,138,47,.4);background:var(--gold-soft)} .vsem.amar b{color:var(--gold)}
-  .vsem.verde{border-color:rgba(21,128,90,.32)} .vsem.verde b{color:var(--ingreso)}
+  .vsem.rojo{border-color:rgba(199,90,60,.4);background:var(--gasto-soft)} .vsem.rojo b{color:var(--gasto)} .vsem.rojo.sel{box-shadow:0 0 0 2px var(--gasto) inset}
+  .vsem.amar{border-color:rgba(185,138,47,.4);background:var(--gold-soft)} .vsem.amar b{color:var(--gold)} .vsem.amar.sel{box-shadow:0 0 0 2px var(--gold) inset}
+  .vsem.verde{border-color:rgba(21,128,90,.32)} .vsem.verde b{color:var(--ingreso)} .vsem.verde.sel{box-shadow:0 0 0 2px var(--ingreso) inset}
   .alertbar{margin:0 0 14px;border-radius:14px;border:1px solid rgba(184,81,56,.28);background:var(--gasto-soft);overflow:hidden;box-shadow:var(--shadow-sm)}
   .alertbar .ah{display:flex;align-items:center;gap:8px;padding:11px 14px 7px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--gasto)}
   .alertrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 14px;font-size:13px;color:var(--paper);border-top:1px solid rgba(184,81,56,.12)}
@@ -1389,7 +1395,6 @@ function renderResumen(){
 
   document.getElementById('view').innerHTML = `
   ${periodBarHTML()}
-  ${vencSemaforoHTML()}
   ${rentAlertsHTML()}
 
   <div class="cards">
@@ -2036,8 +2041,15 @@ function rentPortfolioHTML(){
 }
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
-let RENTQ='', RENTCRIT='todos', RENTMONTH=null;
+let RENTQ='', RENTCRIT='todos', RENTMONTH=null, RENTVENC='';
 function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
+function setRentVenc(k){ RENTVENC=(RENTVENC===k)?'':k; renderAlquileres(); }
+function vencBucket(m){
+  if(!(m.tipo==='ingreso'&&m.alquiler&&m.alquiler.estado==='vigente'&&m.alquiler.vencimiento)) return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const v=new Date(m.alquiler.vencimiento+'T00:00:00'); const d=Math.round((v-today)/86400000);
+  if(d<=90) return 'rojo'; if(d<=150) return 'amar'; return 'verde';
+}
 function onRentSearch(v){RENTQ=v;renderAlquileres(true);}
 function pickRentMonth(){ openWheel('Mes y año', (RENTMONTH&&RENTMONTH.indexOf('-')>=0)?RENTMONTH:thisMonth(), v=>{RENTMONTH=v; renderAlquileres();}); }
 function pickRentYear(){ openWheel('Año', (RENTMONTH&&RENTMONTH.indexOf('-')<0)?RENTMONTH:String(new Date().getFullYear()), v=>{RENTMONTH=v; renderAlquileres();}, true); }
@@ -2047,6 +2059,7 @@ function renderAlquileres(keepFocus){
   const all=rentList();
   const q=(RENTQ||'').trim().toLowerCase();
   let list = all;
+  if(RENTVENC) list = list.filter(m=>vencBucket(m)===RENTVENC);
   if(RENTMONTH) list = list.filter(m=> RENTMONTH.indexOf('-')>=0 ? mkey(m.fecha)===RENTMONTH : m.fecha.slice(0,4)===RENTMONTH);
   if(q) list = list.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;});
   const vig=all.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
@@ -2078,6 +2091,7 @@ function renderAlquileres(keepFocus){
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
+   ${vencSemaforoHTML()}
    ${rentPortfolioHTML()}
    <div class="statstrip" style="margin-top:4px">
      <div class="stat"><div class="sv num">${all.length}</div><div class="sk">Contratos</div></div>
@@ -3288,16 +3302,20 @@ function vencSemaforo(){
   let rojo=0,amar=0,vig=0;
   DATA.forEach(m=>{ if(m.tipo==='ingreso'&&m.alquiler&&m.alquiler.estado==='vigente'&&m.alquiler.vencimiento){
     vig++; const v=new Date(m.alquiler.vencimiento+'T00:00:00'); const d=Math.round((v-today)/86400000);
-    if(d<=15) rojo++; else if(d<=60) amar++;
+    if(d<=90) rojo++; else if(d<=150) amar++;
   }});
   return {rojo,amar,verde:Math.max(0,vig-rojo-amar),vig};
 }
 function vencSemaforoHTML(){
   const s=vencSemaforo(); if(!s.vig) return '';
-  return `<div class="vsemwrap" onclick="go('alquileres')" title="Ver alquileres">
-    <div class="vsem rojo"><b>${s.rojo}</b><span>Vencidos o ≤15 días</span></div>
-    <div class="vsem amar"><b>${s.amar}</b><span>Vencen en 16–60 días</span></div>
-    <div class="vsem verde"><b>${s.verde}</b><span>Al día</span></div>
+  const chip=(key,n,lbl,cls)=>`<div class="vsem ${cls} ${RENTVENC===key?'sel':''}" onclick="setRentVenc('${key}')"><b>${n}</b><span>${lbl}</span></div>`;
+  return `<div class="vsemsec">
+    <div class="vsemttl">Vencimiento de contratos de alquiler${RENTVENC?` · <a class="vsemclear" onclick="setRentVenc('')">ver todos</a>`:' <small>tocá un plazo para filtrar</small>'}</div>
+    <div class="vsemwrap">
+      ${chip('rojo',s.rojo,'Avisar ya · vencidos o ≤3 meses','rojo')}
+      ${chip('amar',s.amar,'Preparar aviso · 3 a 5 meses','amar')}
+      ${chip('verde',s.verde,'Al día · +5 meses','verde')}
+    </div>
   </div>`;
 }
 function rentAlertsHTML(){
