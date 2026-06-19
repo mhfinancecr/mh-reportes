@@ -519,6 +519,41 @@
   .pdleg span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
   .pdleg i{width:8px;height:8px;border-radius:2px;display:inline-block;flex:0 0 auto}
   @media(max-width:520px){.pjtop{grid-template-columns:1fr;justify-items:center}.pjtop .horizons,.pjtop .effstats{width:100%}.pdleg{max-width:none}.pdleg{flex-direction:row}}
+  /* Sub-pestañas (control segmentado de grupo) */
+  .subseg{display:flex;background:var(--surface2);border-radius:11px;padding:3px;gap:2px;margin:0 0 14px;border:1px solid var(--line);position:sticky;top:0;z-index:4}
+  .subseg button{flex:1;border:0;background:transparent;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:8px 2px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .subseg button.on{background:var(--surface);color:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+  /* HOY — centro de mando */
+  .hoyhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .hoydate{font-size:11px;color:var(--muted);font-weight:600;text-align:right;text-transform:capitalize;line-height:1.35}
+  .hmoney{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .hmc{border:1px solid var(--line);border-radius:14px;padding:13px 15px;background:var(--surface)}
+  .hmc .hk{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
+  .hmdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .hmc .hv{font-family:'Newsreader',serif;font-size:21px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums;line-height:1.05}
+  .hmc .hsub{font-size:10px;color:var(--muted);margin-top:3px}
+  .hsec{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:18px 2px 9px;display:flex;align-items:center;gap:8px}
+  .hsec .hcnt{background:var(--navy,#1C3D60);color:#fff;border-radius:999px;font-size:10px;padding:1px 8px;font-weight:800}
+  html[data-theme="dark"] .hsec .hcnt{background:var(--gold);color:#1a1205}
+  .hsec.warn .hcnt{background:#C75A3C;color:#fff} .hsec.gold .hcnt{background:var(--gold);color:#1a1205}
+  .hrow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px}
+  .hdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .hrmain{flex:1;min-width:0}
+  .hrtitle{font-weight:700;color:var(--paper);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hrsub{font-size:11.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hrright{flex:0 0 auto;text-align:right;font-size:12px;font-weight:700}
+  .htime{font-family:'Newsreader',serif;font-size:17px;font-weight:600;color:var(--paper)}
+  .hchip{display:inline-block;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px}
+  .hchip.r{background:rgba(199,90,60,.14);color:#C75A3C} .hchip.y{background:rgba(201,154,51,.2);color:#9A6B1E}
+  html[data-theme="dark"] .hchip.y{color:#E8C27A}
+  .hprio{background:linear-gradient(135deg,var(--navy,#1C3D60),#27557F);border-radius:16px;padding:17px 18px 15px;color:#fff;margin-top:16px}
+  .hprio h3{font-family:'Newsreader',serif;font-size:17px;font-weight:600;margin-bottom:11px}
+  .hptask{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-top:1px solid rgba(255,255,255,.14)}
+  .hptask:first-of-type{border-top:0}
+  .hpn{width:21px;height:21px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:0 0 auto;margin-top:1px}
+  .hpt{font-size:12.5px;line-height:1.4}
+  .hpt b{color:#F2D79A}
+  .hpwhy{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
   /* COACHING */
   .cnudge{background:var(--gold-soft);border:1px solid rgba(185,138,47,.3);border-radius:11px;padding:11px 14px;font-size:12.5px;color:#7A5C1E;margin-bottom:10px}
   html[data-theme="dark"] .cnudge{background:rgba(185,138,47,.12);color:#E8C27A}
@@ -731,14 +766,11 @@
 <main id="view"></main>
 
 <nav>
-  <button id="nav-resumen" class="active" onclick="go('resumen')"><span class="ic">◈</span>Resumen</button>
-  <button id="nav-graficos" onclick="go('graficos')"><span class="ic">↗</span>Gráficos</button>
-  <button id="nav-movimientos" onclick="go('movimientos')"><span class="ic">≣</span>Movim.</button>
-  <button id="nav-reportes" onclick="go('reportes')"><span class="ic">⤓</span>Reportes</button>
-  <button id="nav-alquileres" onclick="go('alquileres')"><span class="ic">⌂</span>Alquil.</button>
-  <button id="nav-pipeline" onclick="go('pipeline')"><span class="ic">⇗</span>Pipeline</button>
-  <button id="nav-citas" onclick="go('citas')"><span class="ic">◷</span>Citas</button>
-  <button id="nav-coaching" onclick="go('coaching')"><span class="ic">✦</span>Coach</button>
+  <button id="nav-hoy" class="active" onclick="goGroup('hoy')"><span class="ic">◈</span>Hoy</button>
+  <button id="nav-finanzas" onclick="goGroup('finanzas')"><span class="ic">₡</span>Finanzas</button>
+  <button id="nav-negocio" onclick="goGroup('negocio')"><span class="ic">⇗</span>Negocio</button>
+  <button id="nav-alquileres" onclick="goGroup('alquileres')"><span class="ic">⌂</span>Alquil.</button>
+  <button id="nav-mas" onclick="goGroup('mas')"><span class="ic">⋯</span>Más</button>
 </nav>
 
 <!-- FORM SHEET -->
@@ -1314,13 +1346,35 @@ function pickCmp(key){
 function toggleCmp2(v){CMP.on=v;persist();render();}
 function swapCmp(){const d=CMP.aD,h=CMP.aH;CMP.aD=CMP.bD;CMP.aH=CMP.bH;CMP.bD=d;CMP.bH=h;persist();render();}
 
-/* ---------- Navegación ---------- */
-let CURRENT='resumen';
-function go(v){CURRENT=v;['resumen','graficos','movimientos','reportes','alquileres','pipeline','citas','coaching'].forEach(x=>{var el=document.getElementById('nav-'+x);if(el)el.classList.toggle('active',x===v);});render();window.scrollTo(0,0);}
+/* ---------- Navegación (5 grupos con sub-pestañas) ---------- */
+let CURRENT='hoy';
+const NAVGROUPS=[
+  ['hoy','Hoy',['hoy']],
+  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes']],
+  ['negocio','Negocio',['pipeline','citas']],
+  ['alquileres','Alquileres',['alquileres']],
+  ['mas','Más',['coaching','ajustes']]
+];
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',ajustes:'Ajustes'};
+const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
+const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
+function go(v){
+  CURRENT=v;
+  const grp=SCREENGROUP[v]||'mas'; LASTSCREEN[grp]=v;
+  NAVGROUPS.forEach(g=>{var el=document.getElementById('nav-'+g[0]); if(el) el.classList.toggle('active',g[0]===grp);});
+  render(); window.scrollTo(0,0);
+}
+function goGroup(grp){ go(LASTSCREEN[grp] || (NAVGROUPS.find(g=>g[0]===grp)||[])[2][0] || 'hoy'); }
+function subTabsHTML(){
+  const grp=SCREENGROUP[CURRENT]; const g=NAVGROUPS.find(x=>x[0]===grp);
+  if(!g || g[2].length<2) return '';
+  return `<div class="subseg">`+g[2].map(s=>`<button class="${s===CURRENT?'on':''}" onclick="go('${s}')">${SUBLABEL[s]}</button>`).join('')+`</div>`;
+}
 
 function render(){
   try{var gd=document.getElementById('gearDot'); if(gd)gd.classList.toggle('hide',!backupOverdue());}catch(e){}
-  if(CURRENT==='resumen') renderResumen();
+  if(CURRENT==='hoy') renderHoy();
+  else if(CURRENT==='resumen') renderResumen();
   else if(CURRENT==='graficos') renderGraficos();
   else if(CURRENT==='movimientos') renderMovs();
   else if(CURRENT==='reportes') renderReportes();
@@ -1329,6 +1383,46 @@ function render(){
   else if(CURRENT==='citas') renderCitas();
   else if(CURRENT==='coaching') renderCoaching();
   else renderAjustes();
+  try{ const bar=subTabsHTML(); if(bar) document.getElementById('view').insertAdjacentHTML('afterbegin',bar); }catch(e){}
+}
+
+/* ---------- Vista HOY (centro de mando) ---------- */
+function renderHoy(){
+  const today=new Date(); const todayISO=today.toISOString().slice(0,10); const mk=todayISO.slice(0,7);
+  const cobrado=DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk).reduce((a,m)=>a+crc(m),0);
+  const nOps=DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk).length;
+  const esperado=PIPE.filter(p=>!isVencido(p)&&(p.meses||1)===1).reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0);
+  const citasHoy=CITAS.filter(c=>c.fecha===todayISO).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const segs=CITAS.filter(c=>c.estado==='espera'||c.estado==='poragendar').map(c=>({c,d:daysSince(c.fecha||c.ingreso)||0})).sort((a,b)=>b.d-a.d);
+  const sinCita=PIPE.filter(p=>!isVencido(p)&&(p.prob??100)>=75&&p.coloc!=='colega'&&!CITAS.some(c=>c.lid===p.id&&CITA_VIVAS.indexOf(c.estado)>=0));
+  const avisos=DATA.filter(m=>vencBucket(m)==='rojo').map(m=>({m,d:Math.round((new Date(m.alquiler.vencimiento+'T00:00:00')-new Date(todayISO+'T00:00:00'))/86400000)})).sort((a,b)=>a.d-b.d);
+  const cierres=PIPE.filter(p=>!isVencido(p)&&(p.prob??100)>=75).sort((a,b)=>crc(b)-crc(a));
+  const dname=today.toLocaleDateString('es-CR',{weekday:'long'});
+  const dfull=today.toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric'});
+  const row=(dot,title,sub,right)=>`<div class="hrow"><span class="hdot" style="background:${dot}"></span><div class="hrmain"><div class="hrtitle">${title}</div>${sub?`<div class="hrsub">${sub}</div>`:''}</div>${right?`<div class="hrright">${right}</div>`:''}</div>`;
+  const sdot=c=>c==='g'?'#15805A':c==='r'?'#C75A3C':'#C99A33';
+  // Prioridades
+  const prio=[];
+  if(citasHoy[0]) prio.push(['Confirmá la <b>cita de las '+(citasHoy[0].hora||'hoy')+'</b>'+(citasHoy[0].cliente?' con '+citasHoy[0].cliente:''),'cita hoy']);
+  if(segs[0]&&segs[0].d>=5) prio.push(['Llamá a <b>'+(segs[0].c.propiedad||'un prospecto')+'</b> — '+segs[0].d+' días sin avanzar','negocio vivo enfriándose']);
+  if(avisos[0]) prio.push(['Enviá aviso de vencimiento a <b>'+(avisos[0].m.propiedad||'un contrato')+'</b>',avisos[0].d<0?'vencido':'dentro de la ventana legal']);
+  if(sinCita[0]&&prio.length<3) prio.push(['Agendá cita para <b>'+(sinCita[0].propiedad||sinCita[0].concepto)+'</b>','alta probabilidad sin próxima cita']);
+  if(cierres[0]&&prio.length<3) prio.push(['Empujá el cierre de <b>'+(cierres[0].propiedad||cierres[0].concepto)+'</b>','probable cierre este mes']);
+  while(prio.length<3) prio.push(['Registrá tus movimientos del día','mantén tus cifras al día']);
+  const hasAny=citasHoy.length||segs.length||avisos.length||cierres.length;
+  document.getElementById('view').innerHTML=`
+   <div class="hoyhead"><div><h2 class="scr-title">Hoy</h2><p class="scr-sub">Qué hacer, en 10 segundos</p></div><div class="hoydate">${dname}<br>${dfull}</div></div>
+   <div class="hmoney">
+     <div class="hmc"><div class="hk"><span class="hmdot" style="background:var(--ingreso)"></span>Cobrado · este mes</div><div class="hv" style="color:var(--ingreso)">${fmtCRC(cobrado)}</div><div class="hsub">${nOps} ${nOps===1?'operación':'operaciones'}</div></div>
+     <div class="hmc"><div class="hk"><span class="hmdot" style="background:var(--navy,#1C3D60)"></span>Esperado · próx. mes</div><div class="hv" style="color:var(--paper)">${fmtCRC(esperado)}</div><div class="hsub">pipeline ponderado a 1 mes</div></div>
+   </div>
+   ${citasHoy.length?`<div class="hsec">Citas de hoy <span class="hcnt">${citasHoy.length}</span></div>`+citasHoy.map(c=>row('#C99A33',c.propiedad||'(Sin propiedad)',c.cliente||'',`<span class="htime">${c.hora||'—'}</span>`)).join(''):''}
+   ${segs.length?`<div class="hsec">Seguimientos pendientes <span class="hcnt">${segs.length}</span></div>`+segs.slice(0,4).map(o=>row(sdot(CITA_COL[o.c.estado]),o.c.propiedad||'(Sin propiedad)',CITA_LBL[o.c.estado],`<span class="hchip y">${o.d} días</span>`)).join(''):''}
+   ${avisos.length?`<div class="hsec warn">Contratos · ventana de aviso <span class="hcnt">${avisos.length}</span></div>`+avisos.map(o=>row('#C75A3C',o.m.propiedad||'(Sin propiedad)','Vence '+fmtFecha(o.m.alquiler.vencimiento),`<span class="hchip r">${o.d<0?'vencido':o.d+' días'}</span>`)).join(''):''}
+   ${cierres.length?`<div class="hsec gold">Probable cierre este mes <span class="hcnt">${cierres.length}</span></div>`+cierres.slice(0,4).map(p=>row('#15805A',p.propiedad||p.concepto,(/alquiler/i.test(p.concepto)?'Alquiler':'Venta')+' · '+(p.prob??100)+'%',`<span style="color:var(--ingreso);font-weight:700">${fmtC(crc(p))}</span>`)).join(''):''}
+   ${!hasAny?`<div class="empty"><div class="big">◈</div>Sin pendientes para hoy.<br>Agregá citas, pipeline o alquileres y acá verás tu día de un vistazo.</div>`:''}
+   <div class="hprio"><h3>✦ Tus 3 prioridades</h3>${prio.slice(0,3).map((p,i)=>`<div class="hptask"><div class="hpn">${i+1}</div><div><div class="hpt">${p[0]}</div><div class="hpwhy">${p[1]}</div></div></div>`).join('')}</div>
+  `;
 }
 
 /* ---------- Vista RESUMEN ---------- */
@@ -2586,7 +2680,7 @@ const PROBS=[25,50,75,90,100];
 let pEditId=null,pMon='CRC',pProb=75,pMeses=1,pColoc='propia';
 function pSetColoc(c){pColoc=c; document.querySelectorAll('#pSegColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('pColocHint'); if(h){const t=c==='colega'?'Propiedad de un colega: ingresá SOLO tu 50% esperado.':c==='comp'?'Tu portafolio con otro corredor: ingresá la comisión completa esperada.':''; h.textContent=t; h.classList.toggle('hide',!t);}}
 
-function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else openForm(); }
+function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else if(CURRENT==='citas') openCita(); else openForm(); }
 
 /* helpers de pipeline */
 const PIPE_TO_CAT={'Comisión por venta':'Comisión por venta de propiedad','Comisión por alquiler':'Comisión por alquiler de propiedad','Comisión por referido':'Comisión por referido','Otro':'Otro ingreso'};
