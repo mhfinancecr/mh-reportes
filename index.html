@@ -533,9 +533,8 @@
   .hmc .hv{font-family:'Newsreader',serif;font-size:21px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums;line-height:1.05}
   .hmc .hsub{font-size:10px;color:var(--muted);margin-top:3px}
   .hsec{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:18px 2px 9px;display:flex;align-items:center;gap:8px}
-  .hsec .hcnt{background:var(--navy,#1C3D60);color:#fff;border-radius:999px;font-size:10px;padding:1px 8px;font-weight:800}
-  html[data-theme="dark"] .hsec .hcnt{background:var(--gold);color:#1a1205}
-  .hsec.warn .hcnt{background:#C75A3C;color:#fff} .hsec.gold .hcnt{background:var(--gold);color:#1a1205}
+  .hsec .hcnt{background:#1C3D60;color:#fff;border-radius:999px;font-size:10px;padding:1px 8px;font-weight:800}
+  .hsec.warn .hcnt{background:#C75A3C;color:#fff} .hsec.gold .hcnt{background:#15805A;color:#fff}
   .hrow{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px}
   .hdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
   .hrmain{flex:1;min-width:0}
@@ -554,6 +553,25 @@
   .hpt{font-size:12.5px;line-height:1.4}
   .hpt b{color:#F2D79A}
   .hpwhy{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+  /* MANUAL embebido */
+  .mdoc{font-size:13px;line-height:1.55;color:var(--paper)}
+  .mh1{font-family:'Newsreader',serif;font-size:26px;font-weight:600;color:var(--paper);line-height:1.1}
+  .msub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin:5px 0 8px}
+  .mdoc .mh2{font-family:'Newsreader',serif;font-size:17px;font-weight:600;color:var(--paper);margin:22px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+  .mdoc .mh2 span{color:var(--gold);margin-right:5px}
+  .mdoc p{margin-bottom:8px;text-wrap:pretty}
+  .mdoc b{color:var(--paper)}
+  .mtbl{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:12.5px}
+  .mtbl td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--muted)}
+  .mtbl td:first-child{font-weight:700;color:var(--paper);white-space:nowrap;width:90px}
+  .mf{background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 13px;margin:7px 0;font-size:12.5px;color:var(--paper)}
+  .mf code{font-family:inherit;font-weight:700;color:var(--gold)}
+  .mul{margin:4px 0 10px 18px}
+  .mul li{margin-bottom:6px;text-wrap:pretty;color:var(--paper)}
+  .mok{color:var(--ingreso);font-weight:700}
+  .mno{color:var(--gasto);font-weight:700}
+  .mtip{border-left:3px solid var(--gold);background:var(--gold-soft);padding:9px 13px;border-radius:0 9px 9px 0;margin:10px 0;font-size:12.5px;color:var(--paper)}
+  html[data-theme="dark"] .mtip{background:rgba(185,138,47,.12)}
   /* COACHING */
   .cnudge{background:var(--gold-soft);border:1px solid rgba(185,138,47,.3);border-radius:11px;padding:11px 14px;font-size:12.5px;color:#7A5C1E;margin-bottom:10px}
   html[data-theme="dark"] .cnudge{background:rgba(185,138,47,.12);color:#E8C27A}
@@ -1353,9 +1371,9 @@ const NAVGROUPS=[
   ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes']],
   ['negocio','Negocio',['pipeline','citas']],
   ['alquileres','Alquileres',['alquileres']],
-  ['mas','Más',['coaching','ajustes']]
+  ['mas','Más',['coaching','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',ajustes:'Ajustes'};
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1382,6 +1400,7 @@ function render(){
   else if(CURRENT==='pipeline') renderPipeline();
   else if(CURRENT==='citas') renderCitas();
   else if(CURRENT==='coaching') renderCoaching();
+  else if(CURRENT==='manual') renderManual();
   else renderAjustes();
   try{ const bar=subTabsHTML(); if(bar) document.getElementById('view').insertAdjacentHTML('afterbegin',bar); }catch(e){}
 }
@@ -1417,9 +1436,9 @@ function renderHoy(){
      <div class="hmc"><div class="hk"><span class="hmdot" style="background:var(--navy,#1C3D60)"></span>Esperado · próx. mes</div><div class="hv" style="color:var(--paper)">${fmtCRC(esperado)}</div><div class="hsub">pipeline ponderado a 1 mes</div></div>
    </div>
    ${citasHoy.length?`<div class="hsec">Citas de hoy <span class="hcnt">${citasHoy.length}</span></div>`+citasHoy.map(c=>row('#C99A33',c.propiedad||'(Sin propiedad)',c.cliente||'',`<span class="htime">${c.hora||'—'}</span>`)).join(''):''}
-   ${segs.length?`<div class="hsec">Seguimientos pendientes <span class="hcnt">${segs.length}</span></div>`+segs.slice(0,4).map(o=>row(sdot(CITA_COL[o.c.estado]),o.c.propiedad||'(Sin propiedad)',CITA_LBL[o.c.estado],`<span class="hchip y">${o.d} días</span>`)).join(''):''}
+   ${segs.length?`<div class="hsec">Seguimientos pendientes <span class="hcnt">${segs.length}</span></div>`+segs.map(o=>row(sdot(CITA_COL[o.c.estado]),o.c.propiedad||'(Sin propiedad)',CITA_LBL[o.c.estado],`<span class="hchip y">${o.d} días</span>`)).join(''):''}
    ${avisos.length?`<div class="hsec warn">Contratos · ventana de aviso <span class="hcnt">${avisos.length}</span></div>`+avisos.map(o=>row('#C75A3C',o.m.propiedad||'(Sin propiedad)','Vence '+fmtFecha(o.m.alquiler.vencimiento),`<span class="hchip r">${o.d<0?'vencido':o.d+' días'}</span>`)).join(''):''}
-   ${cierres.length?`<div class="hsec gold">Probable cierre este mes <span class="hcnt">${cierres.length}</span></div>`+cierres.slice(0,4).map(p=>row('#15805A',p.propiedad||p.concepto,(/alquiler/i.test(p.concepto)?'Alquiler':'Venta')+' · '+(p.prob??100)+'%',`<span style="color:var(--ingreso);font-weight:700">${fmtC(crc(p))}</span>`)).join(''):''}
+   ${cierres.length?`<div class="hsec gold">Probable cierre este mes <span class="hcnt">${cierres.length}</span></div>`+cierres.map(p=>row('#15805A',p.propiedad||p.concepto,(/alquiler/i.test(p.concepto)?'Alquiler':'Venta')+' · '+(p.prob??100)+'%',`<span style="color:var(--ingreso);font-weight:700">${fmtC(crc(p))}</span>`)).join(''):''}
    ${!hasAny?`<div class="empty"><div class="big">◈</div>Sin pendientes para hoy.<br>Agregá citas, pipeline o alquileres y acá verás tu día de un vistazo.</div>`:''}
    <div class="hprio"><h3>✦ Tus 3 prioridades</h3>${prio.slice(0,3).map((p,i)=>`<div class="hptask"><div class="hpn">${i+1}</div><div><div class="hpt">${p[0]}</div><div class="hpwhy">${p[1]}</div></div></div>`).join('')}</div>
   `;
@@ -2681,6 +2700,108 @@ let pEditId=null,pMon='CRC',pProb=75,pMeses=1,pColoc='propia';
 function pSetColoc(c){pColoc=c; document.querySelectorAll('#pSegColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('pColocHint'); if(h){const t=c==='colega'?'Propiedad de un colega: ingresá SOLO tu 50% esperado.':c==='comp'?'Tu portafolio con otro corredor: ingresá la comisión completa esperada.':''; h.textContent=t; h.classList.toggle('hide',!t);}}
 
 function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else if(CURRENT==='citas') openCita(); else openForm(); }
+
+/* ---------- Vista MANUAL (embebido) ---------- */
+function renderManual(){
+  document.getElementById('view').innerHTML=`
+   <div class="mdoc">
+    <div class="mh1">Manual de uso</div>
+    <div class="msub">MH Finance Costa Rica · Gestión de negocios</div>
+
+    <div class="mh2"><span>1.</span> Navegación: 5 grupos</div>
+    <p>La barra inferior tiene <b>5 botones</b>. Los que agrupan varias pantallas muestran un <b>control segmentado</b> arriba para cambiar entre ellas.</p>
+    <table class="mtbl">
+      <tr><td>◈ Hoy</td><td>Centro de mando del día. Es la pantalla de inicio.</td></tr>
+      <tr><td>₡ Finanzas</td><td><b>Resumen</b> · <b>Gráficos</b> · <b>Movim.</b> · <b>Reportes</b>.</td></tr>
+      <tr><td>⇗ Negocio</td><td><b>Pipeline</b> · <b>Citas</b>. No afectan las cifras reales.</td></tr>
+      <tr><td>⌂ Alquil.</td><td>Contratos: estado, vencimientos, día de pago, IPC, ficha PDF, recibo.</td></tr>
+      <tr><td>⋯ Más</td><td><b>Coaching</b> · <b>Ajustes</b> · <b>Manual</b>. El engranaje ⚙︎ también abre Ajustes.</td></tr>
+    </table>
+    <p>El botón <b>＋ Nuevo</b> crea una transacción desde cualquier pantalla (en Pipeline agrega al pipeline, en Citas agenda una cita). El <b>tema automático</b> usa modo oscuro de 6 pm a 6 am y claro de día.</p>
+
+    <div class="mh2"><span>2.</span> Hoy (centro de mando)</div>
+    <p>La pantalla de inicio. <b>No guarda nada nuevo</b>: lee y prioriza lo que ya está en las otras pantallas.</p>
+    <ul class="mul">
+      <li><b>Cobrado · este mes</b> y <b>Esperado · próx. mes</b> (pipeline ponderado a 1 mes).</li>
+      <li><b>Citas de hoy</b> · <b>Seguimientos pendientes</b> · <b>Contratos en ventana de aviso</b> (3 meses legales) · <b>Probable cierre este mes</b> (prob ≥75%).</li>
+      <li><b>Tus 3 prioridades:</b> las tres acciones más urgentes, armadas solas.</li>
+    </ul>
+
+    <div class="mh2"><span>3.</span> Cómo ingresar un cierre</div>
+    <ul class="mul">
+      <li><b>Propiedad:</b> escribí <u>siempre el mismo nombre exacto</u> — liga el ingreso con sus gastos, la ficha y el historial.</li>
+      <li><b>Monto:</b> la comisión <b>NETA</b> (sin IVA). En USD revisá el tipo de cambio.</li>
+      <li><b>Colocación:</b> <i>Propia · solo</i> · <i>Propia · 50/50</i> · <i>De colega</i>. En 50/50 y colega indicá el <b>corredor</b>.</li>
+      <li><b>Comisión al colega:</b> se precarga al 50% — editala si el acuerdo es otro. Al guardar crea el gasto solo.</li>
+      <li><b>Facturado:</b> la app calcula el IVA (13% del neto), lo suma al ingreso (bruto) y crea el gasto de IVA.</li>
+      <li><b>Referido:</b> nombre y monto — crea el gasto en "Pago de comisiones por referidos".</li>
+      <li><b>Cobro:</b> <i>Cobrado</i> entra ya; <i>Por cobrar</i> queda en espera sin sumar hasta marcarlo cobrado.</li>
+    </ul>
+    <div class="mtip"><b class="mno">No digités a mano</b> los gastos de IVA, comisión a colega o referido de un cierre: la app los crea sola. Hacerlo manual los duplicaría.</div>
+    <p><b>Para corregir montos:</b> editá la <b>ficha del ingreso</b> y los gastos automáticos se actualizan solos — o editá el gasto individual y se refleja de vuelta. Sin duplicar.</p>
+
+    <div class="mh2"><span>4.</span> Lógica de cálculo</div>
+    <div class="mf"><code>Monto en ₡</code> = monto × tipo de cambio (si es USD)</div>
+    <div class="mf"><code>Ingreso bruto</code> = comisión neta + IVA 13% (solo si facturado)</div>
+    <div class="mf"><code>Gastos</code> = comisiones a colegas + referidos + otros (IVA, legales, mantenimiento, cashback)</div>
+    <div class="mf"><code>Saldo</code> = Ingresos − Gastos + ajuste de IVA declarado</div>
+    <ul class="mul">
+      <li><b>Ajuste de IVA:</b> al final del mes digitá el IVA realmente pagado a Hacienda; la diferencia <u>solo corrige el saldo</u>. Dejá el mes <b>vacío</b> si aún no declarás; <b>0</b> solo si declaraste en cero.</li>
+      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Color térmico: <span class="mok">verde ≥95%</span>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
+    </ul>
+
+    <div class="mh2"><span>5.</span> Alquileres</div>
+    <ul class="mul">
+      <li>Un ingreso de categoría <b>alquiler</b> habilita el contrato: inicio, vencimiento, día de pago, estado, cuota, datos de <b>propietario e inquilino</b> (con cédula) e IBAN.</li>
+      <li><b>Ficha PDF:</b> contrato, cuota, cédulas, IBAN, aumento por IPC, fotos de inspección (6 por página) y checklist. Solo para tu portafolio (no en "De colega").</li>
+      <li><b>Vencimientos:</b> semáforo según la ventana legal de aviso de 3 meses + botón para agregar a tu Calendario de Apple.</li>
+      <li>Buscá por propiedad, propietario o inquilino; filtrá por mes/año. El portafolio muestra vigentes, desocupadas y reparto colones/dólares.</li>
+    </ul>
+
+    <div class="mh2"><span>6.</span> Pipeline (proyección)</div>
+    <ul class="mul">
+      <li>Cada negocio en proceso con su comisión y plazo (1/2/3 meses). Suma solo en su casilla de plazo.</li>
+      <li><b>Fecha de ingreso editable</b> · <b>⏱ días en gestión</b> en cada ficha · a los 3 meses pasa a <b>Vencido</b>.</li>
+      <li><b>Cerrado:</b> se traslada solo a tus cifras reales (con deshacer). <b>Perdido:</b> al histórico (con devolver).</li>
+    </ul>
+    <div class="mf"><code>% de cierre</code> = cerrados ÷ (cerrados + perdidos) · cuenta negocios</div>
+    <div class="mf"><code>Efectividad (₡)</code> = ₡ cerrados ÷ (₡ cerrados + ₡ perdidos) · pesa colones</div>
+    <div class="mtip">«% de cierre» cuenta negocios; «Efectividad» pesa colones. Si cerrás chicos y perdés uno grande, el % puede ser alto y la efectividad baja.</div>
+
+    <div class="mh2"><span>7.</span> Citas (seguimiento comercial)</div>
+    <p>Visitas de tu <b>portafolio propio</b>, dentro del grupo <b>Negocio</b>. No toca cifras reales.</p>
+    <ul class="mul">
+      <li><b>Crear:</b> desde el pipeline (“📅 Agendar cita”, queda ligada) o suelta con “＋ Nueva cita”.</li>
+      <li><b>Semáforo:</b> <span class="mok">verde</span>=cerró · <b style="color:#9A6B1E">amarillo</b>=viva (agendada/en espera/por agendar) · <span class="mno">rojo</span>=no concretó.</li>
+      <li><b>Al cerrar en pipeline</b> elegís cuál cita lo cerró; las demás pasan a "cerrado antes". Si perdés, pasan a "no continúa".</li>
+    </ul>
+    <div class="mf"><code>Efectividad de citas</code> = cierres ÷ (cierres + visitas efectuadas sin cierre)</div>
+    <p style="font-size:12px;color:var(--muted)">No cuentan canceladas, no-show, rechazos de perfil ni las vivas. <b>Reporte de gestión PDF</b> por propiedad para demostrarle al propietario tu trabajo.</p>
+
+    <div class="mh2"><span>8.</span> Reportes</div>
+    <ul class="mul">
+      <li>Elegí período y <b>Generar PDF</b>: tarjetas, evolución, tabla por mes, colocación, facturación, corredores, IVA, movimientos y contratos.</li>
+      <li><b>Comparativos:</b> vs. año anterior o A vs B (libre). El <b>CSV</b> exporta todo para Excel.</li>
+    </ul>
+
+    <div class="mh2"><span>9.</span> Respaldo y sincronización</div>
+    <ul class="mul">
+      <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
+      <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
+      <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
+    </ul>
+
+    <div class="mh2"><span>10.</span> Reglas de oro</div>
+    <ul class="mul">
+      <li><span class="mok">✓</span> Mismo nombre exacto de propiedad en todo un cierre.</li>
+      <li><span class="mok">✓</span> Comisión siempre NETA; el IVA lo agrega la app.</li>
+      <li><span class="mok">✓</span> Corregí montos en la ficha del ingreso (sincroniza solo).</li>
+      <li><span class="mok">✓</span> Respaldá tras cada sesión e importá en tus otros dispositivos.</li>
+      <li><span class="mno">✗</span> No dupliqués gastos que la app genera sola.</li>
+      <li><span class="mno">✗</span> No pongás 0 en "IVA pagado" de un mes sin declarar — dejalo vacío.</li>
+    </ul>
+   </div>`;
+}
 
 /* helpers de pipeline */
 const PIPE_TO_CAT={'Comisión por venta':'Comisión por venta de propiedad','Comisión por alquiler':'Comisión por alquiler de propiedad','Comisión por referido':'Comisión por referido','Otro':'Otro ingreso'};
