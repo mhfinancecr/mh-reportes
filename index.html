@@ -472,6 +472,15 @@
   .scr-title{font-family:'Newsreader',serif;font-size:23px;font-weight:600;color:var(--paper);line-height:1.1}
   .scr-sub{font-size:12px;color:var(--muted);margin-top:2px}
   .citacards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0 10px}
+  .citatop{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin:12px 0 10px}
+  .citatop .citacards{grid-template-columns:repeat(2,minmax(0,1fr));margin:0;flex:1}
+  .cdonutwrap{display:flex;flex-direction:column;align-items:center;gap:7px;flex:0 0 auto}
+  .cdonut{width:96px;height:96px;transform:rotate(-90deg)}
+  .cdonut .cdtext{transform:rotate(90deg);transform-origin:21px 21px;font-size:11px;font-weight:800;fill:var(--paper);text-anchor:middle;dominant-baseline:central;font-family:'Plus Jakarta Sans',sans-serif}
+  .cdleg{display:flex;flex-direction:column;gap:3px}
+  .cdleg span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .cdleg i{width:8px;height:8px;border-radius:2px;display:inline-block;flex:0 0 auto}
+  @media(max-width:480px){.citatop{grid-template-columns:1fr;justify-items:center}.citatop .cdleg{flex-direction:row;gap:12px}.citatop .citacards{width:100%}}
   .ccard{border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;background:var(--surface)}
   .ccard .cv{font-family:'Newsreader',serif;font-size:25px;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums}
   .ccard .ck{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
@@ -498,6 +507,8 @@
   .citabtn{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-top:1px solid var(--line);padding:10px;font-size:12.5px;font-weight:600;color:var(--navy,#1C3D60);background:transparent;width:100%;border-radius:0 0 var(--radius) var(--radius);cursor:pointer}
   html[data-theme="dark"] .citabtn{color:var(--paper)}
   .citabtn:hover{background:var(--gold-soft)}
+  .estfilter{margin:0 0 12px}
+  .estfilter select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--paper);font-size:13px;font-weight:600;font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238A8575' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
   /* Bloque de alquiler en formulario */
   .rentblock{border:1px solid var(--line);border-radius:12px;padding:13px 13px 11px;margin-bottom:14px;background:var(--gold-soft)}
   .rentblock.hide{display:none}
@@ -2710,31 +2721,52 @@ const CITA_ESTADOS=[
  ['nocontinua','Cliente no continúa','r'],
  ['rechazopost','Perfil rechazado — posterior a la cita','r'],
  ['rechazopre','Perfil rechazado — sin coordinar cita','r'],
- ['cerradoantes','Negocio cerrado antes de concretar','r']
+ ['cerradoantes','No prosperó · cerré con otro cliente','r']
 ];
 const CITA_LBL={}, CITA_COL={};
 CITA_ESTADOS.forEach(([k,l,c])=>{CITA_LBL[k]=l;CITA_COL[k]=c;});
 const CITA_VIVAS=['agendada','espera','poragendar'];
+const CITA_EFECTUADAS=['cerro','espera','nocontinua','rechazopost'];  // la visita SÍ se realizó
 function citaStats(list){
   list=list||CITAS;
   const cierres=list.filter(c=>c.estado==='cerro').length;
   const vivas=list.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0).length;
   const rojas=list.filter(c=>CITA_COL[c.estado]==='r').length;
-  const noCont=list.filter(c=>c.estado==='nocontinua').length;   // cita efectuada, resuelta sin cierre
-  const conResultado=cierres+noCont;                              // base de efectividad
-  const efec=conResultado>0?Math.round(cierres/conResultado*100):null;
-  return {total:list.length,cierres,vivas,rojas,noCont,conResultado,efec};
+  const noCont=list.filter(c=>c.estado==='nocontinua').length;
+  const efectuadas=list.filter(c=>CITA_EFECTUADAS.indexOf(c.estado)>=0).length;  // base de efectividad: citas realizadas
+  const efec=efectuadas>0?Math.round(cierres/efectuadas*100):null;
+  return {total:list.length,cierres,vivas,rojas,noCont,efectuadas,conResultado:efectuadas,efec};
 }
-let CITAS_TIPO='todos', CITAS_Q='';
+let CITAS_TIPO='todos', CITAS_Q='', CITAS_EST='todos';
 function setCitasTipo(t){CITAS_TIPO=t;renderCitas();}
+function setCitasEst(e){CITAS_EST=e;renderCitas();}
 function citasSearch(v){CITAS_Q=(v||'').toLowerCase().trim();renderCitas();}
 function citaDate(c){ return c.fecha || c.ingreso || ''; }
+function citaDonut(g,y,r){
+  const tot=g+y+r;
+  if(!tot) return `<svg viewBox="0 0 42 42" class="cdonut"><circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--line)" stroke-width="7"></circle></svg>`;
+  const segs=[['#15805A',g],['#C99A33',y],['#C75A3C',r]];
+  let off=25; // empieza arriba
+  let arcs='';
+  segs.forEach(([col,val])=>{
+    if(!val) return;
+    const pct=val/tot*100;
+    arcs+=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${col}" stroke-width="7" stroke-dasharray="${pct.toFixed(2)} ${(100-pct).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"></circle>`;
+    off=(off-pct+100)%100;
+  });
+  return `<svg viewBox="0 0 42 42" class="cdonut">${arcs}<text x="21" y="21" class="cdtext">${tot}</text></svg>`;
+}
 function citasInPeriod(list,desde,hasta){ return list.filter(c=>{ const d=citaDate(c); if(!d) return false; const k=d.slice(0,7); return k>=desde && k<=hasta; }); }
 function citasShiftYear(ym,n){ const p=ym.split('-'); return (+p[0]+n)+'-'+p[1]; }
 function citasPerLabel(desde,hasta){ return desde===hasta?fmtMesAno(desde):fmtMesAno(desde)+' – '+fmtMesAno(hasta); }
 function citasFiltered(){
   let l=citasInPeriod(CITAS,PER.desde,PER.hasta);
   if(CITAS_TIPO!=='todos') l=l.filter(c=>c.tipo===CITAS_TIPO);
+  if(CITAS_EST!=='todos'){
+    if(CITAS_EST==='_vivas') l=l.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0);
+    else if(CITAS_EST==='_g'||CITAS_EST==='_y'||CITAS_EST==='_r') l=l.filter(c=>CITA_COL[c.estado]===CITAS_EST.slice(1));
+    else l=l.filter(c=>c.estado===CITAS_EST);
+  }
   if(CITAS_Q) l=l.filter(c=>((c.propiedad||'')+' '+(c.cliente||'')).toLowerCase().indexOf(CITAS_Q)>=0);
   l.sort((a,b)=>(b.fecha||b.ingreso||'').localeCompare(a.fecha||a.ingreso||''));
   return l;
@@ -2789,14 +2821,17 @@ function renderCitas(){
     </div>
     <button class="addpipe" onclick="openCita()">＋  Nueva cita</button>
     ${periodBarHTML()}
-    <div class="citacards">
-      <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
-      <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
-      <div class="ccard y"><div class="cv">${s.vivas}</div><div class="ck">Vivas / en proceso</div></div>
-      <div class="ccard r"><div class="cv">${s.rojas}</div><div class="ck">No concretaron</div></div>
+    <div class="citatop">
+      <div class="cdonutwrap">${citaDonut(s.cierres,s.vivas,s.rojas)}<div class="cdleg"><span><i style="background:#15805A"></i>Cerró</span><span><i style="background:#C99A33"></i>Vivas</span><span><i style="background:#C75A3C"></i>No concretó</span></div></div>
+      <div class="citacards">
+        <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
+        <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
+        <div class="ccard y"><div class="cv">${s.vivas}</div><div class="ck">Vivas / en proceso</div></div>
+        <div class="ccard r"><div class="cv">${s.rojas}</div><div class="ck">No concretaron</div></div>
+      </div>
     </div>
     <div class="efeccita">
-      <div><div class="ef-k">Efectividad de citas</div><div class="ef-v">${s.efec!==null?s.efec+'%':'—'}</div><div class="ef-d">${s.conResultado?`${s.cierres} ${s.cierres===1?'cierre':'cierres'} de ${s.conResultado} citas con resultado`:'se calcula al cerrar o descartar visitas concretadas'}</div></div>
+      <div><div class="ef-k">Efectividad de citas</div><div class="ef-v">${s.efec!==null?s.efec+'%':'—'}</div><div class="ef-d">${s.efectuadas?`${s.cierres} ${s.cierres===1?'cierre':'cierres'} de ${s.efectuadas} ${s.efectuadas===1?'visita realizada':'visitas realizadas'}`:'se calcula sobre las visitas efectuadas'}</div></div>
     </div>
     <label class="cmptoggle" style="margin-bottom:10px"><input type="checkbox" ${cmpOn?'checked':''} onchange="toggleCitasCmp(this.checked)"> Comparar con el mismo período del año anterior</label>
     ${cmpBlock}
@@ -2805,6 +2840,19 @@ function renderCitas(){
       <div class="rentchips">
         ${[['todos','Todas'],['venta','Ventas'],['alquiler','Alquileres']].map(([k,l])=>`<button class="${CITAS_TIPO===k?'on':''}" onclick="setCitasTipo('${k}')">${l}</button>`).join('')}
       </div>
+    </div>
+    <div class="estfilter">
+      <select onchange="setCitasEst(this.value)">
+        <option value="todos"${CITAS_EST==='todos'?' selected':''}>Todos los estados</option>
+        <optgroup label="— Atajos por semáforo —">
+          <option value="_g"${CITAS_EST==='_g'?' selected':''}>🟢 Cerró negocio</option>
+          <option value="_y"${CITAS_EST==='_y'?' selected':''}>🟡 Vivas / en proceso (todas)</option>
+          <option value="_r"${CITAS_EST==='_r'?' selected':''}>🔴 No concretaron (todas)</option>
+        </optgroup>
+        <optgroup label="— Estado específico —">
+          ${CITA_ESTADOS.map(([k,l,c])=>`<option value="${k}"${CITAS_EST===k?' selected':''}>${c==='g'?'🟢':c==='y'?'🟡':'🔴'} ${l}</option>`).join('')}
+        </optgroup>
+      </select>
     </div>
     ${list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin citas en este período o búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`}
     ${repBtns}
