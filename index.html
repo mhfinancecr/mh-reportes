@@ -497,6 +497,7 @@
   .cita-prop{font-weight:700;color:var(--paper);font-size:14px}
   .cita-tipo{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:5px;padding:1px 6px;margin-left:4px;text-transform:uppercase;letter-spacing:.04em}
   .cita-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .cita-motivo{font-size:11.5px;color:var(--gasto);margin-top:4px;font-style:italic;line-height:1.4}
   .citachip{font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;text-align:center}
   .citachip.g{background:rgba(21,128,90,.15);color:var(--ingreso)} .citachip.y{background:rgba(201,154,51,.18);color:var(--gold)} .citachip.r{background:rgba(199,90,60,.15);color:var(--gasto)}
   .cita-r{flex:0 0 auto;max-width:42%}
@@ -1081,8 +1082,10 @@
       <div class="formrow"><label>Fecha de la cita</label><button type="button" class="wheelfield" id="citaFecBtn" onclick="pickCitaFec()">Elegir fecha</button></div>
       <div class="formrow"><label>Hora</label><button type="button" class="wheelfield" id="citaHorBtn" onclick="pickCitaHor()">Elegir hora</button></div>
     </div>
-    <div class="formrow"><label>Estado</label><select id="citaEstado"></select></div>
-    <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:-2px 0 14px">🟢 verde = cerró · 🟡 amarillo = viva / en proceso · 🔴 rojo = no concretó. Las citas son seguimiento comercial de tu portafolio propio; no afectan tus cifras reales.</p>
+    <div class="formrow"><label>Estado</label><select id="citaEstado" onchange="citaEstadoChange()"></select></div>
+    <div class="formrow" id="citaMotivoRow" style="display:none"><label id="citaMotivoLbl">Motivo (por qué no continuó)</label><textarea id="citaMotivo" placeholder="Ej: el perfil crediticio no calificó · al cliente no le gustó la ubicación · el propietario no aceptó el perfil…" style="min-height:64px"></textarea></div>
+    <button type="button" class="icsbtn" id="citaIcsBtn" onclick="addCitaToCalendar()" style="display:none">📅 Agregar esta cita al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorio 1 día y 1 hora antes</span></button>
+    <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:10px 0 14px">🟢 verde = cerró · 🟡 amarillo = viva / en proceso · 🔴 rojo = no concretó. Las citas son seguimiento comercial; no afectan tus cifras reales.</p>
     <button class="saveBtn" onclick="saveCita()">Guardar cita</button>
     <button class="delBtn" id="citaDelBtn" style="color:var(--gasto);border-color:var(--line)" onclick="delCita()">Eliminar</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCita()">Cancelar</button>
@@ -3097,6 +3100,7 @@ function citaRow(c){
     <div class="cita-m">
       <div class="cita-prop">${c.propiedad||'(Sin propiedad)'} <span class="cita-tipo">${c.tipo==='alquiler'?'Alquiler':'Venta'}</span></div>
       <div class="cita-sub">${c.cliente?c.cliente+' · ':''}${fec}${hr}${c.lid?' · 🔗 pipeline':''}</div>
+      ${c.motivo?`<div class="cita-motivo">“${c.motivo.replace(/</g,'&lt;')}”</div>`:''}
     </div>
     <div class="cita-r"><span class="citachip ${col}">${CITA_LBL[c.estado]||c.estado}</span></div>
   </div>`;
@@ -3173,6 +3177,7 @@ function openCita(id,pre){
     document.getElementById('citaCli').value=c.cliente||'';
     citaIng=c.ingreso||''; citaFec=c.fecha||''; citaHor=c.hora||'';
     document.getElementById('citaEstado').value=c.estado||'agendada';
+    document.getElementById('citaMotivo').value=c.motivo||'';
     document.getElementById('citaTitle').textContent='Editar cita';
     document.getElementById('citaDelBtn').style.display='';
   } else {
@@ -3181,11 +3186,12 @@ function openCita(id,pre){
     document.getElementById('citaCli').value='';
     citaIng=new Date().toISOString().slice(0,10); citaFec=''; citaHor='';
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
+    document.getElementById('citaMotivo').value='';
     document.getElementById('citaTitle').textContent='Nueva cita';
     document.getElementById('citaDelBtn').style.display='none';
   }
   citaLid=pre.lid||(id?(CITAS.find(x=>x.id===id)||{}).lid:null)||null;
-  updCitaBtns();
+  updCitaBtns(); citaEstadoChange();
   document.getElementById('citaOverlay').classList.add('open');
 }
 let citaLid=null;
@@ -3193,6 +3199,17 @@ function updCitaBtns(){
   document.getElementById('citaIngBtn').textContent=citaIng?fmtFecha(citaIng):'Elegir fecha';
   document.getElementById('citaFecBtn').textContent=citaFec?fmtFecha(citaFec):'Elegir fecha';
   document.getElementById('citaHorBtn').textContent=citaHor?citaHor:'Elegir hora';
+  citaEstadoChange();
+}
+function citaEstadoChange(){
+  const est=document.getElementById('citaEstado').value;
+  const isRed=(CITA_COL[est]==='r');
+  const row=document.getElementById('citaMotivoRow'); if(row) row.style.display=isRed?'':'none';
+  const lbl=document.getElementById('citaMotivoLbl');
+  if(lbl){ lbl.textContent = (est==='rechazopre'||est==='rechazopost') ? 'Motivo del rechazo de perfil' : 'Motivo (por qué no continuó)'; }
+  // El botón de calendario aparece cuando la cita está viva y tiene fecha + hora
+  const ics=document.getElementById('citaIcsBtn');
+  if(ics) ics.style.display=(CITA_VIVAS.indexOf(est)>=0 && citaFec && citaHor)?'':'none';
 }
 function pickCitaIng(){ openDateWheel('Ingreso del prospecto', citaIng, v=>{citaIng=v;updCitaBtns();}); }
 function pickCitaFec(){ openDateWheel('Fecha de la cita', citaFec, v=>{citaFec=v;updCitaBtns();}); }
@@ -3204,9 +3221,38 @@ function saveCita(){
   const rec={ id:citaEditId||Date.now(), lid:citaLid||null, tipo:citaTipo,
     propiedad:prop, cliente:document.getElementById('citaCli').value.trim(),
     ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
-    estado:document.getElementById('citaEstado').value };
-  if(citaEditId){ const i=CITAS.findIndex(x=>x.id===citaEditId); CITAS[i]=rec; } else CITAS.push(rec);
+    estado:document.getElementById('citaEstado').value,
+    motivo:(CITA_COL[document.getElementById('citaEstado').value]==='r')?document.getElementById('citaMotivo').value.trim():'' };
+  if(citaEditId){ const i=CITAS.findIndex(x=>x.id===citaEditId); rec.motivo=rec.motivo||(CITAS[i]||{}).motivo||''; CITAS[i]=rec; } else CITAS.push(rec);
   persist();closeCita();render();toast('✓ Cita guardada');
+}
+function addCitaToCalendar(){
+  if(!citaFec||!citaHor){toast('Poné fecha y hora de la cita');return;}
+  const prop=document.getElementById('citaProp').value.trim()||'Propiedad';
+  const cli=document.getElementById('citaCli').value.trim();
+  const tipo=citaTipo==='alquiler'?'alquiler':'venta';
+  const hm=citaHor.split(':'); const sh=('0'+(hm[0]||'9')).slice(-2), sm=('0'+(hm[1]||'00')).slice(-2);
+  const dt=citaFec.replace(/-/g,'')+'T'+sh+sm+'00';
+  // fin: +1 hora
+  let eh=(parseInt(hm[0]||'9',10)+1); if(eh>23)eh=23; const dtEnd=citaFec.replace(/-/g,'')+'T'+('0'+eh).slice(-2)+sm+'00';
+  const uid='cita-'+Date.now()+'@mhfinance';
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const L=[
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MH Finance//Panel//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+stamp,'DTSTART:'+dt,'DTEND:'+dtEnd,
+    'SUMMARY:Cita '+tipo+' \u00b7 '+prop,
+    'DESCRIPTION:Visita de '+tipo+' \u00b7 '+prop+(cli?' \u00b7 Cliente: '+cli:'')+'. Generado por MH Finance.',
+    (cli?'LOCATION:'+prop:'LOCATION:'+prop),
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Ma\u00f1ana ten\u00e9s cita \u00b7 '+prop,'TRIGGER:-P1D','END:VALARM',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:En 1 hora \u00b7 cita '+prop,'TRIGGER:-PT1H','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  const blob=new Blob([L],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=prop.replace(/[^\w]+/g,'_')+'_cita.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast('📅 Abriendo el evento — tocá «Añadir»');
 }
 function delCita(){
   if(!citaEditId)return;
@@ -3251,7 +3297,7 @@ function reporteGestion(prop){
   const SBG={g:'#E4F3EC',y:'#FBF1DD',r:'#FBE7E1'};
   const rows=cs.map(c=>{
     const col=CITA_COL[c.estado]||'y';
-    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span></td></tr>';
+    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:10px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>';
   }).join('');
   const cerrada=cs.find(c=>c.estado==='cerro');
   const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
