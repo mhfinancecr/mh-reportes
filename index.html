@@ -554,6 +554,25 @@
   .hpt{font-size:12.5px;line-height:1.4}
   .hpt b{color:#F2D79A}
   .hpwhy{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+  /* ASISTENTE */
+  .acard{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+  .acard.open{border-color:var(--gold)}
+  .ahead{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;padding:14px 15px;cursor:pointer;font-family:inherit;text-align:left}
+  .aico{font-size:20px;flex:0 0 auto}
+  .atxt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .atxt b{font-size:14px;color:var(--paper);font-weight:700}
+  .atxt small{font-size:11px;color:var(--muted)}
+  .achev{font-size:18px;color:var(--gold);font-weight:700;flex:0 0 auto}
+  .abody{padding:2px 15px 16px}
+  .afield{margin-bottom:11px}
+  .afield label{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .afield select,.afield textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13px;color:var(--paper);background:var(--surface)}
+  .afield textarea{min-height:90px;resize:vertical}
+  .afield select:focus,.afield textarea:focus{outline:none;border-color:var(--gold)}
+  .amsgbox{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:13px 14px;font-size:13px;line-height:1.55;color:var(--paper);margin-bottom:10px;white-space:normal}
+  .amsgbox b{font-weight:700;color:var(--paper)}
+  .abody .cbtn{margin-bottom:8px}
+  .ahint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px}
   /* MANUAL embebido */
   .mdoc{font-size:13px;line-height:1.55;color:var(--paper)}
   .mh1{font-family:'Newsreader',serif;font-size:26px;font-weight:600;color:var(--paper);line-height:1.1}
@@ -1374,9 +1393,9 @@ const NAVGROUPS=[
   ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes']],
   ['negocio','Negocio',['pipeline','citas']],
   ['alquileres','Alquileres',['alquileres']],
-  ['mas','Más',['coaching','ajustes','manual']]
+  ['mas','Más',['coaching','asistente','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',ajustes:'Ajustes',manual:'Manual'};
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1403,6 +1422,7 @@ function render(){
   else if(CURRENT==='pipeline') renderPipeline();
   else if(CURRENT==='citas') renderCitas();
   else if(CURRENT==='coaching') renderCoaching();
+  else if(CURRENT==='asistente') renderAsistente();
   else if(CURRENT==='manual') renderManual();
   else renderAjustes();
   try{ const bar=subTabsHTML(); if(bar) document.getElementById('view').insertAdjacentHTML('afterbegin',bar); }catch(e){}
@@ -2704,6 +2724,136 @@ function pSetColoc(c){pColoc=c; document.querySelectorAll('#pSegColoc button').f
 
 function fabAdd(){ if(CURRENT==='pipeline') openPipe(); else if(CURRENT==='citas') openCita(); else openForm(); }
 
+/* ====================== ASISTENTE (IA) ====================== */
+let ASIST_TOOL='', ASIST_MSGTYPE='', ASIST_MSGTGT='', ASIST_Q='', ASIST_VCITA='';
+const MSG_TYPES=[
+  ['recordatorio_cita','Recordatorio de cita','cita'],
+  ['seguimiento','Seguimiento post-visita','cita'],
+  ['aviso_venc','Aviso de vencimiento de contrato','contrato'],
+  ['renovacion_ipc','Propuesta de renovación (con aumento IPC)','contrato'],
+  ['recordatorio_pago','Recordatorio de día de pago','contrato']
+];
+function asistContracts(){ return DATA.filter(m=>m.tipo==='ingreso'&&m.alquiler).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')); }
+function fmtCuota(a){ const v=+a.cuota||0; return (cuotaMonOf(a)==='USD'?fmtUSD(v):fmtCRC(v)); }
+function buildMessage(type,obj){
+  const nl='\n';
+  if(type==='recordatorio_cita'){
+    const c=obj; const cli=c.cliente||'estimado(a)';
+    return `Hola ${cli}, un gusto saludarle.${nl}${nl}Le recuerdo nuestra cita para visitar *${c.propiedad}* el ${c.fecha?fmtFecha(c.fecha):'(fecha)'}${c.hora?' a las '+c.hora:''}.${nl}${nl}Cualquier cambio me avisa con gusto. ¡Nos vemos!${nl}${nl}MH Finance Costa Rica`;
+  }
+  if(type==='seguimiento'){
+    const c=obj; const cli=c.cliente||'estimado(a)';
+    return `Hola ${cli}, ¿cómo está?${nl}${nl}Le escribo para dar seguimiento a la visita de *${c.propiedad}*. Me encantaría conocer su impresión y resolver cualquier duda que le haya quedado.${nl}${nl}¿Le interesaría avanzar con el proceso o prefiere que le muestre otras opciones?${nl}${nl}Quedo atento. Saludos,${nl}MH Finance Costa Rica`;
+  }
+  const m=obj, a=m.alquiler||{}, ten=a.tenName||'estimado(a)';
+  if(type==='aviso_venc'){
+    return `Estimado(a) ${ten}, un cordial saludo.${nl}${nl}Le escribo respecto al contrato de alquiler de *${m.propiedad}*, que vence el ${a.vencimiento?fmtFecha(a.vencimiento):'(fecha)'}.${nl}${nl}Conforme a la Ley de Arrendamientos, le notifico con anticipación para coordinar la renovación o las condiciones del siguiente período. Con gusto conversamos cuándo le sea conveniente.${nl}${nl}Saludos cordiales,${nl}MH Finance Costa Rica`;
+  }
+  if(type==='renovacion_ipc'){
+    const ipc=ipcLatest(); const esCRC=cuotaMonOf(a)==='CRC'; const cuota=+a.cuota||0;
+    const nueva = (esCRC&&ipc)? Math.round(cuota*(1+ipc.pct/100)) : cuota;
+    const linea = (esCRC&&ipc)? `Conforme al IPC publicado (${ipc.pct}%), la cuota pasaría de ${fmtCRC(cuota)} a *${fmtCRC(nueva)}* a partir de la renovación.` : `La cuota actual es de ${fmtCuota(a)}.`;
+    return `Estimado(a) ${ten}, un cordial saludo.${nl}${nl}Próximo a la renovación del contrato de *${m.propiedad}*, le comparto la propuesta para el siguiente período.${nl}${nl}${linea}${nl}${nl}Quedo a su disposición para conversarlo. Saludos cordiales,${nl}MH Finance Costa Rica`;
+  }
+  if(type==='recordatorio_pago'){
+    const dia=a.pago?(typeof a.pago==='string'&&a.pago.indexOf('-')>=0?a.pago.split('-')[2]:a.pago):'';
+    return `Estimado(a) ${ten}, un cordial saludo.${nl}${nl}Le recuerdo con aprecio el pago del alquiler de *${m.propiedad}* correspondiente a este mes${dia?`, con fecha de pago el día ${dia}`:''}${a.cuota?`, por un monto de *${fmtCuota(a)}*`:''}.${nl}${nl}${a.iban?`Cuenta IBAN: ${a.iban}${nl}${nl}`:''}Agradezco su puntualidad. Saludos cordiales,${nl}MH Finance Costa Rica`;
+  }
+  return '';
+}
+function asistMsgOutput(){
+  if(!ASIST_MSGTYPE||!ASIST_MSGTGT) return '';
+  const t=MSG_TYPES.find(x=>x[0]===ASIST_MSGTYPE); if(!t) return '';
+  let obj=null;
+  if(t[2]==='cita') obj=CITAS.find(c=>String(c.id)===ASIST_MSGTGT);
+  else obj=DATA.find(m=>String(m.id)===ASIST_MSGTGT);
+  if(!obj) return '';
+  return buildMessage(ASIST_MSGTYPE,obj);
+}
+function setAsistTool(t){ ASIST_TOOL=(ASIST_TOOL===t)?'':t; renderAsistente(); }
+function setMsgType(v){ ASIST_MSGTYPE=v; ASIST_MSGTGT=''; renderAsistente(); }
+function setMsgTgt(v){ ASIST_MSGTGT=v; renderAsistente(); }
+function copyMsg(){ const t=asistMsgOutput(); if(!t){toast('Eleg\u00ed tipo y destino');return;} try{navigator.clipboard.writeText(t);}catch(e){} toast('\u2709 Mensaje copiado \u00b7 peg\u00e1 en WhatsApp'); }
+function asistQuestion(v){ ASIST_Q=v; }
+function copyAskPrompt(){
+  const q=(document.getElementById('asistQ')||{}).value||ASIST_Q;
+  if(!q.trim()){toast('Escrib\u00ed tu pregunta');return;}
+  ASIST_Q=q;
+  const m=coachMetrics();
+  const snap=[
+    `Ingresos del a\u00f1o ₡${Math.round(m.ing).toLocaleString('es-CR')} \u00b7 gastos ₡${Math.round(m.gas).toLocaleString('es-CR')} \u00b7 saldo ₡${Math.round(m.saldo).toLocaleString('es-CR')}`,
+    `Meta anual ₡${(m.meta||0).toLocaleString('es-CR')} \u00b7 YTD esperado ₡${(m.ytdMeta||0).toLocaleString('es-CR')}`,
+    `Pipeline por cerrar ₡${Math.round(m.porCerrar).toLocaleString('es-CR')} (ponderado ₡${m.pond.toLocaleString('es-CR')}) \u00b7 vencido ₡${Math.round(m.vencT).toLocaleString('es-CR')}`,
+    `Efectividad de cierre ${m.efCierre!=null?m.efCierre+'%':'s/d'} \u00b7 citas ${m.efCitas!=null?m.efCitas+'%':'s/d'} \u00b7 cierre promedio ${m.avg!=null?m.avg+' d\u00edas':'s/d'}`,
+    `Contratos vigentes ${m.vigentes} \u00b7 citas vivas ${m.citasVivas}`
+  ].join('\n- ');
+  const prompt=`Sos mi analista de negocio inmobiliario en Costa Rica. Respond\u00e9 mi pregunta usando SOLO estas cifras (no inventes datos), en espa\u00f1ol con trato de "vos", concreto y breve. Si la cifra exacta no est\u00e1, dec\u00edlo.\n\nMi pregunta: ${q}\n\nMis datos (agregados, sin nombres de clientes):\n- ${snap}`;
+  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  toast('\u2709 Consulta copiada \u00b7 peg\u00e1 en Claude');
+}
+function copyVisitaPrompt(){
+  const notas=(document.getElementById('asistVNotas')||{}).value||'';
+  if(!notas.trim()){toast('Dict\u00e1 o escrib\u00ed tus notas');return;}
+  const prompt=`Sos mi asistente. Convert\u00ed estas notas crudas de una visita inmobiliaria en un resumen ejecutivo en espa\u00f1ol (trato de "vos"), con: 1) un p\u00e1rrafo breve de qu\u00e9 pas\u00f3, 2) impresi\u00f3n del cliente, 3) el siguiente paso concreto recomendado, 4) un estado sugerido entre: cerr\u00f3 / en espera de respuesta / por agendar / no contin\u00faa / perfil rechazado. S\u00e9 conciso.\n\nNotas crudas:\n${notas}`;
+  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  toast('\u2709 Copiado \u00b7 peg\u00e1 en Claude');
+}
+function saveVisitaToCita(){
+  const sel=document.getElementById('asistVCita'); const res=document.getElementById('asistVResult');
+  if(!sel||!sel.value){toast('Eleg\u00ed la cita');return;}
+  if(!res||!res.value.trim()){toast('Peg\u00e1 el resumen de Claude');return;}
+  const c=CITAS.find(x=>String(x.id)===sel.value); if(!c)return;
+  c.resumen=res.value.trim();
+  persist(); toast('\u2713 Resumen guardado en la cita'); renderAsistente();
+}
+function renderAsistente(){
+  const contracts=asistContracts();
+  const t=MSG_TYPES.find(x=>x[0]===ASIST_MSGTYPE);
+  const tgtList = t? (t[2]==='cita'? CITAS.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')) : contracts) : [];
+  const tgtOpts = tgtList.map(o=>{
+    const lbl = t&&t[2]==='cita' ? ((o.propiedad||'(sin propiedad)')+(o.cliente?' \u00b7 '+o.cliente:'')) : ((o.propiedad||'(sin propiedad)')+(o.alquiler&&o.alquiler.tenName?' \u00b7 '+o.alquiler.tenName:''));
+    return `<option value="${o.id}" ${String(o.id)===ASIST_MSGTGT?'selected':''}>${lbl.replace(/</g,'&lt;')}</option>`;
+  }).join('');
+  const msgOut=asistMsgOutput();
+  const card=(key,icon,title,sub,body)=>`
+    <div class="acard ${ASIST_TOOL===key?'open':''}">
+      <button class="ahead" onclick="setAsistTool('${key}')"><span class="aico">${icon}</span><span class="atxt"><b>${title}</b><small>${sub}</small></span><span class="achev">${ASIST_TOOL===key?'\u2212':'+'}</span></button>
+      ${ASIST_TOOL===key?`<div class="abody">${body}</div>`:''}
+    </div>`;
+  const visCitas=CITAS.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('view').innerHTML=`
+    <div class="citahead"><div><h2 class="scr-title">Asistente</h2><p class="scr-sub">Tu copiloto con IA \u00b7 los datos de clientes nunca salen sin tu control</p></div></div>
+    ${card('msg','\u270d\ufe0f','Redactor de mensajes','Plantillas listas para WhatsApp \u00b7 instant\u00e1neo',`
+      <div class="afield"><label>Tipo de mensaje</label>
+        <select onchange="setMsgType(this.value)"><option value="">Eleg\u00ed\u2026</option>${MSG_TYPES.map(x=>`<option value="${x[0]}" ${ASIST_MSGTYPE===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select></div>
+      ${t?`<div class="afield"><label>${t[2]==='cita'?'Cita / prospecto':'Contrato de alquiler'}</label>
+        <select onchange="setMsgTgt(this.value)"><option value="">Eleg\u00ed\u2026</option>${tgtOpts}</select></div>`:''}
+      ${msgOut?`<div class="amsgbox">${msgOut.replace(/</g,'&lt;').replace(/\*(.+?)\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}</div>
+        <button class="cbtn" onclick="copyMsg()">\u2709 Copiar mensaje</button>`:(t&&ASIST_MSGTGT===''?'<p class="ahint">Eleg\u00ed el destino para ver el mensaje.</p>':'')}
+      <p class="ahint">Se arma solo con tus datos \u2014 revisalo y ajustalo antes de enviar.</p>
+    `)}
+    ${card('ask','\ud83d\udcac','Pregúntale a tu negocio','Respuestas sobre tus cifras \u00b7 con Claude Pro',`
+      <div class="afield"><label>Tu pregunta</label>
+        <textarea id="asistQ" placeholder="Ej: \u00bfcu\u00e1nto gan\u00e9 en alquileres este a\u00f1o? \u00bfqu\u00e9 propiedades llevan m\u00e1s tiempo sin moverse?">${(ASIST_Q||'').replace(/</g,'&lt;')}</textarea></div>
+      <button class="cbtn" onclick="copyAskPrompt()">\u2709 Copiar consulta para Claude</button>
+      <button class="cbtn gold" onclick="coachOpenClaude()">\u2197 Abrir Claude Pro</button>
+      <p class="ahint">La consulta lleva tus cifras agregadas (sin nombres de clientes). Peg\u00e1la en Claude y te responde.</p>
+    `)}
+    ${card('visita','\ud83c\udf99\ufe0f','Resumen de visita','Dict\u00e1 y Claude lo ordena \u00b7 con Claude Pro',`
+      <div class="afield"><label>Notas crudas de la visita</label>
+        <textarea id="asistVNotas" placeholder="Toc\u00e1 el micr\u00f3fono del teclado y dict\u00e1: c\u00f3mo estuvo la visita, qu\u00e9 dijo el cliente, dudas, siguiente paso\u2026"></textarea></div>
+      <button class="cbtn" onclick="copyVisitaPrompt()">\u2709 Copiar para estructurar con Claude</button>
+      <button class="cbtn gold" onclick="coachOpenClaude()">\u2197 Abrir Claude Pro</button>
+      <div class="afield" style="margin-top:12px"><label>Peg\u00e1 ac\u00e1 el resumen de Claude y guardalo en una cita</label>
+        <textarea id="asistVResult" placeholder="Peg\u00e1 el resumen estructurado\u2026"></textarea></div>
+      <div class="afield"><label>Cita donde guardarlo</label>
+        <select id="asistVCita"><option value="">Eleg\u00ed\u2026</option>${visCitas.map(c=>`<option value="${c.id}">${((c.propiedad||'(sin propiedad)')+(c.cliente?' \u00b7 '+c.cliente:'')).replace(/</g,'&lt;')}</option>`).join('')}</select></div>
+      <button class="cbtn" onclick="saveVisitaToCita()">\u2713 Guardar resumen en la cita</button>
+    `)}
+    <p class="ahint" style="margin-top:14px;text-align:center">El Asistente nunca env\u00eda datos solo. Vos decid\u00eds qu\u00e9 copiar y compartir con Claude.</p>
+  `;
+}
+
 /* ---------- Vista MANUAL (embebido) ---------- */
 function renderManual(){
   document.getElementById('view').innerHTML=`
@@ -2718,7 +2868,7 @@ function renderManual(){
       <tr><td>₡ Finanzas</td><td><b>Resumen</b> · <b>Gráficos</b> · <b>Movim.</b> · <b>Reportes</b>.</td></tr>
       <tr><td>⇗ Negocio</td><td><b>Pipeline</b> · <b>Citas</b>. No afectan las cifras reales.</td></tr>
       <tr><td>⌂ Alquil.</td><td>Contratos: estado, vencimientos, día de pago, IPC, ficha PDF, recibo.</td></tr>
-      <tr><td>⋯ Más</td><td><b>Coaching</b> · <b>Ajustes</b> · <b>Manual</b>. El engranaje ⚙︎ también abre Ajustes.</td></tr>
+      <tr><td>⋯ Más</td><td><b>Coaching</b> · <b>Asistente</b> (IA) · <b>Ajustes</b> · <b>Manual</b>. El engranaje ⚙︎ también abre Ajustes.</td></tr>
     </table>
     <p>El botón <b>＋ Nuevo</b> crea una transacción desde cualquier pantalla (en Pipeline agrega al pipeline, en Citas agenda una cita). El <b>tema automático</b> usa modo oscuro de 6 pm a 6 am y claro de día.</p>
 
@@ -2776,6 +2926,8 @@ function renderManual(){
     <ul class="mul">
       <li><b>Crear:</b> desde el pipeline (“📅 Agendar cita”, queda ligada) o suelta con “＋ Nueva cita”.</li>
       <li><b>Semáforo:</b> <span class="mok">verde</span>=cerró · <b style="color:#9A6B1E">amarillo</b>=viva (agendada/en espera/por agendar) · <span class="mno">rojo</span>=no concretó.</li>
+      <li><b>Motivo:</b> al marcar una cita en estado rojo (rechazo de perfil, cliente no continúa, etc.) se abre un campo para <b>anotar el motivo</b>; sale en la lista y en el reporte de gestión.</li>
+      <li><b>Agendar al Calendario:</b> en citas vivas con fecha y hora, el botón “📅 Agregar al Calendario” abre el evento ya rellenado en tu Calendario de Apple (vos tocás “Añadir”), con recordatorio 1 día y 1 hora antes.</li>
       <li><b>Al cerrar en pipeline</b> elegís cuál cita lo cerró; las demás pasan a "cerrado antes". Si perdés, pasan a "no continúa".</li>
     </ul>
     <div class="mf"><code>Efectividad de citas</code> = cierres ÷ (cierres + visitas efectuadas sin cierre)</div>
@@ -2787,14 +2939,23 @@ function renderManual(){
       <li><b>Comparativos:</b> vs. año anterior o A vs B (libre). El <b>CSV</b> exporta todo para Excel.</li>
     </ul>
 
-    <div class="mh2"><span>9.</span> Respaldo y sincronización</div>
+    <div class="mh2"><span>9.</span> Coaching y Asistente (IA)</div>
+    <p>En el grupo <b>Más</b>. Usan tu suscripción <b>Claude Pro</b> con un puente seguro de copiar/pegar — nada se envía solo y los <b>datos de clientes nunca salen</b>.</p>
+    <ul class="mul">
+      <li><b>Coaching del mes:</b> generás una consulta con tus métricas (sin nombres), la pegás en Claude y guardás la guía de buenas prácticas. Queda el historial por mes.</li>
+      <li><b>Asistente · Redactor de mensajes:</b> plantillas listas para WhatsApp (recordatorio de cita, seguimiento, aviso de vencimiento, renovación con aumento IPC ya calculado, recordatorio de pago). Se arman solas con tus datos — <b>instantáneo, sin internet</b>.</li>
+      <li><b>Asistente · Pregúntale a tu negocio:</b> escribís una pregunta, copiás la consulta (con cifras agregadas) y Claude te responde.</li>
+      <li><b>Asistente · Resumen de visita:</b> dictás las notas con el micrófono del teclado, Claude las ordena y guardás el resumen en la cita.</li>
+    </ul>
+
+    <div class="mh2"><span>10.</span> Respaldo y sincronización</div>
     <ul class="mul">
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
     </ul>
 
-    <div class="mh2"><span>10.</span> Reglas de oro</div>
+    <div class="mh2"><span>11.</span> Reglas de oro</div>
     <ul class="mul">
       <li><span class="mok">✓</span> Mismo nombre exacto de propiedad en todo un cierre.</li>
       <li><span class="mok">✓</span> Comisión siempre NETA; el IVA lo agrega la app.</li>
