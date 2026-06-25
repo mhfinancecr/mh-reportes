@@ -498,6 +498,7 @@
   .cita-tipo{font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border-radius:5px;padding:1px 6px;margin-left:4px;text-transform:uppercase;letter-spacing:.04em}
   .cita-sub{font-size:12px;color:var(--muted);margin-top:2px}
   .cita-motivo{font-size:11.5px;color:var(--gasto);margin-top:4px;font-style:italic;line-height:1.4}
+  .cita-resumen{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45;background:var(--surface2);border-radius:8px;padding:7px 9px}
   .citachip{font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;text-align:center}
   .citachip.g{background:rgba(21,128,90,.15);color:var(--ingreso)} .citachip.y{background:rgba(201,154,51,.18);color:var(--gold)} .citachip.r{background:rgba(199,90,60,.15);color:var(--gasto)}
   .cita-r{flex:0 0 auto;max-width:42%}
@@ -1103,6 +1104,7 @@
     </div>
     <div class="formrow"><label>Estado</label><select id="citaEstado" onchange="citaEstadoChange()"></select></div>
     <div class="formrow" id="citaMotivoRow" style="display:none"><label id="citaMotivoLbl">Motivo (por qué no continuó)</label><textarea id="citaMotivo" placeholder="Ej: el perfil crediticio no calificó · al cliente no le gustó la ubicación · el propietario no aceptó el perfil…" style="min-height:64px"></textarea></div>
+    <div class="formrow" id="citaResumenRow" style="display:none"><label>📝 Resumen de la visita</label><textarea id="citaResumen" placeholder="Resumen de la visita (lo podés generar en Más → Asistente)…" style="min-height:72px"></textarea></div>
     <button type="button" class="icsbtn" id="citaIcsBtn" onclick="addCitaToCalendar()" style="display:none">📅 Agregar esta cita al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorio 1 día y 1 hora antes</span></button>
     <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:10px 0 14px">🟢 verde = cerró · 🟡 amarillo = viva / en proceso · 🔴 rojo = no concretó. Las citas son seguimiento comercial; no afectan tus cifras reales.</p>
     <button class="saveBtn" onclick="saveCita()">Guardar cita</button>
@@ -3262,6 +3264,7 @@ function citaRow(c){
       <div class="cita-prop">${c.propiedad||'(Sin propiedad)'} <span class="cita-tipo">${c.tipo==='alquiler'?'Alquiler':'Venta'}</span></div>
       <div class="cita-sub">${c.cliente?c.cliente+' · ':''}${fec}${hr}${c.lid?' · 🔗 pipeline':''}</div>
       ${c.motivo?`<div class="cita-motivo">“${c.motivo.replace(/</g,'&lt;')}”</div>`:''}
+      ${c.resumen?`<div class="cita-resumen">📝 ${c.resumen.replace(/</g,'&lt;').slice(0,150)}${c.resumen.length>150?'…':''}</div>`:''}
     </div>
     <div class="cita-r"><span class="citachip ${col}">${CITA_LBL[c.estado]||c.estado}</span></div>
   </div>`;
@@ -3339,6 +3342,7 @@ function openCita(id,pre){
     citaIng=c.ingreso||''; citaFec=c.fecha||''; citaHor=c.hora||'';
     document.getElementById('citaEstado').value=c.estado||'agendada';
     document.getElementById('citaMotivo').value=c.motivo||'';
+    document.getElementById('citaResumen').value=c.resumen||'';
     document.getElementById('citaTitle').textContent='Editar cita';
     document.getElementById('citaDelBtn').style.display='';
   } else {
@@ -3348,6 +3352,7 @@ function openCita(id,pre){
     citaIng=new Date().toISOString().slice(0,10); citaFec=''; citaHor='';
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
     document.getElementById('citaMotivo').value='';
+    document.getElementById('citaResumen').value='';
     document.getElementById('citaTitle').textContent='Nueva cita';
     document.getElementById('citaDelBtn').style.display='none';
   }
@@ -3371,6 +3376,9 @@ function citaEstadoChange(){
   // El botón de calendario aparece cuando la cita está viva y tiene fecha + hora
   const ics=document.getElementById('citaIcsBtn');
   if(ics) ics.style.display=(CITA_VIVAS.indexOf(est)>=0 && citaFec && citaHor)?'':'none';
+  // Resumen de visita: visible si ya hay uno guardado
+  const rr=document.getElementById('citaResumenRow');
+  if(rr) rr.style.display=(document.getElementById('citaResumen').value.trim())?'':'none';
 }
 function pickCitaIng(){ openDateWheel('Ingreso del prospecto', citaIng, v=>{citaIng=v;updCitaBtns();}); }
 function pickCitaFec(){ openDateWheel('Fecha de la cita', citaFec, v=>{citaFec=v;updCitaBtns();}); }
@@ -3383,6 +3391,7 @@ function saveCita(){
     propiedad:prop, cliente:document.getElementById('citaCli').value.trim(),
     ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
     estado:document.getElementById('citaEstado').value,
+    resumen:document.getElementById('citaResumen').value.trim(),
     motivo:(CITA_COL[document.getElementById('citaEstado').value]==='r')?document.getElementById('citaMotivo').value.trim():'' };
   if(citaEditId){ const i=CITAS.findIndex(x=>x.id===citaEditId); rec.motivo=rec.motivo||(CITAS[i]||{}).motivo||''; CITAS[i]=rec; } else CITAS.push(rec);
   persist();closeCita();render();toast('✓ Cita guardada');
@@ -3458,7 +3467,8 @@ function reporteGestion(prop){
   const SBG={g:'#E4F3EC',y:'#FBF1DD',r:'#FBE7E1'};
   const rows=cs.map(c=>{
     const col=CITA_COL[c.estado]||'y';
-    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:10px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>';
+    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:10px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>'
+      +(c.resumen?'<tr class="resrow"><td colspan="5" style="background:#F6F8FB;font-size:10.5px;color:#1E2A38;line-height:1.5;padding:7px 10px"><b style="color:#1C3D60">Resumen de la visita:</b> '+c.resumen.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</td></tr>':'');
   }).join('');
   const cerrada=cs.find(c=>c.estado==='cerro');
   const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
