@@ -3503,8 +3503,8 @@ function reporteGestion(prop){
   const tx=DATA.find(m=>(m.propiedad||'').trim().toLowerCase()===prop.toLowerCase() && m.origenPipe);
   const s=citaStats(cs);
   const realizadas=cs.filter(c=>['cerro','espera','nocontinua','rechazopost'].indexOf(c.estado)>=0).length;
-  const canc=cs.filter(c=>c.estado==='cancelada').length;
-  const pend=cs.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0).length;
+  const pend=cs.filter(c=>['agendada','poragendar'].indexOf(c.estado)>=0).length;
+  const norealiz=Math.max(0, s.total - realizadas - pend);
   let ingreso=''; if(pipe) ingreso=pipeCreado(pipe); else if(tx&&tx.origenPipe) ingreso=tx.origenPipe.creado;
   const dias=ingreso?Math.max(0,Math.round((new Date()-new Date(ingreso))/86400000)):null;
   const owner = tx&&tx.alquiler&&tx.alquiler.ownName ? tx.alquiler.ownName : '';
@@ -3534,8 +3534,8 @@ function reporteGestion(prop){
     +'<div class="gcards">'
       +'<div class="gcard"><div class="v">'+s.total+'</div><div class="k">Prospectos</div></div>'
       +'<div class="gcard"><div class="v">'+realizadas+'</div><div class="k">Visitas realizadas</div></div>'
-      +'<div class="gcard"><div class="v">'+canc+'</div><div class="k">Canceladas</div></div>'
       +'<div class="gcard"><div class="v">'+pend+'</div><div class="k">Pendientes</div></div>'
+      +'<div class="gcard"><div class="v">'+norealiz+'</div><div class="k">No realizadas</div></div>'
     +'</div>'
     +'<h4>Bitácora de citas y visitas</h4>'
     +'<table class="ftbl"><thead><tr><th>Ingreso del prospecto</th><th>Fecha de cita</th><th>Hora</th><th>Cliente</th><th class="r">Resultado</th></tr></thead><tbody>'+rows+'</tbody></table>'
