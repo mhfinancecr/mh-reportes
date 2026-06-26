@@ -499,6 +499,12 @@
   .cita-sub{font-size:12px;color:var(--muted);margin-top:2px}
   .cita-motivo{font-size:11.5px;color:var(--gasto);margin-top:4px;font-style:italic;line-height:1.4}
   .cita-resumen{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45;background:var(--surface2);border-radius:8px;padding:7px 9px}
+  .cita-reag{font-size:11px;color:var(--gold);margin-top:4px;font-weight:600}
+  .citahistbtns{display:flex;flex-direction:column;gap:8px;margin-bottom:11px}
+  .chistbox{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:0 0 11px}
+  .chistttl{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .chistrow{font-size:12.5px;color:var(--paper);padding:3px 0;display:flex;justify-content:space-between;gap:8px}
+  .chistrow span{color:var(--gold);font-size:10.5px;font-weight:600}
   .citachip{font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;text-align:center}
   .citachip.g{background:rgba(21,128,90,.15);color:var(--ingreso)} .citachip.y{background:rgba(201,154,51,.18);color:var(--gold)} .citachip.r{background:rgba(199,90,60,.15);color:var(--gasto)}
   .cita-r{flex:0 0 auto;max-width:42%}
@@ -1102,9 +1108,16 @@
       <div class="formrow"><label>Fecha de la cita</label><button type="button" class="wheelfield" id="citaFecBtn" onclick="pickCitaFec()">Elegir fecha</button></div>
       <div class="formrow"><label>Hora</label><button type="button" class="wheelfield" id="citaHorBtn" onclick="pickCitaHor()">Elegir hora</button></div>
     </div>
+    <div id="citaHistRow" style="display:none"></div>
+    <div class="citahistbtns" style="display:none" id="citaHistBtns">
+      <button type="button" class="icsbtn" onclick="reagendarCita()" style="color:var(--gold)">🔁 Reagendar (cambió la fecha)</button>
+      <button type="button" class="icsbtn" onclick="otraVisita()" style="color:var(--gold)">➕ Otra visita (con la pareja, 2ª vuelta…)</button>
+    </div>
     <div class="formrow"><label>Estado</label><select id="citaEstado" onchange="citaEstadoChange()"></select></div>
     <div class="formrow" id="citaMotivoRow" style="display:none"><label id="citaMotivoLbl">Motivo (por qué no continuó)</label><textarea id="citaMotivo" placeholder="Ej: el perfil crediticio no calificó · al cliente no le gustó la ubicación · el propietario no aceptó el perfil…" style="min-height:64px"></textarea></div>
-    <div class="formrow" id="citaResumenRow" style="display:none"><label>📝 Resumen de la visita</label><textarea id="citaResumen" placeholder="Resumen de la visita (lo podés generar en Más → Asistente)…" style="min-height:72px"></textarea></div>
+    <div class="formrow" id="citaResumenRow" style="display:none"><label>📝 Resumen de la visita</label><textarea id="citaResumen" placeholder="Escribí o dictá (micrófono del teclado) cómo estuvo la visita, qué dijo el cliente, el siguiente paso…" style="min-height:80px"></textarea>
+      <div class="citaresbtns"><button type="button" class="icsbtn" style="margin-top:8px" onclick="estructurarResumen()">✨ Estructurar con Claude<br><span style="font-weight:500;color:var(--muted)">copia tus notas listas para pegar en Claude</span></button></div>
+    </div>
     <button type="button" class="icsbtn" id="citaIcsBtn" onclick="addCitaToCalendar()" style="display:none">📅 Agregar esta cita al Calendario de Apple<br><span style="font-weight:500;color:var(--muted)">recordatorio 1 día y 1 hora antes</span></button>
     <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:10px 0 14px">🟢 verde = cerró · 🟡 amarillo = viva / en proceso · 🔴 rojo = no concretó. Las citas son seguimiento comercial; no afectan tus cifras reales.</p>
     <button class="saveBtn" onclick="saveCita()">Guardar cita</button>
@@ -1221,6 +1234,8 @@ const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','
 const crc = m => { const base = m.monto + ((m.tipo==='ingreso'&&m.factura==='si')?(+m.iva||0):0); return m.moneda==='USD' ? base*m.tc : base; };  // valor en colones (ingreso facturado = bruto con IVA)
 const mkey = f => f.slice(0,7);                                       // "YYYY-MM"
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+function clipCopy(text){ try{ var p=navigator.clipboard&&navigator.clipboard.writeText(text); if(p&&p.catch)p.catch(function(){fallbackCopy(text);}); else fallbackCopy(text); }catch(e){ fallbackCopy(text); } }
+function fallbackCopy(text){ try{ var ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }catch(e){} }
 
 /* ---------- Estado de filtro de período ---------- */
 function thisMonth(){const d=new Date();return d.toISOString().slice(0,7);}
@@ -2775,7 +2790,7 @@ function asistMsgOutput(){
 function setAsistTool(t){ ASIST_TOOL=(ASIST_TOOL===t)?'':t; renderAsistente(); }
 function setMsgType(v){ ASIST_MSGTYPE=v; ASIST_MSGTGT=''; renderAsistente(); }
 function setMsgTgt(v){ ASIST_MSGTGT=v; renderAsistente(); }
-function copyMsg(){ const t=asistMsgOutput(); if(!t){toast('Eleg\u00ed tipo y destino');return;} try{navigator.clipboard.writeText(t);}catch(e){} toast('\u2709 Mensaje copiado \u00b7 peg\u00e1 en WhatsApp'); }
+function copyMsg(){ const t=asistMsgOutput(); if(!t){toast('Eleg\u00ed tipo y destino');return;} clipCopy(t); toast('\u2709 Mensaje copiado \u00b7 peg\u00e1 en WhatsApp'); }
 function asistQuestion(v){ ASIST_Q=v; }
 function copyAskPrompt(){
   const q=(document.getElementById('asistQ')||{}).value||ASIST_Q;
@@ -2790,14 +2805,14 @@ function copyAskPrompt(){
     `Contratos vigentes ${m.vigentes} \u00b7 citas vivas ${m.citasVivas}`
   ].join('\n- ');
   const prompt=`Sos mi analista de negocio inmobiliario en Costa Rica. Respond\u00e9 mi pregunta usando SOLO estas cifras (no inventes datos), en espa\u00f1ol con trato de "vos", concreto y breve. Si la cifra exacta no est\u00e1, dec\u00edlo.\n\nMi pregunta: ${q}\n\nMis datos (agregados, sin nombres de clientes):\n- ${snap}`;
-  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  clipCopy(prompt);
   toast('\u2709 Consulta copiada \u00b7 peg\u00e1 en Claude');
 }
 function copyVisitaPrompt(){
   const notas=(document.getElementById('asistVNotas')||{}).value||'';
   if(!notas.trim()){toast('Dict\u00e1 o escrib\u00ed tus notas');return;}
   const prompt=`Sos mi asistente. Convert\u00ed estas notas crudas de una visita inmobiliaria en un resumen ejecutivo en espa\u00f1ol (trato de "vos"), con: 1) un p\u00e1rrafo breve de qu\u00e9 pas\u00f3, 2) impresi\u00f3n del cliente, 3) el siguiente paso concreto recomendado, 4) un estado sugerido entre: cerr\u00f3 / en espera de respuesta / por agendar / no contin\u00faa / perfil rechazado. S\u00e9 conciso.\n\nNotas crudas:\n${notas}`;
-  try{navigator.clipboard.writeText(prompt);}catch(e){}
+  clipCopy(prompt);
   toast('\u2709 Copiado \u00b7 peg\u00e1 en Claude');
 }
 function saveVisitaToCita(){
@@ -2841,18 +2856,7 @@ function renderAsistente(){
       <button class="cbtn gold" onclick="coachOpenClaude()">\u2197 Abrir Claude Pro</button>
       <p class="ahint">La consulta lleva tus cifras agregadas (sin nombres de clientes). Peg\u00e1la en Claude y te responde.</p>
     `)}
-    ${card('visita','\ud83c\udf99\ufe0f','Resumen de visita','Dict\u00e1 y Claude lo ordena \u00b7 con Claude Pro',`
-      <div class="afield"><label>Notas crudas de la visita</label>
-        <textarea id="asistVNotas" placeholder="Toc\u00e1 el micr\u00f3fono del teclado y dict\u00e1: c\u00f3mo estuvo la visita, qu\u00e9 dijo el cliente, dudas, siguiente paso\u2026"></textarea></div>
-      <button class="cbtn" onclick="copyVisitaPrompt()">\u2709 Copiar para estructurar con Claude</button>
-      <button class="cbtn gold" onclick="coachOpenClaude()">\u2197 Abrir Claude Pro</button>
-      <div class="afield" style="margin-top:12px"><label>Peg\u00e1 ac\u00e1 el resumen de Claude y guardalo en una cita</label>
-        <textarea id="asistVResult" placeholder="Peg\u00e1 el resumen estructurado\u2026"></textarea></div>
-      <div class="afield"><label>Cita donde guardarlo</label>
-        <select id="asistVCita"><option value="">Eleg\u00ed\u2026</option>${visCitas.map(c=>`<option value="${c.id}">${((c.propiedad||'(sin propiedad)')+(c.cliente?' \u00b7 '+c.cliente:'')).replace(/</g,'&lt;')}</option>`).join('')}</select></div>
-      <button class="cbtn" onclick="saveVisitaToCita()">\u2713 Guardar resumen en la cita</button>
-    `)}
-    <p class="ahint" style="margin-top:14px;text-align:center">El Asistente nunca env\u00eda datos solo. Vos decid\u00eds qu\u00e9 copiar y compartir con Claude.</p>
+    <p class="ahint" style="margin-top:14px;text-align:center">El <b>resumen de cada visita</b> ahora se genera dentro de la propia cita (grupo Negocio → Citas → abrí una cita). El Asistente nunca envía datos solo.</p>
   `;
 }
 
@@ -2931,6 +2935,7 @@ function renderManual(){
       <li><b>Motivo:</b> al marcar una cita en estado rojo (rechazo de perfil, cliente no continúa, etc.) se abre un campo para <b>anotar el motivo</b>; sale en la lista y en el reporte de gestión.</li>
       <li><b>Agendar al Calendario:</b> en citas vivas con fecha y hora, el botón “📅 Agregar al Calendario” abre el evento ya rellenado en tu Calendario de Apple (vos tocás “Añadir”), con recordatorio 1 día y 1 hora antes.</li>
       <li><b>Al cerrar en pipeline</b> elegís cuál cita lo cerró; las demás pasan a "cerrado antes". Si perdés, pasan a "no continúa".</li>
+      <li><b>Varias visitas por lead:</b> cuando la cita ya tiene fecha aparecen dos botones — <b>🔁 Reagendar</b> (el cliente cambió la fecha) y <b>➕ Otra visita</b> (segunda vuelta con la pareja, la familia, etc.). Ambos guardan la fecha actual en el <b>historial de visitas del lead</b> y te dejan poner la nueva. El historial sale en la cita y en el <b>reporte de gestión</b> — así le demostrás al propietario cada visita que se coordinó.</li>
     </ul>
     <div class="mf"><code>Efectividad de citas</code> = cierres ÷ (cierres + visitas efectuadas sin cierre)</div>
     <p style="font-size:12px;color:var(--muted)">No cuentan canceladas, no-show, rechazos de perfil ni las vivas. <b>Reporte de gestión PDF</b> por propiedad para demostrarle al propietario tu trabajo.</p>
@@ -2947,7 +2952,7 @@ function renderManual(){
       <li><b>Coaching del mes:</b> generás una consulta con tus métricas (sin nombres), la pegás en Claude y guardás la guía de buenas prácticas. Queda el historial por mes.</li>
       <li><b>Asistente · Redactor de mensajes:</b> plantillas listas para WhatsApp (recordatorio de cita, seguimiento, aviso de vencimiento, renovación con aumento IPC ya calculado, recordatorio de pago). Se arman solas con tus datos — <b>instantáneo, sin internet</b>.</li>
       <li><b>Asistente · Pregúntale a tu negocio:</b> escribís una pregunta, copiás la consulta (con cifras agregadas) y Claude te responde.</li>
-      <li><b>Asistente · Resumen de visita:</b> dictás las notas con el micrófono del teclado, Claude las ordena y guardás el resumen en la cita.</li>
+      <li><b>Resumen de visita (en la cita):</b> dentro de cada cita escribís o dictás las notas, las estructurás con Claude y el resumen queda guardado en la cita y sale en el reporte de gestión.</li>
     </ul>
 
     <div class="mh2"><span>10.</span> Respaldo y sincronización</div>
@@ -3265,6 +3270,7 @@ function citaRow(c){
       <div class="cita-sub">${c.cliente?c.cliente+' · ':''}${fec}${hr}${c.lid?' · 🔗 pipeline':''}</div>
       ${c.motivo?`<div class="cita-motivo">“${c.motivo.replace(/</g,'&lt;')}”</div>`:''}
       ${c.resumen?`<div class="cita-resumen">📝 ${c.resumen.replace(/</g,'&lt;').slice(0,150)}${c.resumen.length>150?'…':''}</div>`:''}
+      ${(c.historial&&c.historial.length)?`<div class="cita-reag">🗓 ${c.historial.length+1} ${c.historial.length+1===1?'visita':'visitas'} · antes: ${c.historial.map(h=>h.fecha?fmtFecha(h.fecha):'s/f').join(', ')}</div>`:''}
     </div>
     <div class="cita-r"><span class="citachip ${col}">${CITA_LBL[c.estado]||c.estado}</span></div>
   </div>`;
@@ -3327,7 +3333,7 @@ function renderCitas(){
 }
 
 /* ----- Formulario de cita ----- */
-let citaEditId=null, citaTipo='venta', citaIng='', citaFec='', citaHor='';
+let citaEditId=null, citaTipo='venta', citaIng='', citaFec='', citaHor='', citaHist=[];
 function setCitaTipo(t){citaTipo=t;document.querySelectorAll('#segCitaTipo button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
 function ownProps(){ const seen={},out=[]; DATA.concat(PIPE).forEach(x=>{ if(x.coloc==='colega')return; const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out.sort((a,b)=>a.localeCompare(b,'es')); }
 function openCita(id,pre){
@@ -3343,6 +3349,7 @@ function openCita(id,pre){
     document.getElementById('citaEstado').value=c.estado||'agendada';
     document.getElementById('citaMotivo').value=c.motivo||'';
     document.getElementById('citaResumen').value=c.resumen||'';
+    citaHist=(c.historial||[]).slice();
     document.getElementById('citaTitle').textContent='Editar cita';
     document.getElementById('citaDelBtn').style.display='';
   } else {
@@ -3353,6 +3360,7 @@ function openCita(id,pre){
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
     document.getElementById('citaMotivo').value='';
     document.getElementById('citaResumen').value='';
+    citaHist=[];
     document.getElementById('citaTitle').textContent='Nueva cita';
     document.getElementById('citaDelBtn').style.display='none';
   }
@@ -3376,9 +3384,35 @@ function citaEstadoChange(){
   // El botón de calendario aparece cuando la cita está viva y tiene fecha + hora
   const ics=document.getElementById('citaIcsBtn');
   if(ics) ics.style.display=(CITA_VIVAS.indexOf(est)>=0 && citaFec && citaHor)?'':'none';
-  // Resumen de visita: visible si ya hay uno guardado
+  // Resumen de visita: siempre disponible para escribir/dictar
   const rr=document.getElementById('citaResumenRow');
-  if(rr) rr.style.display=(document.getElementById('citaResumen').value.trim())?'':'none';
+  if(rr) rr.style.display='';
+  // Reagendar / otra visita: disponible cuando hay una fecha puesta
+  const rb=document.getElementById('citaHistBtns');
+  if(rb) rb.style.display=citaFec?'flex':'none';
+  renderCitaHist();
+}
+function renderCitaHist(){
+  const el=document.getElementById('citaHistRow'); if(!el)return;
+  if(!citaHist.length){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  el.innerHTML='<div class="chistbox"><div class="chistttl">\ud83d\uddd3 Historial de visitas de este lead</div>'+citaHist.map(function(h){return '<div class="chistrow">'+(h.fecha?fmtFecha(h.fecha):'sin fecha')+(h.hora?' \u00b7 '+h.hora:'')+'<span>'+(h.tipo==='visita'?'visita realizada':'reagendada')+'</span></div>';}).join('')+'</div>';
+}
+function reagendarCita(){
+  if(!citaFec){toast('Esta cita no tiene fecha para reagendar');return;}
+  citaHist.push({fecha:citaFec,hora:citaHor||'',tipo:'reagendada',ts:Date.now()});
+  citaFec=''; citaHor='';
+  var sel=document.getElementById('citaEstado'); if(sel) sel.value='poragendar';
+  updCitaBtns(); citaEstadoChange();
+  toast('\ud83d\udd01 Fecha anterior guardada \u00b7 eleg\u00ed la nueva');
+}
+function otraVisita(){
+  if(!citaFec){toast('Pon\u00e9 primero la fecha de la visita que ya se hizo');return;}
+  citaHist.push({fecha:citaFec,hora:citaHor||'',tipo:'visita',ts:Date.now()});
+  citaFec=''; citaHor='';
+  var sel=document.getElementById('citaEstado'); if(sel) sel.value='agendada';
+  updCitaBtns(); citaEstadoChange();
+  toast('\u2713 Visita guardada en el historial \u00b7 agend\u00e1 la siguiente');
 }
 function pickCitaIng(){ openDateWheel('Ingreso del prospecto', citaIng, v=>{citaIng=v;updCitaBtns();}); }
 function pickCitaFec(){ openDateWheel('Fecha de la cita', citaFec, v=>{citaFec=v;updCitaBtns();}); }
@@ -3391,10 +3425,21 @@ function saveCita(){
     propiedad:prop, cliente:document.getElementById('citaCli').value.trim(),
     ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
     estado:document.getElementById('citaEstado').value,
+    historial:citaHist.slice(),
     resumen:document.getElementById('citaResumen').value.trim(),
     motivo:(CITA_COL[document.getElementById('citaEstado').value]==='r')?document.getElementById('citaMotivo').value.trim():'' };
   if(citaEditId){ const i=CITAS.findIndex(x=>x.id===citaEditId); rec.motivo=rec.motivo||(CITAS[i]||{}).motivo||''; CITAS[i]=rec; } else CITAS.push(rec);
   persist();closeCita();render();toast('✓ Cita guardada');
+}
+function estructurarResumen(){
+  const ta=document.getElementById('citaResumen'); const notas=(ta&&ta.value.trim())||'';
+  if(!notas){toast('Escrib\u00ed o dict\u00e1 tus notas primero');return;}
+  const prop=document.getElementById('citaProp').value.trim();
+  const cli=document.getElementById('citaCli').value.trim();
+  const prompt='Sos mi asistente inmobiliario. Convert\u00ed estas notas crudas de una visita en un resumen ejecutivo breve en espa\u00f1ol (trato de "vos"), con: 1) qu\u00e9 pas\u00f3 en la visita, 2) impresi\u00f3n del cliente, 3) el siguiente paso concreto recomendado. M\u00e1ximo 4 l\u00edneas, claro y profesional para compartir con el propietario.'+(prop?' Propiedad: '+prop+'.':'')+(cli?' Cliente: '+cli+'.':'')+'\n\nNotas crudas:\n'+notas;
+  clipCopy(prompt);
+  toast('\u2709 Copiado \u00b7 peg\u00e1 en Claude y traé la respuesta acá');
+  try{ window.open('https://claude.ai','_blank'); }catch(e){}
 }
 function addCitaToCalendar(){
   if(!citaFec||!citaHor){toast('Poné fecha y hora de la cita');return;}
@@ -3467,8 +3512,12 @@ function reporteGestion(prop){
   const SBG={g:'#E4F3EC',y:'#FBF1DD',r:'#FBE7E1'};
   const rows=cs.map(c=>{
     const col=CITA_COL[c.estado]||'y';
-    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td><td>'+(c.cliente||'—')+'</td><td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:10px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>'
-      +(c.resumen?'<tr class="resrow"><td colspan="5" style="background:#F6F8FB;font-size:10.5px;color:#1E2A38;line-height:1.5;padding:7px 10px"><b style="color:#1C3D60">Resumen de la visita:</b> '+c.resumen.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</td></tr>':'');
+    return '<tr><td>'+(c.ingreso?fmtFecha(c.ingreso):'—')+'</td><td>'+(c.fecha?fmtFecha(c.fecha):'—')+'</td><td>'+(c.hora||'—')+'</td>'
+      +'<td><div style="font-weight:600;color:#1C3D60">'+(c.cliente||'—')+'</div>'
+        +((c.historial&&c.historial.length)?'<div style="font-size:9px;color:#5A6B80;margin-top:2px">🗓 Visitas previas: '+c.historial.map(function(h){return (h.fecha?fmtFecha(h.fecha):'s/f')+' ('+(h.tipo==='visita'?'realizada':'reagendada')+')';}).join(' · ')+'</div>':'')
+        +(c.resumen?'<div style="font-size:9px;color:#1E2A38;line-height:1.4;margin-top:2px"><b style="color:#1C3D60">Visita:</b> '+c.resumen.replace(/</g,'&lt;').replace(/\n/g,' ')+'</div>':'')
+      +'</td>'
+      +'<td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:9px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>';
   }).join('');
   const cerrada=cs.find(c=>c.estado==='cerro');
   const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
@@ -3606,7 +3655,7 @@ function coachBuildPrompt(){
 }
 function setCoachYear(y){COACH_YEAR=y;renderCoaching();}
 function coachToggleGen(){COACH_GEN=!COACH_GEN; if(COACH_GEN)COACH_PROMPT=coachBuildPrompt(); renderCoaching();}
-function coachCopy(){ try{navigator.clipboard.writeText(COACH_PROMPT);}catch(e){} const t=document.getElementById('coachPromptBox'); if(t){t.style.display='block';} toast('Consulta copiada ✓ · pegala en Claude'); }
+function coachCopy(){ clipCopy(COACH_PROMPT); const t=document.getElementById('coachPromptBox'); if(t){t.style.display='block';} toast('Consulta copiada ✓ · pegala en Claude'); }
 function coachOpenClaude(){ window.open('https://claude.ai','_blank'); }
 function coachSave(){
   const ta=document.getElementById('coachInput'); if(!ta)return;
