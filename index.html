@@ -531,6 +531,57 @@
   .subseg{display:flex;background:var(--surface2);border-radius:11px;padding:3px;gap:2px;margin:0 0 14px;border:1px solid var(--line);position:sticky;top:0;z-index:4}
   .subseg button{flex:1;border:0;background:transparent;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:8px 2px;border-radius:8px;cursor:pointer;white-space:nowrap}
   .subseg button.on{background:var(--surface);color:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+  /* FORECAST FISCAL */
+  .fcbanner{background:var(--gold-soft);border:1px solid var(--line);color:var(--gold-2);border-radius:12px;font-size:12.5px;font-weight:600;padding:11px 13px;margin:0 0 14px;line-height:1.45}
+  .fcmodeseg{display:flex;background:var(--surface2);border-radius:11px;padding:3px;gap:2px;margin:0 0 16px;border:1px solid var(--line)}
+  .fcmodeseg button{flex:1;border:0;background:transparent;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:9px 4px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .fcmodeseg button.on{background:var(--gold);color:#fff}
+  .fctiers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .fctier{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .fctier::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .fctier.t1::before{background:var(--neto)}.fctier.t2::before{background:var(--gold)}.fctier.t3::before{background:var(--ingreso)}
+  .fctier .l{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+  .fctier .big{font-family:'Newsreader',serif;font-weight:600;font-size:22px;letter-spacing:-.01em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+  .fctier.t1 .big{color:var(--neto)}.fctier.t2 .big{color:var(--gold)}.fctier.t3 .big{color:var(--ingreso)}
+  .fctier .note{font-size:11px;color:var(--muted);line-height:1.35}
+  .fctier .note b{color:var(--gasto);font-weight:600}
+  .fcfall{margin:2px 0 0}
+  .fcfr{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;gap:12px}
+  .fcfr:last-child{border-bottom:0}
+  .fcfr .k{color:var(--paper);font-weight:500}.fcfr .k small{display:block;color:var(--muted2);font-size:11px;font-weight:500}
+  .fcfr .v{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+  .fcfr .v.neg{color:var(--gasto)}
+  .fcfr.head .k{font-family:'Newsreader',serif;font-weight:600;color:var(--neto);font-size:15px}.fcfr.head .v{color:var(--neto);font-size:15px}
+  .fcfr.total{border-top:2px solid var(--neto);border-bottom:0;margin-top:2px}
+  .fcfr.total .k{font-family:'Newsreader',serif;font-weight:600;color:var(--ingreso);font-size:15.5px}.fcfr.total .v{font-size:19px;color:var(--ingreso);font-family:'Newsreader',serif}
+  .fcpill{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
+  .fcpill.auto{background:var(--ingreso-soft);color:var(--ingreso)}.fcpill.man{background:var(--gold-soft);color:var(--gold-2)}
+  .fcsal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fcsc{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface2)}
+  .fcsc .l{font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+  .fcsc .big{font-family:'Newsreader',serif;font-weight:600;font-size:20px;margin:5px 0 2px;color:var(--neto);font-variant-numeric:tabular-nums}
+  .fcsc .note{font-size:11.5px;color:var(--muted);line-height:1.4}
+  .fcsc.warn{background:var(--gasto-soft);border-color:var(--gasto)}.fcsc.warn .big{color:var(--gasto)}
+  .fcsc.ok{background:var(--ingreso-soft);border-color:var(--ingreso)}.fcsc.ok .big{color:var(--ingreso)}
+  .fccfg h4{font-size:12.5px;font-weight:700;color:var(--paper);margin:14px 0 3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .fccfg h4:first-child{margin-top:2px}
+  .fccfg .hint{font-size:11.5px;color:var(--muted);margin-bottom:6px;line-height:1.4}
+  .fcir{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);gap:12px}
+  .fcir:last-child{border-bottom:0}
+  .fcir label{font-size:13px;color:var(--paper);font-weight:500}.fcir label small{display:block;color:var(--muted2);font-size:11px;font-weight:500}
+  .fcir input{width:120px;text-align:right;font-family:inherit;font-size:14px;font-weight:600;color:var(--neto);border:1px solid var(--line2);border-radius:9px;padding:7px 10px;background:var(--surface);font-variant-numeric:tabular-nums}
+  .fcir input:focus{outline:0;border-color:var(--gold)}
+  .fcir input:disabled{color:var(--ingreso);background:var(--ingreso-soft);border-color:var(--ingreso);text-align:center;font-style:italic}
+  .fcfreq{font-size:10px;font-weight:700;color:var(--gold-2);background:var(--gold-soft);padding:2px 6px;border-radius:5px;white-space:nowrap}
+  .fcdisc{font-size:11.5px;color:var(--muted);background:var(--gold-soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px;line-height:1.5}
+  .fcdisc b{color:var(--gold-2)}
+  .fcgancho{cursor:pointer}
+  .fcg3{display:flex;gap:8px;margin-top:2px}
+  .fcg3>div{flex:1;background:var(--surface2);border-radius:10px;padding:9px 8px;text-align:center}
+  .fcg3 .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .fcg3 .n{font-family:'Newsreader',serif;font-weight:600;font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+  .fcgmore{margin-top:11px;font-size:12px;font-weight:700;color:var(--gold-2)}
+  @media(max-width:560px){.fctiers{grid-template-columns:1fr}.fcsal{grid-template-columns:1fr}}
   /* HOY — centro de mando */
   .hoyhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
   .hoydate{font-size:11px;color:var(--muted);font-weight:600;text-align:right;text-transform:capitalize;line-height:1.35}
@@ -1407,12 +1458,12 @@ function swapCmp(){const d=CMP.aD,h=CMP.aH;CMP.aD=CMP.bD;CMP.aH=CMP.bH;CMP.bD=d;
 let CURRENT='hoy';
 const NAVGROUPS=[
   ['hoy','Hoy',['hoy']],
-  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes']],
+  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes','forecast']],
   ['negocio','Negocio',['pipeline','citas']],
   ['alquileres','Alquileres',['alquileres']],
   ['mas','Más',['coaching','asistente','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1435,6 +1486,7 @@ function render(){
   else if(CURRENT==='graficos') renderGraficos();
   else if(CURRENT==='movimientos') renderMovs();
   else if(CURRENT==='reportes') renderReportes();
+  else if(CURRENT==='forecast') renderForecast();
   else if(CURRENT==='alquileres') renderAlquileres();
   else if(CURRENT==='pipeline') renderPipeline();
   else if(CURRENT==='citas') renderCitas();
@@ -1595,7 +1647,9 @@ function renderResumen(){
       <h3>Gastos por categoría</h3>
       ${brk('gasto','var(--gasto)')}
     </div>
-  </div>`;
+  </div>
+
+  ${forecastGanchoHTML()}`;
   foldApply();
 }
 
@@ -2946,7 +3000,27 @@ function renderManual(){
       <li><b>Comparativos:</b> vs. año anterior o A vs B (libre). El <b>CSV</b> exporta todo para Excel.</li>
     </ul>
 
-    <div class="mh2"><span>9.</span> Coaching y Asistente (IA)</div>
+    <div class="mh2"><span>9.</span> Forecast fiscal (Finanzas → Forecast)</div>
+    <p>Proyecta el <b>cierre de año</b> de tu negocio (persona jurídica), de lo que cobrás (<b>bruto</b>) a lo que queda <b>neto</b> después de todo. Toma tus cifras reales y las completa con campos que llenás vos o tu contador. <b>No registra movimientos</b>: solo lee y proyecta.</p>
+    <ul class="mul">
+      <li><b>3 vistas</b> (botón arriba): <i>Anual proyectado</i> (todo el año), <i>Mensual prom.</i> (anual ÷ 12) y <i>Real a hoy</i> (solo lo cobrado, prorrateado a los meses transcurridos).</li>
+      <li><b>3 niveles:</b> ① Bruto → ② Operativo (antes de impuestos) → ③ Neto (reserva del negocio).</li>
+      <li>Cada línea marca <span class="mok">auto</span> (la calcula la app) o <b style="color:#9A6B1E">manual</b> (la llenás vos/tu contador).</li>
+    </ul>
+    <div class="mf"><code>① Bruto proyectado</code> = cobrado del año + por cobrar + pipeline ponderado</div>
+    <div class="mf"><code>Pipeline ponderado</code> = Σ (comisión esperada × probabilidad%) de cada negocio activo</div>
+    <div class="mf"><code>② Operativo</code> = Bruto − gastos de negocio − gastos fijos − provisiones − salario</div>
+    <div class="mf"><code>③ Neto</code> = Operativo − IVA − renta/parciales − impuesto jurídica</div>
+    <ul class="mul">
+      <li><b>Gastos de negocio</b> (auto): comisiones a colegas, referidos y legales reales del año, más la parte proporcional sobre el pipeline ponderado.</li>
+      <li><b>Gastos fijos</b> (manual, mensual ×12): contador + CCSS + internet/TV/celular. El <b>CCSS</b> respeta el arreglo de pago hasta 08/2027.</li>
+      <li><b>Provisiones regulatorias</b> (manual, <u>amortizadas</u>): aparta cada mes una parte de los cargos que no son mensuales — <code>SUGEF ÷1 + EEFF ÷2 + firma digital ÷4</code> al año (1/12, 1/24 y 1/48 por mes). Así cuando llega la factura ya está guardada.</li>
+      <li><b>Salario</b> (manual): lo que te pagás del negocio (×12). Se compara con tu <b>gasto personal</b> y avisa si no alcanza.</li>
+      <li><b>IVA</b> (auto): 13% de lo que registrás <b>con factura</b>. Si en el <b>Resumen</b> anotaste el <b>IVA realmente pagado</b> de un mes (ajuste por crédito fiscal / IVA a favor), el forecast usa <u>ese</u> monto en vez del 13%. Meses sin ventas facturadas no suman IVA. <b>Renta, parciales y jurídica</b> los ponés con tu contador.</li>
+    </ul>
+    <div class="mtip">Lo editás una vez y queda guardado (viaja en el respaldo). Aparece también una <b>tarjeta-gancho</b> al final del Resumen con los 3 números.</div>
+
+    <div class="mh2"><span>10.</span> Coaching y Asistente (IA)</div>
     <p>En el grupo <b>Más</b>. Usan tu suscripción <b>Claude Pro</b> con un puente seguro de copiar/pegar — nada se envía solo y los <b>datos de clientes nunca salen</b>.</p>
     <ul class="mul">
       <li><b>Coaching del mes:</b> generás una consulta con tus métricas (sin nombres), la pegás en Claude y guardás la guía de buenas prácticas. Queda el historial por mes.</li>
@@ -2955,14 +3029,14 @@ function renderManual(){
       <li><b>Resumen de visita (en la cita):</b> dentro de cada cita escribís o dictás las notas, las estructurás con Claude y el resumen queda guardado en la cita y sale en el reporte de gestión.</li>
     </ul>
 
-    <div class="mh2"><span>10.</span> Respaldo y sincronización</div>
+    <div class="mh2"><span>11.</span> Respaldo y sincronización</div>
     <ul class="mul">
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
     </ul>
 
-    <div class="mh2"><span>11.</span> Reglas de oro</div>
+    <div class="mh2"><span>12.</span> Reglas de oro</div>
     <ul class="mul">
       <li><span class="mok">✓</span> Mismo nombre exacto de propiedad en todo un cierre.</li>
       <li><span class="mok">✓</span> Comisión siempre NETA; el IVA lo agrega la app.</li>
@@ -3946,6 +4020,179 @@ function resetRecibos(){
   DATA.forEach(x=>{ if(x.alquiler){ delete x.alquiler.reciboNum; delete x.alquiler.reciboFecha; } });
   persist(); render(); toast('✓ Numeración reiniciada · el próximo recibo será 001');
 }
+/* ---------- Forecast fiscal (bruto → operativo → neto) ---------- */
+const FC_DEF={sal:350000,personal:400000,cont:55000,ccss:40000,net:40125,sugef:300000,eeff:215000,firma:55000,renta:0,jur:69330};
+function fcCfg(){ if(!SET.fc)SET.fc={}; const c=SET.fc; for(const k in FC_DEF){ if(c[k]==null)c[k]=FC_DEF[k]; } return c; }
+const fcNum=s=>{const n=parseInt(String(s).replace(/[^\d]/g,''),10);return isNaN(n)?0:n;};
+let FCMODE='anual'; // 'anual' | 'mensual' | 'real'
+function fcSetMode(m){ FCMODE=m; document.querySelectorAll('#fcModeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); fcRecompute(); }
+let _fcSaveT=null;
+function fcInput(key,val){ const c=fcCfg(); c[key]=fcNum(val); fcRecompute(); clearTimeout(_fcSaveT); _fcSaveT=setTimeout(persist,400); }
+
+function fcCompute(mode){
+  mode=mode||FCMODE;
+  const cfg=fcCfg();
+  const cy=new Date().getFullYear();
+  const now=new Date();
+  const elapsed = now.getFullYear()===cy ? (now.getMonth()+1) : (now.getFullYear()>cy?12:0);
+  // Reales del año en curso
+  let cobrado=0,porCobrar=0,bizReal=0;
+  DATA.forEach(m=>{
+    if(+String(m.fecha).slice(0,4)!==cy) return;
+    if(m.tipo==='ingreso'){ if(m.cobro==='pend') porCobrar+=crc(m); else cobrado+=crc(m); }
+    else { if(!isIvaGasto(m) && !m.virt) bizReal+=crc(m); }
+  });
+  // IVA efectivo del año: respeta el ajuste manual del Resumen (lo realmente pagado a Hacienda,
+  // que el contador puede bajar por crédito fiscal / IVA a favor). Si un mes no tiene ajuste,
+  // usa el IVA auto registrado (13% de lo facturado). Meses sin ventas facturadas → ₡0 solos.
+  let ivaReal=0;
+  const lastMo = (now.getFullYear()===cy)?elapsed:(now.getFullYear()>cy?12:0);
+  for(let mo=1; mo<=lastMo; mo++){
+    const ym=cy+'-'+String(mo).padStart(2,'0');
+    const dv=(SET.ivaPag && SET.ivaPag[ym]!=null && SET.ivaPag[ym]!=='')?(+SET.ivaPag[ym]):null;
+    ivaReal += (dv!=null)?dv:ivaCalcMonth(ym);
+  }
+  // Pipeline ponderado (lo que falta por cerrar)
+  let pipePond=0;
+  PIPE.forEach(p=>{ const base=(p.moneda==='USD')?(p.monto*(p.tc||1)):(+p.monto||0); pipePond += base*((p.prob==null?100:p.prob)/100); });
+  const ingrCerrado=cobrado+porCobrar;
+  const rBiz= ingrCerrado>0 ? bizReal/ingrCerrado : 0;
+  const rIva= ingrCerrado>0 ? ivaReal/ingrCerrado : 0;
+  // CCSS: arreglo de pago hasta 08/2027
+  const ccssYearMonths = cy<2027?12:(cy===2027?8:0);
+  const ccssElapsed = cy<2027?elapsed:(cy===2027?Math.min(elapsed,8):0);
+  const sal=+cfg.sal||0,cont=+cfg.cont||0,ccss=+cfg.ccss||0,net=+cfg.net||0;
+  const sugef=+cfg.sugef||0,eeff=+cfg.eeff||0,firma=+cfg.firma||0,renta=+cfg.renta||0,jur=+cfg.jur||0;
+  const provAnual=Math.round(sugef + eeff/2 + firma/4);
+
+  let bruto,biz,iva,fixed,prov,salary,rentaV,jurV,div,scopeLbl,grossNote,facturadoBase;
+  if(mode==='real'){
+    bruto=cobrado; biz=bizReal; iva=ivaReal; facturadoBase=ingrCerrado;
+    fixed=(cont+net)*elapsed + ccss*ccssElapsed;
+    prov=Math.round(provAnual/12*elapsed);
+    salary=sal*elapsed;
+    rentaV=Math.round(renta/12*elapsed); jurV=Math.round(jur/12*elapsed);
+    div=1; scopeLbl='real a '+(MES[Math.max(0,elapsed-1)]||'')+' '+cy;
+    grossNote='solo lo cobrado este año ('+elapsed+' mes'+(elapsed===1?'':'es')+')';
+  } else {
+    bruto=cobrado+porCobrar+pipePond;
+    biz=bizReal+rBiz*pipePond;
+    iva=ivaReal+rIva*pipePond;
+    facturadoBase=ingrCerrado+pipePond;
+    fixed=(cont+net)*12 + ccss*ccssYearMonths;
+    prov=provAnual;
+    salary=sal*12;
+    rentaV=renta; jurV=jur;
+    if(mode==='mensual'){ div=12; scopeLbl='promedio mensual · proyectado'; }
+    else { div=1; scopeLbl='año '+cy+' · proyectado'; }
+    grossNote='cobrado + por cobrar + pipeline ponderado';
+  }
+  const operativo=bruto - biz - fixed - prov - salary;
+  const impuestos=iva + rentaV + jurV;
+  const neto=operativo - impuestos;
+  return {cy,elapsed,cobrado,porCobrar,pipePond,bruto,biz,iva,fixed,prov,salary,rentaV,jurV,operativo,impuestos,neto,div,scopeLbl,grossNote,cfg,sal:+cfg.sal||0,personal:+cfg.personal||0,mode};
+}
+
+function forecastGanchoHTML(){
+  const f=fcCompute('anual');
+  if(f.bruto<=0) return '';
+  return `<div class="section fcgancho" onclick="go('forecast')">
+    <h3>Forecast fiscal <span class="small">cierre de año · de bruto a neto</span></h3>
+    <div class="fcg3">
+      <div><div class="l">Bruto</div><div class="n" style="color:var(--neto)">${fmtC(f.bruto)}</div></div>
+      <div><div class="l">Operativo</div><div class="n" style="color:var(--gold)">${fmtC(f.operativo)}</div></div>
+      <div><div class="l">Neto</div><div class="n" style="color:var(--ingreso)">${fmtC(f.neto)}</div></div>
+    </div>
+    <div class="fcgmore">Ver desglose, salario, provisiones e impuestos →</div>
+  </div>`;
+}
+
+function renderForecast(){
+  fcCfg();
+  document.getElementById('view').innerHTML = `
+  <div class="fcbanner">📊 <b>Forecast fiscal</b> · persona jurídica. Toma tus cifras reales y proyecta el cierre de año: de lo que cobrás (bruto) hasta lo que queda neto después de gastos, provisiones, salario e impuestos.</div>
+
+  <div class="fcmodeseg" id="fcModeSeg">
+    <button data-m="anual" class="on" onclick="fcSetMode('anual')">Anual proyectado</button>
+    <button data-m="mensual" onclick="fcSetMode('mensual')">Mensual prom.</button>
+    <button data-m="real" onclick="fcSetMode('real')">Real a hoy</button>
+  </div>
+
+  <div class="fctiers" id="fcTiers"></div>
+
+  <div class="section" style="margin-bottom:14px">
+    <h3>El desglose, paso a paso <span class="small" id="fcScope"></span></h3>
+    <div class="fcfall" id="fcFall"></div>
+  </div>
+
+  <div class="section" style="margin-bottom:14px">
+    <h3>Tu salario vs. tu vida</h3>
+    <div class="fcsal" id="fcSalary"></div>
+  </div>
+
+  <div class="section">
+    <h3>Lo que podés ajustar <span class="small">editá y todo se recalcula</span></h3>
+    <div class="fccfg">
+      <h4>Tu salario</h4>
+      <div class="fcir"><label>Salario mensual <small>lo que te pagás del negocio</small></label><input type="text" value="${(+fcCfg().sal||0).toLocaleString('es-CR')}" oninput="fcInput('sal',this.value)"></div>
+      <div class="fcir"><label>Tu gasto personal mensual <small>para comparar contra el salario</small></label><input type="text" value="${(+fcCfg().personal||0).toLocaleString('es-CR')}" oninput="fcInput('personal',this.value)"></div>
+
+      <h4>Gastos fijos mensuales</h4>
+      <div class="fcir"><label>Honorarios contador</label><input type="text" value="${(+fcCfg().cont||0).toLocaleString('es-CR')}" oninput="fcInput('cont',this.value)"></div>
+      <div class="fcir"><label>CCSS · arreglo de pago <small>hasta 08/2027</small></label><input type="text" value="${(+fcCfg().ccss||0).toLocaleString('es-CR')}" oninput="fcInput('ccss',this.value)"></div>
+      <div class="fcir"><label>Internet · TV · celular</label><input type="text" value="${(+fcCfg().net||0).toLocaleString('es-CR')}" oninput="fcInput('net',this.value)"></div>
+
+      <h4>Provisiones regulatorias <span class="fcfreq">amortizadas por mes</span></h4>
+      <div class="hint">Cargos que no son mensuales: el negocio aparta 1/12 (anual), 1/24 (cada 2 años) o 1/48 (cada 4 años) cada mes, para que cuando llegue la factura no te sorprenda.</div>
+      <div class="fcir"><label>Canon SUGEF (art. 15bis) <small>anual · lo anuncia SUGEF en abril</small></label><input type="text" value="${(+fcCfg().sugef||0).toLocaleString('es-CR')}" oninput="fcInput('sugef',this.value)"></div>
+      <div class="fcir"><label>EEFF auditados <small>cada 2 años · próx. dic-2027</small></label><input type="text" value="${(+fcCfg().eeff||0).toLocaleString('es-CR')}" oninput="fcInput('eeff',this.value)"></div>
+      <div class="fcir"><label>Renovación firma digital <small>cada 4 años · próx. oct-2026</small></label><input type="text" value="${(+fcCfg().firma||0).toLocaleString('es-CR')}" oninput="fcInput('firma',this.value)"></div>
+
+      <h4>Impuestos <span class="fcfreq">vos / tu contador</span></h4>
+      <div class="fcir"><label>IVA <small>13% automático, sale de lo que registrás facturado</small></label><input type="text" value="auto" disabled></div>
+      <div class="fcir"><label>Renta + parciales (estimado anual) <small>lo da tu contador</small></label><input type="text" value="${(+fcCfg().renta||0).toLocaleString('es-CR')}" oninput="fcInput('renta',this.value)"></div>
+      <div class="fcir"><label>Impuesto a personas jurídicas (anual)</label><input type="text" value="${(+fcCfg().jur||0).toLocaleString('es-CR')}" oninput="fcInput('jur',this.value)"></div>
+    </div>
+    <div class="fcdisc"><b>⚠︎ Sobre los impuestos:</b> no soy tu contador y la ley tributaria de CR cambia. <b>Renta, parciales y el impuesto de jurídica</b> los llenás con lo que te diga tu contador — la app solo hace la matemática. El <b>IVA (13%)</b> sí sale solo, de lo que registrás <b>con factura</b>.</div>
+  </div>`;
+  fcRecompute();
+}
+
+function fcRecompute(){
+  const f=fcCompute();
+  const d=f.div;
+  const tiers=document.getElementById('fcTiers'); if(!tiers) return;
+  tiers.innerHTML=`
+    <div class="fctier t1"><div class="l">① Bruto ${f.mode==='real'?'real':'proyectado'}</div><div class="big">${fmtC(f.bruto/d)}</div><div class="note">${f.grossNote}</div></div>
+    <div class="fctier t2"><div class="l">② Operativo · antes de imp.</div><div class="big">${fmtC(f.operativo/d)}</div><div class="note">− gastos, provisiones y salario: <b>${fmtC((f.biz+f.fixed+f.prov+f.salary)/d)}</b></div></div>
+    <div class="fctier t3"><div class="l">③ Neto · reserva del negocio</div><div class="big">${fmtC(f.neto/d)}</div><div class="note">− impuestos (IVA+renta+jur.): <b>${fmtC(f.impuestos/d)}</b></div></div>`;
+  const sc=document.getElementById('fcScope'); if(sc) sc.textContent=f.scopeLbl;
+  const rows=[
+    ['head','Ingreso bruto', f.bruto, '', ''],
+    ['','− Comisiones, referidos, legales', f.biz, 'neg', ''],
+    ['','− Gastos fijos<small>contador + CCSS + internet</small>', f.fixed, 'neg', ''],
+    ['','− Provisiones regulatorias<small>SUGEF + EEFF + firma digital, amortizadas</small>', f.prov, 'neg', ''],
+    ['','− Tu salario<small>'+fmtCRC(f.sal)+'/mes</small>', f.salary, 'neg', ''],
+    ['head','= Operativo (antes de impuestos)', f.operativo, '', ''],
+    ['','− IVA 13%<small>de lo facturado · respeta tu ajuste del Resumen</small>', f.iva, 'neg', 'auto'],
+    ['','− Renta + parciales<small>estimado de tu contador</small>', f.rentaV, 'neg', 'man'],
+    ['','− Impuesto personas jurídicas', f.jurV, 'neg', 'man'],
+    ['total','= Neto · reserva del negocio', f.neto, '', '']
+  ];
+  document.getElementById('fcFall').innerHTML=rows.map(r=>{
+    const[cls,k,val,sign,tag]=r;
+    const pill = tag==='auto'?'<span class="fcpill auto">auto</span>':tag==='man'?'<span class="fcpill man">manual</span>':'';
+    const isHT = cls==='head'||cls==='total';
+    const vtxt = isHT ? fmtCRC(val/d) : (sign==='neg'?'− ':'')+fmtCRC(Math.abs(val)/d);
+    return `<div class="fcfr ${cls}"><div class="k">${k}${pill}</div><div class="v ${sign}">${vtxt}</div></div>`;
+  }).join('');
+  // salario
+  const sal=f.sal, personal=f.personal, gap=sal-personal;
+  const salHTML=`<div class="fcsc"><div class="l">Te pagás</div><div class="big">${fmtCRC(sal)}/mes</div><div class="note">= ${fmtCRC(sal*12)} al año saliendo del negocio</div></div>`+
+    `<div class="fcsc ${gap<0?'warn':'ok'}"><div class="l">vs. gasto personal (${fmtCRC(personal)}/mes)</div><div class="big">${gap>=0?'+':'−'}${fmtCRC(Math.abs(gap))}/mes</div><div class="note">${gap<0?'tu salario no cubre tu gasto personal · faltan '+fmtCRC(Math.abs(gap))+' que salen de otra fuente o de la reserva':'tu salario cubre tu vida y sobra'}</div></div>`;
+  document.getElementById('fcSalary').innerHTML=salHTML;
+}
+
 function exportJSON(){
   var name='MH_Reportes_respaldo.json';
   var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST,citas:CITAS,coach:COACH},null,2);
