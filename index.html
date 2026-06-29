@@ -1174,6 +1174,7 @@
       <button type="button" class="icsbtn" onclick="otraVisita()" style="color:var(--gold)">➕ Otra visita (con la pareja, 2ª vuelta…)</button>
     </div>
     <div class="formrow"><label>Estado</label><select id="citaEstado" onchange="citaEstadoChange()"></select></div>
+    <div class="formrow"><label>Origen del lead <small style="font-weight:500;text-transform:none;letter-spacing:0">· para el embudo</small></label><select id="citaOrigen"><option value="redes">Redes (fan page / Marketplace)</option><option value="referido">Referido</option><option value="colega">Cliente de colega</option><option value="directo">Directo / otro</option></select></div>
     <div class="formrow" id="citaMotivoRow" style="display:none"><label id="citaMotivoLbl">Motivo (por qué no continuó)</label><textarea id="citaMotivo" placeholder="Ej: el perfil crediticio no calificó · al cliente no le gustó la ubicación · el propietario no aceptó el perfil…" style="min-height:64px"></textarea></div>
     <div class="formrow" id="citaResumenRow" style="display:none"><label>📝 Resumen de la visita</label><textarea id="citaResumen" placeholder="Escribí o dictá (micrófono del teclado) cómo estuvo la visita, qué dijo el cliente, el siguiente paso…" style="min-height:80px"></textarea>
       <div class="citaresbtns"><button type="button" class="icsbtn" style="margin-top:8px" onclick="estructurarResumen()">✨ Estructurar con Claude<br><span style="font-weight:500;color:var(--muted)">copia tus notas listas para pegar en Claude</span></button></div>
@@ -1210,7 +1211,7 @@
 <script>
 /* ---------- Almacenamiento (localStorage con respaldo en memoria) ---------- */
 const PASS='MHFi240312';  // Contraseña de ingreso — cambiala por la que quieras
-const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1', CKEY='mh_citas_v1', COKEY='mh_coaching_v1';
+const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1', CKEY='mh_citas_v1', COKEY='mh_coaching_v1', MKEY='mh_mkt_v1';
 let mem={}; // respaldo si localStorage no está disponible (p.ej. previsualización)
 function store(k,v){ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} }
 function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]??null)}catch(e){return mem[k]??null} }
@@ -1221,7 +1222,8 @@ let PIPE = JSON.parse(load(PKEY) || '[]');   // cartera/pipeline — NO afecta c
 let LOST = JSON.parse(load(LKEY) || '[]');   // negocios perdidos — histórico, no suma en pipeline ni en cifras reales
 let CITAS = JSON.parse(load(CKEY) || '[]');  // citas / visitas — solo seguimiento comercial de portafolio PROPIO, no afecta cifras reales
 let COACH = JSON.parse(load(COKEY) || '[]'); // coaching mensual — guía de buenas prácticas importada de Claude Pro, no afecta cifras reales
-function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); store(CKEY, JSON.stringify(CITAS)); store(COKEY, JSON.stringify(COACH)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
+let MKT  = JSON.parse(load(MKEY) || '{}');  // embudo de marketing — capturas mensuales {YYYY-MM:{fan, props:{propkey:{mkt,cons}}}}, no afecta cifras reales
+function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); store(CKEY, JSON.stringify(CITAS)); store(COKEY, JSON.stringify(COACH)); store(MKEY, JSON.stringify(MKT)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
 const LOGO_PATH=`M2238 7250 c-16 -12 -28 -27 -28 -34 0 -7 22 -60 49 -117 86 -185
 124 -313 156 -533 41 -283 39 -923 -5 -1135 -25 -124 -53 -195 -109 -281 -22
 -35 -41 -70 -41 -77 0 -27 83 -165 104 -172 11 -5 124 -5 250 -1 176 6 230 11
@@ -1468,11 +1470,11 @@ let CURRENT='hoy';
 const NAVGROUPS=[
   ['hoy','Hoy',['hoy']],
   ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes','forecast']],
-  ['negocio','Negocio',['pipeline','citas']],
+  ['negocio','Negocio',['pipeline','citas','embudo']],
   ['alquileres','Alquileres',['alquileres']],
   ['mas','Más',['coaching','asistente','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',pipeline:'Pipeline',citas:'Citas',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',pipeline:'Pipeline',citas:'Citas',embudo:'Marketing',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1499,6 +1501,7 @@ function render(){
   else if(CURRENT==='alquileres') renderAlquileres();
   else if(CURRENT==='pipeline') renderPipeline();
   else if(CURRENT==='citas') renderCitas();
+  else if(CURRENT==='embudo') renderEmbudo();
   else if(CURRENT==='coaching') renderCoaching();
   else if(CURRENT==='asistente') renderAsistente();
   else if(CURRENT==='manual') renderManual();
@@ -1912,6 +1915,7 @@ function propFicha(name){
     ${priceLine}
     ${rentInfo}${rows}${pipeRows}
     ${CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===key)?`<button class="ghostbtn" style="width:100%;margin-top:14px;border-color:var(--gold);color:var(--gold)" onclick="closePropFicha();reporteGestion('${name.replace(/'/g,"\\'")}')">📄 Reporte de gestión</button>`:''}
+    ${txClosed?`<button class="ghostbtn" style="width:100%;margin-top:10px;border-color:var(--ingreso);color:var(--ingreso)" onclick="closePropFicha();reporteDesempeno('${name.replace(/'/g,"\\'")}')">🏆 Reporte de desempeño (cierre)</button>`:''}
     <button class="ghostbtn" style="width:100%;margin-top:10px" onclick="closePropFicha()">Cerrar</button>`;
   document.getElementById('propOverlay').classList.add('open');
 }
@@ -3013,9 +3017,12 @@ function renderManual(){
       <li>Cada negocio en proceso con su comisión y plazo (1/2/3 meses). Suma solo en su casilla de plazo.</li>
       <li><b>Fecha de ingreso editable</b> · <b>⏱ días en gestión</b> en cada ficha · a los 3 meses pasa a <b>Vencido</b>.</li>
       <li><b>Cerrado:</b> se traslada solo a tus cifras reales (con deshacer). <b>Perdido:</b> al histórico (con devolver).</li>
+      <li><b>Precio de venta / alquiler:</b> campo opcional (el rótulo cambia solo según el concepto). Al cerrar te pide el <b>precio logrado</b> y calcula el <b>% del precio pedido</b>. Se ve en la ficha de la propiedad y en los reportes al propietario.</li>
     </ul>
     <div class="mf"><code>% de cierre</code> = cerrados ÷ (cerrados + perdidos) · cuenta negocios</div>
     <div class="mf"><code>Efectividad (₡)</code> = ₡ cerrados ÷ (₡ cerrados + ₡ perdidos) · pesa colones</div>
+    <div class="mf"><code>Velocidad de pipeline</code> = activos × % cierre × comisión promedio ÷ días de ciclo (₡/mes que mueve tu cartera)</div>
+    <div class="mf"><code>Absorción</code> = meses para colocar el pipeline actual al ritmo de los últimos 6 meses</div>
     <div class="mtip">«% de cierre» cuenta negocios; «Efectividad» pesa colones. Si cerrás chicos y perdés uno grande, el % puede ser alto y la efectividad baja.</div>
 
     <div class="mh2"><span>7.</span> Citas (seguimiento comercial)</div>
@@ -3027,17 +3034,29 @@ function renderManual(){
       <li><b>Agendar al Calendario:</b> en citas vivas con fecha y hora, el botón “📅 Agregar al Calendario” abre el evento ya rellenado en tu Calendario de Apple (vos tocás “Añadir”), con recordatorio 1 día y 1 hora antes.</li>
       <li><b>Al cerrar en pipeline</b> elegís cuál cita lo cerró; las demás pasan a "cerrado antes". Si perdés, pasan a "no continúa".</li>
       <li><b>Varias visitas por lead:</b> cuando la cita ya tiene fecha aparecen dos botones — <b>🔁 Reagendar</b> (el cliente cambió la fecha) y <b>➕ Otra visita</b> (segunda vuelta con la pareja, la familia, etc.). Ambos guardan la fecha actual en el <b>historial de visitas del lead</b> y te dejan poner la nueva. El historial sale en la cita y en el <b>reporte de gestión</b> — así le demostrás al propietario cada visita que se coordinó.</li>
+      <li><b>Origen del lead:</b> en cada cita elegís de dónde vino (Redes / Referido / Cliente de colega / Directo). Lo usa el <b>Embudo de marketing</b> para medir solo lo que generan tus redes. No se muestra al propietario.</li>
     </ul>
     <div class="mf"><code>Efectividad de citas</code> = cierres ÷ (cierres + visitas efectuadas sin cierre)</div>
-    <p style="font-size:12px;color:var(--muted)">No cuentan canceladas, no-show, rechazos de perfil ni las vivas. <b>Reporte de gestión PDF</b> por propiedad para demostrarle al propietario tu trabajo.</p>
+    <p style="font-size:12px;color:var(--muted)">No cuentan canceladas, no-show, rechazos de perfil ni las vivas. <b>Dos PDF por propiedad</b> (botones en la ficha de la propiedad; el de gestión también en Citas): <b>📄 Reporte de gestión</b> (seguimiento de citas, disponible siempre) y <b>🏆 Reporte de desempeño</b> (solo cuando el negocio ya cerró: prospectos atendidos, días en el mercado, visitas hasta cerrar, % del precio pedido, exposición y bitácora). Ninguno muestra el origen del lead ni tus comisiones.</p>
 
-    <div class="mh2"><span>8.</span> Reportes</div>
+    <div class="mh2"><span>8.</span> Embudo de marketing (Negocio → Marketing)</div>
+    <p>Mide de <b>cuánta gente te ve</b> a <b>cuántos negocios cerrás</b>. Vive en el grupo <b>Negocio</b>. No toca cifras reales.</p>
+    <ul class="mul">
+      <li><b>Cada mes digitás 3 datos</b> (con las flechas ‹ › elegís el mes): <b>alcance de la Fan page</b> (global) y, por propiedad, <b>vistas de Marketplace</b> y <b>consultas</b>. ~2 min.</li>
+      <li><b>Citas y cierres se llenan solos</b> desde tus Citas con origen «Redes» — no se digitan.</li>
+      <li><b>Embudo:</b> Vistas → Consultas → Leads con cita → Cierres, con el % de conversión en cada paso.</li>
+      <li><b>Filtrás por propiedad</b> (Todas = total que suma todas, o una sola) y por <b>período</b> (mes / año / todo).</li>
+      <li><b>Origen de tus cierres:</b> barra interna (Redes / Referido / Colega / Directo) — para vos, no sale en el reporte al propietario.</li>
+    </ul>
+    <div class="mtip">El embudo cuenta <b>solo</b> los leads con origen «Redes», para no inflar la conversión con referidos o clientes de colegas. La exposición (alcance/consultas) también alimenta el <b>reporte de desempeño</b> al propietario.</div>
+
+    <div class="mh2"><span>9.</span> Reportes</div>
     <ul class="mul">
       <li>Elegí período y <b>Generar PDF</b>: tarjetas, evolución, tabla por mes, colocación, facturación, corredores, IVA, movimientos y contratos.</li>
       <li><b>Comparativos:</b> vs. año anterior o A vs B (libre). El <b>CSV</b> exporta todo para Excel.</li>
     </ul>
 
-    <div class="mh2"><span>9.</span> Forecast fiscal (Finanzas → Forecast)</div>
+    <div class="mh2"><span>10.</span> Forecast fiscal (Finanzas → Forecast)</div>
     <p>Proyecta el <b>cierre de año</b> de tu negocio (persona jurídica), de lo que cobrás (<b>bruto</b>) a lo que queda <b>neto</b> después de todo. Toma tus cifras reales y las completa con campos que llenás vos o tu contador. <b>No registra movimientos</b>: solo lee y proyecta.</p>
     <ul class="mul">
       <li><b>3 vistas</b> (botón arriba): <i>Anual proyectado</i> (todo el año), <i>Mensual prom.</i> (anual ÷ 12) y <i>Real a hoy</i> (solo lo cobrado, prorrateado a los meses transcurridos).</li>
@@ -3057,7 +3076,7 @@ function renderManual(){
     </ul>
     <div class="mtip">Lo editás una vez y queda guardado (viaja en el respaldo). Aparece también una <b>tarjeta-gancho</b> al final del Resumen con los 3 números.</div>
 
-    <div class="mh2"><span>10.</span> Coaching y Asistente (IA)</div>
+    <div class="mh2"><span>11.</span> Coaching y Asistente (IA)</div>
     <p>En el grupo <b>Más</b>. Usan tu suscripción <b>Claude Pro</b> con un puente seguro de copiar/pegar — nada se envía solo y los <b>datos de clientes nunca salen</b>.</p>
     <ul class="mul">
       <li><b>Coaching del mes:</b> generás una consulta con tus métricas (sin nombres), la pegás en Claude y guardás la guía de buenas prácticas. Queda el historial por mes.</li>
@@ -3066,14 +3085,14 @@ function renderManual(){
       <li><b>Resumen de visita (en la cita):</b> dentro de cada cita escribís o dictás las notas, las estructurás con Claude y el resumen queda guardado en la cita y sale en el reporte de gestión.</li>
     </ul>
 
-    <div class="mh2"><span>11.</span> Respaldo y sincronización</div>
+    <div class="mh2"><span>12.</span> Respaldo y sincronización</div>
     <ul class="mul">
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
     </ul>
 
-    <div class="mh2"><span>12.</span> Reglas de oro</div>
+    <div class="mh2"><span>13.</span> Reglas de oro</div>
     <ul class="mul">
       <li><span class="mok">✓</span> Mismo nombre exacto de propiedad en todo un cierre.</li>
       <li><span class="mok">✓</span> Comisión siempre NETA; el IVA lo agrega la app.</li>
@@ -3497,6 +3516,7 @@ function openCita(id,pre){
     citaIng=c.ingreso||''; citaFec=c.fecha||''; citaHor=c.hora||'';
     document.getElementById('citaEstado').value=c.estado||'agendada';
     document.getElementById('citaMotivo').value=c.motivo||'';
+    document.getElementById('citaOrigen').value=c.origen||'redes';
     document.getElementById('citaResumen').value=c.resumen||'';
     citaHist=(c.historial||[]).slice();
     document.getElementById('citaTitle').textContent='Editar cita';
@@ -3508,6 +3528,7 @@ function openCita(id,pre){
     citaIng=new Date().toISOString().slice(0,10); citaFec=''; citaHor='';
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
     document.getElementById('citaMotivo').value='';
+    document.getElementById('citaOrigen').value='redes';
     document.getElementById('citaResumen').value='';
     citaHist=[];
     document.getElementById('citaTitle').textContent='Nueva cita';
@@ -3574,6 +3595,7 @@ function saveCita(){
     propiedad:prop, cliente:document.getElementById('citaCli').value.trim(),
     ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
     estado:document.getElementById('citaEstado').value,
+    origen:document.getElementById('citaOrigen').value,
     historial:citaHist.slice(),
     resumen:document.getElementById('citaResumen').value.trim(),
     motivo:(CITA_COL[document.getElementById('citaEstado').value]==='r')?document.getElementById('citaMotivo').value.trim():'' };
@@ -3640,6 +3662,99 @@ function closeLinkedCitas(pipeId,chosenId){
 }
 function loseLinkedCitas(pipeId){
   CITAS.forEach(c=>{ if(c.lid===pipeId && CITA_VIVAS.indexOf(c.estado)>=0) c.estado='nocontinua'; });
+}
+
+/* ----- Embudo de marketing (Negocio → Marketing) ----- */
+let MKT_MONTH=new Date().toISOString().slice(0,7), MKT_SCOPE='todas', MKT_PER='ano';
+const ORIG_LBL={redes:'Redes',referido:'Referido',colega:'Colega',directo:'Directo'};
+const ORIG_COL={redes:'#27557F',referido:'#C99A33',colega:'#7C6F9B',directo:'#8B97A6'};
+function mktEnsure(mk){ if(!MKT[mk])MKT[mk]={fan:0,props:{}}; if(!MKT[mk].props)MKT[mk].props={}; return MKT[mk]; }
+function mktNav(d){ let a=MKT_MONTH.split('-'),y=+a[0],m=+a[1]; m+=d; while(m<1){m+=12;y--;} while(m>12){m-=12;y++;} MKT_MONTH=y+'-'+('0'+m).slice(-2); renderEmbudo(); }
+function mktSaveFan(v){ mktEnsure(MKT_MONTH).fan=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
+function mktSaveProp(key,field,v){ const M=mktEnsure(MKT_MONTH); if(!M.props[key])M.props[key]={mkt:0,cons:0}; M.props[key][field]=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
+function mktSetScope(v){ MKT_SCOPE=v; mktRefreshFunnel(); }
+function mktSetPer(p){ MKT_PER=p; renderEmbudo(); }
+function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===now.toISOString().slice(0,7); if(MKT_PER==='ano')return mk.slice(0,4)===String(now.getFullYear()); return true; }
+function mktFunnel(scope){
+  let views=0,cons=0;
+  Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ const M=MKT[mk]||{}, ps=M.props||{};
+    if(scope==='todas'){ views+=(+M.fan||0); Object.keys(ps).forEach(k=>{views+=(+ps[k].mkt||0);cons+=(+ps[k].cons||0);}); }
+    else { const p=ps[scope]||{}; views+=(+p.mkt||0); cons+=(+p.cons||0); }
+  });
+  const cz=CITAS.filter(c=>{ if((c.origen||'redes')!=='redes')return false; const d=c.fecha||c.ingreso||''; if(!d||!mktPerTest(d.slice(0,7)))return false; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return false; return true; });
+  return {views,cons,citas:cz.length,cierres:cz.filter(c=>c.estado==='cerro').length};
+}
+function mktOrigen(scope){ const mix={redes:0,referido:0,colega:0,directo:0};
+  CITAS.forEach(c=>{ if(c.estado!=='cerro')return; const d=c.fecha||c.ingreso||''; if(d&&!mktPerTest(d.slice(0,7)))return; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return; const o=c.origen||'redes'; if(mix[o]!=null)mix[o]++; });
+  return mix;
+}
+function mktFunnelHTML(){
+  const nf=n=>new Intl.NumberFormat('es-CR').format(Math.round(n||0));
+  const isAll=MKT_SCOPE==='todas';
+  const f=mktFunnel(MKT_SCOPE);
+  const steps=[ {l:isAll?'Alcance / vistas':'Vistas Marketplace',v:f.views,c:'#27557F'}, {l:'Consultas',v:f.cons,c:'#3E73A8'}, {l:'Leads con cita',v:f.citas,c:'#C99A33'}, {l:'Negocios cerrados',v:f.cierres,c:'#15805A'} ];
+  let h='';
+  steps.forEach((s,i)=>{ const w=Math.max(40, i===0?100:(steps[0].v>0?100*s.v/steps[0].v:40));
+    h+=`<div style="width:${w}%;background:${s.c};color:#fff;border-radius:10px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center;margin:0 auto 6px"><span style="font-size:12.5px;font-weight:600;opacity:.95">${s.l}</span><span style="font-family:'Newsreader',serif;font-size:21px;font-weight:600">${nf(s.v)}</span></div>`;
+    if(i<steps.length-1){ const nx=steps[i+1].v, cv=s.v>0?(nx/s.v*100):0; h+=`<div style="text-align:center;font-size:11px;font-weight:700;color:var(--gold);margin:-1px 0 6px">↓ ${cv.toFixed(cv<10?1:0)}% a ${steps[i+1].l.toLowerCase()}</div>`; }
+  });
+  const gl=f.views>0?(f.cierres/f.views*100):0;
+  h+=`<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.5">${isAll?'De cada':'En esta propiedad, de cada'} <b>${nf(f.views)}</b> ${isAll?'que te vieron':'vistas'}, cerraste <b>${f.cierres}</b> \u2014 conversi\u00f3n <b>${gl.toFixed(2)}%</b>.</div>`;
+  // Origen interno
+  const mix=mktOrigen(MKT_SCOPE); const tot=Object.keys(mix).reduce((a,k)=>a+mix[k],0);
+  let ob='';
+  if(tot>0){ ob='<div style="display:flex;height:26px;border-radius:7px;overflow:hidden;margin:10px 0 8px">'+Object.keys(mix).filter(k=>mix[k]>0).map(k=>`<span style="flex:${mix[k]};background:${ORIG_COL[k]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${Math.round(mix[k]/tot*100)}%</span>`).join('')+'</div><div style="display:flex;flex-wrap:wrap;gap:10px">'+Object.keys(mix).map(k=>`<span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--paper)"><i style="width:10px;height:10px;border-radius:3px;background:${ORIG_COL[k]}"></i>${ORIG_LBL[k]} <b>${mix[k]}</b></span>`).join('')+'</div>'; }
+  else ob='<div style="font-size:12px;color:var(--muted2);padding:8px 0">Sin cierres en el per\u00edodo.</div>';
+  return `<div id="mktFunnelBox">
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 16px;box-shadow:var(--shadow-sm);margin-bottom:14px">${h}</div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm)">
+      <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px">Origen de tus cierres</div>
+      ${ob}
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">El embudo cuenta <b>solo origen Redes</b>. Esta barra muestra de d\u00f3nde vino <b>todo</b> tu negocio \u2014 uso interno, no sale en el reporte al propietario.</div>
+    </div>
+  </div>`;
+}
+function mktRefreshFunnel(){ const box=document.getElementById('mktAfter'); if(box) box.innerHTML=mktScopeBarHTML()+mktFunnelHTML(); }
+function mktScopeBarHTML(){
+  const props=ownProps();
+  const opts=['<option value="todas">Todas las propiedades (total)</option>'].concat(props.map(p=>`<option value="${p.trim().toLowerCase().replace(/"/g,'&quot;')}"${MKT_SCOPE===p.trim().toLowerCase()?' selected':''}>${p.replace(/</g,'&lt;')}</option>`)).join('');
+  const per=[['mes','Este mes'],['ano','Este año'],['todo','Todo']];
+  return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 14px">
+    <select onchange="mktSetScope(this.value)" style="flex:1;min-width:160px;font:inherit;font-size:13.5px;font-weight:600;color:var(--paper);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:9px 11px">${opts}</select>
+    <div class="seg" style="flex:0 0 auto">${per.map(p=>`<button type="button" class="${MKT_PER===p[0]?'on':''}" onclick="mktSetPer('${p[0]}')">${p[1]}</button>`).join('')}</div>
+  </div>`;
+}
+function renderEmbudo(){
+  const props=ownProps();
+  const M=MKT[MKT_MONTH]||{fan:0,props:{}};
+  const fan=M.fan||0;
+  const MES_N=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const _ma=MKT_MONTH.split('-');
+  const monthLbl=MES_N[(+_ma[1])-1]+' '+_ma[0];
+  const rows=props.length?props.map(p=>{ const k=p.trim().toLowerCase(); const pd=(M.props||{})[k]||{}; 
+    return `<div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)">
+      <div style="font-size:13px;font-weight:600;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.replace(/</g,'&lt;')}</div>
+      <input type="number" inputmode="numeric" value="${pd.mkt||''}" placeholder="vistas" onchange="mktSaveProp('${k.replace(/'/g,"\\'")}','mkt',this.value)" style="font:inherit;font-size:13px;text-align:right;border:1px solid var(--line2);border-radius:8px;padding:7px 8px;color:var(--paper);background:var(--surface2)">
+      <input type="number" inputmode="numeric" value="${pd.cons||''}" placeholder="consultas" onchange="mktSaveProp('${k.replace(/'/g,"\\'")}','cons',this.value)" style="font:inherit;font-size:13px;text-align:right;border:1px solid var(--line2);border-radius:8px;padding:7px 8px;color:var(--paper);background:var(--surface2)">
+    </div>`;
+  }).join(''):'<div style="font-size:12.5px;color:var(--muted2);padding:10px 0">Aún no tenés propiedades propias en pipeline o transacciones.</div>';
+  document.getElementById('view').innerHTML=`
+    <div class="citahead"><div><h2 class="scr-title">Embudo de marketing</h2><p class="scr-sub">De cuánta gente te ve, a cuántos negocios cerrás</p></div></div>
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm);margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <button onclick="mktNav(-1)" style="font:inherit;font-size:18px;border:1px solid var(--line2);background:var(--surface2);color:var(--paper);border-radius:9px;width:36px;height:34px;cursor:pointer">‹</button>
+        <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:600;color:var(--paper);text-transform:capitalize">${monthLbl}</div>
+        <button onclick="mktNav(1)" style="font:inherit;font-size:18px;border:1px solid var(--line2);background:var(--surface2);color:var(--paper);border-radius:9px;width:36px;height:34px;cursor:pointer">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 130px;gap:9px;align-items:center;margin-bottom:6px">
+        <div><div style="font-size:13.5px;font-weight:600;color:var(--paper)">Alcance Fan page <small style="font-weight:500;color:var(--muted2)">· global del mes</small></div></div>
+        <input type="number" inputmode="numeric" value="${fan||''}" placeholder="alcance" onchange="mktSaveFan(this.value)" style="font:inherit;font-size:14px;font-weight:600;text-align:right;border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--paper);background:var(--surface2)">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:10px;padding-bottom:2px"><div>Propiedad</div><div style="text-align:right">Vistas Mkt</div><div style="text-align:right">Consultas</div></div>
+      ${rows}
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Vistas Marketplace y consultas <b>por propiedad</b>. El alcance de Fan page es global. Citas y cierres salen solos de tus Citas (origen «Redes»).</div>
+    </div>
+    <div id="mktAfter">${mktScopeBarHTML()}${mktFunnelHTML()}</div>`;
 }
 
 /* ----- Reporte de gestión por propiedad (PDF) ----- */
@@ -3719,6 +3834,76 @@ function reporteGestion(prop){
     +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
     +'<div class="rep-foot">MH Finance Costa Rica · Reporte de gestión generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
   const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+GEST_CSS+'</style><title>Gestión '+prop+'</title></head><body>'+INNER+'</body></html>';
+  let f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
+}
+
+/* ----- Reporte de desempeño / cierre (PDF para el propietario) ----- */
+function reporteDesempeno(prop){
+  prop=(prop||'').trim();
+  const tx=DATA.find(m=>(m.propiedad||'').trim().toLowerCase()===prop.toLowerCase() && m.origenPipe);
+  if(!tx){toast('Esta propiedad aún no tiene negocio cerrado');return;}
+  const cs=CITAS.filter(c=>(c.propiedad||'').trim().toLowerCase()===prop.toLowerCase());
+  cs.sort((a,b)=>(a.ingreso||a.fecha||'').localeCompare(b.ingreso||b.fecha||''));
+  const ingreso=(tx.origenPipe&&tx.origenPipe.creado)||'';
+  const cierre=tx.fecha||'';
+  const dom=ingreso&&cierre?Math.max(0,Math.round((new Date(cierre)-new Date(ingreso))/86400000)):null;
+  const realizadas=cs.filter(c=>['cerro','espera','nocontinua','rechazopost'].indexOf(c.estado)>=0).length;
+  const isAlq=isAlquilerCat(tx.categoria)||/alquiler/i.test((tx.origenPipe||{}).concepto||'');
+  const pSuf=isAlq?' /mes':'';
+  const listP=tx.precioLista||(tx.origenPipe&&tx.origenPipe.precioLista)||0;
+  const closeP=tx.precioCierre||0;
+  const pr=(listP>0&&closeP>0)?Math.round(closeP/listP*100):null;
+  const owner=tx.alquiler&&tx.alquiler.ownName?tx.alquiler.ownName:'';
+  const totalCitas=cs.length;
+  // Exposición desde el embudo de marketing (suma todos los meses de esta propiedad)
+  let expAlc=0, expCons=0; const _pk=prop.toLowerCase();
+  Object.keys(MKT).forEach(mk=>{ const p=((MKT[mk]||{}).props||{})[_pk]; if(p){ expAlc+=(+p.mkt||0); expCons+=(+p.cons||0); } });
+  let expoBlock='';
+  if(expAlc>0||expCons>0){
+    expoBlock='<h4>Exposición y comercialización</h4><div class="dexpo">'
+      +'<div class="dec"><div class="n">'+expAlc.toLocaleString('es-CR')+'</div><div class="l">Alcance de publicaciones</div></div>'
+      +'<div class="dec"><div class="n">'+expCons.toLocaleString('es-CR')+'</div><div class="l">Consultas atendidas</div></div>'
+      +'<div class="dec"><div class="n">'+realizadas+'</div><div class="l">Visitas coordinadas</div></div>'
+      +'</div>';
+  }
+  // Bitácora resumida: solo eventos con fecha
+  const SCOL={g:'#15805A',y:'#9A6B1E',r:'#BE3A22'};
+  const SBG={g:'#E4F3EC',y:'#FBF1DD',r:'#FBE7E1'};
+  const tlRows=cs.filter(c=>c.fecha||c.ingreso).map(function(c){
+    const col=CITA_COL[c.estado]||'y';
+    const f=c.fecha?fmtFecha(c.fecha):(c.ingreso?fmtFecha(c.ingreso):'—');
+    return '<div class="dev"><div class="dd">'+f+'</div><div class="dt">'+(c.cliente?'<b>'+c.cliente+'</b> · ':'')+'<span class="dst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.resumen?'<div class="dres">'+c.resumen.replace(/</g,'&lt;').replace(/\n/g,' ')+'</div>':'')+'</div></div>';
+  }).join('');
+  const kpiArr=[];
+  kpiArr.push('<div class="dkc"><div class="v">'+totalCitas+'</div><div class="k">Prospectos atendidos</div></div>');
+  if(dom!==null) kpiArr.push('<div class="dkc"><div class="v">'+dom+'</div><div class="k">Días en el mercado</div></div>');
+  kpiArr.push('<div class="dkc"><div class="v">'+realizadas+'</div><div class="k">Visitas hasta cerrar</div></div>');
+  if(pr!==null) kpiArr.push('<div class="dkc g"><div class="v">'+pr+'%</div><div class="k">Del precio pedido</div></div>');
+  const kpis='<div class="dk" style="grid-template-columns:repeat('+kpiArr.length+',1fr)">'+kpiArr.join('')+'</div>';
+  const priceBlock=(listP>0)?'<h4>Precio defendido</h4><div class="dprice"><div><div class="lab">'+(isAlq?'Alquiler publicado':'Precio publicado')+'</div><div class="big">₡'+listP.toLocaleString('es-CR')+pSuf+'</div></div>'
+    +(closeP>0?'<div style="text-align:center"><div class="lab">Logrado</div><div class="big">₡'+closeP.toLocaleString('es-CR')+pSuf+'</div></div><div style="text-align:right"><div class="lab">Del precio pedido</div><div class="ratio">'+pr+'%</div></div>':'')+'</div>':'';
+  const DESEMP_CSS=".dk{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid}.dkc{border:1px solid #E2E6EE;border-radius:11px;padding:13px 8px;text-align:center}.dkc .v{font-family:'Newsreader',serif;font-size:25px;font-weight:600;color:#1C3D60;line-height:1}.dkc .k{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:6px}.dkc.g{background:#E4F3EC;border-color:#BFE0CC}.dkc.g .v{color:#15805A}.dexpo{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #E2E6EE;border-radius:12px;overflow:hidden;margin:6px 0;break-inside:avoid}.dec{padding:15px 10px;text-align:center;border-right:1px solid #E2E6EE}.dec:last-child{border-right:none}.dec .n{font-family:'Newsreader',serif;font-size:27px;font-weight:600;color:#1C3D60;line-height:1}.dec .l{font-size:10.5px;color:#6E7886;font-weight:600;margin-top:6px}.dprice{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#EAF0F6;border:1px solid #D6E2EE;border-radius:12px;padding:15px 18px;break-inside:avoid}.dprice .lab{font-size:11px;color:#6E7886;font-weight:600}.dprice .big{font-family:'Newsreader',serif;font-size:20px;font-weight:600;color:#1C3D60}.dprice .ratio{font-family:'Newsreader',serif;font-size:28px;font-weight:700;color:#15805A}.dtl{margin-top:8px}.dev{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #EEF1F6;break-inside:avoid}.dd{font-size:11px;color:#6E7886;font-weight:700;white-space:nowrap;min-width:74px}.dt{font-size:12.5px;color:#1E2A38}.dst{font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;white-space:nowrap}.dres{font-size:10px;color:#3A4656;margin-top:2px;line-height:1.4}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:5px 14px;font-size:12.5px;font-weight:700;margin:2px 0 6px}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid}.ficha h4{break-after:avoid}";
+  const estadoTxt='Negocio cerrado'+(cierre?' el '+fmtFecha(cierre):'')+(dom!==null?' tras '+dom+' días de gestión':'')+(realizadas>0?' y '+realizadas+' visita'+(realizadas===1?'':'s'):'')+(pr!==null?', al '+pr+'% del precio publicado':'')+'.';
+  const INNER='<div class="rep ficha">'
+    +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de desempeño de la propiedad</div><div class="rep-period">'+prop+' · '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
+    +(dom!==null?'<div class="gsince">⏱ Colocada en '+dom+' días</div>':'')
+    +'<h4>Datos de la propiedad</h4><table class="ftbl big"><tbody>'
+    +'<tr><td class="fl">Propiedad</td><td class="fv">'+prop+'</td></tr>'
+    +(owner?'<tr><td class="fl">Propietario</td><td class="fv">'+owner+'</td></tr>':'')
+    +'<tr><td class="fl">Tipo de negocio</td><td class="fv">'+(isAlq?'Alquiler':'Venta')+'</td></tr>'
+    +(ingreso?'<tr><td class="fl">Ingreso al portafolio</td><td class="fv">'+fmtFecha(ingreso)+'</td></tr>':'')
+    +(cierre?'<tr><td class="fl">Cierre del negocio</td><td class="fv">'+fmtFecha(cierre)+'</td></tr>':'')
+    +'</tbody></table>'
+    +expoBlock
+    +'<h4>Desempeño comercial</h4>'+kpis
+    +priceBlock
+    +(tlRows?'<h4>Bitácora de la gestión</h4><div class="dtl">'+tlRows+'</div>':'')
+    +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
+    +'<div class="rep-foot">MH Finance Costa Rica · Reporte de desempeño generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
+  const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+DESEMP_CSS+'</style><title>Desempeño '+prop+'</title></head><body>'+INNER+'</body></html>';
   let f=document.getElementById('printFrame');
   if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
   const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
@@ -4298,7 +4483,7 @@ function fcRecompute(){
 
 function exportJSON(){
   var name='MH_Reportes_respaldo.json';
-  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST,citas:CITAS,coach:COACH},null,2);
+  var content=JSON.stringify({data:DATA,set:SET,pipe:PIPE,lost:LOST,citas:CITAS,coach:COACH,mkt:MKT},null,2);
   try{ var file=new File([content],name,{type:'application/json'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       navigator.share({files:[file],title:'MH Reportes — respaldo'}).then(function(){toast('Respaldo listo');SET.lastBackup=new Date().toISOString().slice(0,10);persist();}).catch(function(){}); return;
@@ -4306,7 +4491,7 @@ function exportJSON(){
   dl(name,content,'application/json'); toast('Respaldo descargado');
   SET.lastBackup=new Date().toISOString().slice(0,10); persist();
 }
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;if(Array.isArray(o.lost))LOST=o.lost;if(Array.isArray(o.citas))CITAS=o.citas;if(Array.isArray(o.coach))COACH=o.coach;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(Array.isArray(o.data)){DATA=o.data;if(o.set)SET=o.set;if(Array.isArray(o.pipe))PIPE=o.pipe;if(Array.isArray(o.lost))LOST=o.lost;if(Array.isArray(o.citas))CITAS=o.citas;if(Array.isArray(o.coach))COACH=o.coach;if(o.mkt&&typeof o.mkt==='object'&&!Array.isArray(o.mkt))MKT=o.mkt;persist();render();toast('Respaldo restaurado');}else toast('Archivo no válido');}catch(_){toast('No se pudo leer el archivo');}};r.readAsText(f);}
 
 /* ---------- Tema claro / oscuro / auto ---------- */
 function effTheme(){
