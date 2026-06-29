@@ -3447,9 +3447,11 @@ function renderCitas(){
   const periodList=citasInPeriod(CITAS,PER.desde,PER.hasta).filter(c=>CITAS_TIPO==='todos'||c.tipo===CITAS_TIPO);
   const s=citaStats(periodList);
   const props=[...new Set(periodList.map(c=>c.propiedad).filter(Boolean))];
-  const repBtns=props.length?`<div class="citareps"><div class="crlbl">Reporte de gestión por propiedad</div>${props.map(p=>`<button onclick="reporteGestion('${p.replace(/'/g,"\\'")}')">📄 ${p}</button>`).join('')}</div>`:'';
   const cerradas=[...new Set(DATA.filter(m=>m.origenPipe).map(m=>m.propiedad).filter(Boolean))];
-  const desempBtns=cerradas.length?`<div class="citareps"><div class="crlbl">Reporte de desempeño (negocios cerrados)</div>${cerradas.map(p=>`<button style="border-color:var(--ingreso);color:var(--ingreso)" onclick="reporteDesempeno('${p.replace(/'/g,"\\'")}')">🏆 ${p}</button>`).join('')}</div>`:'';
+  const cerradasKey=cerradas.map(p=>p.trim().toLowerCase());
+  const propsAbiertas=props.filter(p=>cerradasKey.indexOf(p.trim().toLowerCase())<0);
+  const repBtns=propsAbiertas.length?`<div class="citareps"><div class="crlbl">Reporte de gestión por propiedad</div>${propsAbiertas.map(p=>`<button onclick="reporteGestion('${p.replace(/'/g,"\\'")}')">📄 ${p}</button>`).join('')}</div>`:'';
+  const desempBtns=cerradas.length?`<div class="citareps"><div class="crlbl">Negocios cerrados · abrí la ficha para sus reportes</div>${cerradas.map(p=>`<button style="border-color:var(--ingreso);color:var(--ingreso)" onclick="propFicha('${p.replace(/'/g,"\\'")}')">⌂ ${p}</button>`).join('')}</div>`:'';
   const cmpOn=SET.citasCmp;
   let cmpBlock='';
   if(cmpOn){
