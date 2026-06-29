@@ -1058,7 +1058,7 @@
     <h2 id="pFormTitle">Nueva propiedad en pipeline</h2>
     <div class="formrow">
       <label>Concepto</label>
-      <select id="pCat"></select>
+      <select id="pCat" onchange="pPrecioLbl()"></select>
     </div>
     <div class="formrow">
       <label>Propiedad / negocio</label>
@@ -1102,6 +1102,11 @@
       <input type="number" id="pTC" inputmode="decimal">
     </div>
     <div class="formrow">
+      <label id="pLblPrecio">Precio publicado <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
+      <input type="number" id="pPrecioLista" inputmode="decimal" placeholder="0">
+      <div class="fotonote" id="pPrecioNote">Precio de venta, o renta mensual si es alquiler. Sirve para mostrarle al dueño qué % del precio pedido lograste al cerrar.</div>
+    </div>
+    <div class="formrow">
       <label>Probabilidad de cierre</label>
       <div class="seg" id="pSegProb"></div>
     </div>
@@ -1128,6 +1133,11 @@
     <div class="formrow">
       <label>Fecha de cierre</label>
       <input type="date" id="closeDate">
+    </div>
+    <div class="formrow">
+      <label id="closePrecioLbl">Precio de cierre <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
+      <input type="number" id="closePrecio" inputmode="decimal" placeholder="0">
+      <div id="closePrecioCmp" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
     </div>
     <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
     <div class="formrow hide" id="closeCitaRow"><label>Cita que cerró este negocio</label><select id="closeCitaSel"></select></div>
@@ -1822,6 +1832,20 @@ function pipeEffHTML(){
   const sV=stats(closed.filter(m=>isVen(cOf(m))),LOST.filter(p=>isVen(p.concepto)));
   const sA=stats(closed.filter(m=>isAlq(cOf(m))),LOST.filter(p=>isAlq(p.concepto)));
   const f=(v,suf)=>v!==null&&v!==undefined?v+(suf||''):'—';
+  // B6 Velocidad de pipeline · B8 Absorción
+  const ticket=g.n?g.closedTot/g.n:0;
+  const vel=(g.avg&&g.n&&PIPE.length)?Math.round(PIPE.length*((g.pC||0)/100)*ticket/g.avg*30):null;
+  const _now=new Date();
+  const c6=closed.filter(m=>(_now-new Date(m.fecha))/86400000<=183).length;
+  const perMonth=c6/6;
+  const mesesInv=perMonth>0?(PIPE.length/perMonth):null;
+  const velAbs=(vel!==null||perMonth>0)?`
+    <div class="statstrip" style="margin-top:10px">
+      <div class="stat"><div class="sv num">${vel!==null?fmtC(vel):'—'}</div><div class="sk">Velocidad ₡/mes</div></div>
+      <div class="stat"><div class="sv num">${perMonth>0?perMonth.toFixed(1):'—'}</div><div class="sk">Cierres/mes (6m)</div></div>
+      <div class="stat"><div class="sv num">${mesesInv!==null?mesesInv.toFixed(1)+'<small style="font-size:12px;color:var(--muted)"> meses</small>':'—'}</div><div class="sk">Inventario (absorción)</div></div>
+    </div>
+    <div class="small" style="margin-top:6px;color:var(--muted);line-height:1.5">Velocidad = activos × % cierre × comisión promedio ÷ días de ciclo. Absorción = meses para colocar el pipeline actual al ritmo de los últimos 6 meses.</div>`:'';
   const split=(sV.dec||sA.dec)?`
     <div class="effsplit">
       <div class="h"></div><div class="h">Ventas</div><div class="h">Alquileres</div><div class="h">Total</div>
@@ -1851,6 +1875,7 @@ function pipeEffHTML(){
       </div>
     </div>
     ${split}
+    ${velAbs}
   </div>`;
 }
 function propFicha(name){
@@ -1868,10 +1893,23 @@ function propFicha(name){
   const rentInfo=rentas.length?`<div class="brk" style="border-bottom:none;padding-bottom:2px"><span class="name" style="font-weight:700;color:var(--paper)">Alquilada ${rentas.length} ${rentas.length===1?'vez':'veces'}</span></div>`+rentas.map((m,ix)=>{const a=m.alquiler;const canc=a.estado==='cancelado';
     return `<div class="brk pcrow" onclick="closePropFicha();openForm(${m.id})"><span class="name">Contrato ${ix+1} · ${canc?'cancelado':'vigente'} <small>${fD(a.inicio)} → ${canc?(fD(a.cancelado||a.vencimiento)+' (cancelación)'):fD(a.vencimiento)}</small></span><span class="amt num">${a.cuota?fmtCRC(a.cuotaMon==='USD'?a.cuota*(m.tc||SET.tc||1):a.cuota)+'/mes':''}</span></div>`;}).join(''):'';;
   const cov=((txs.find(m=>m.foto)||{}).foto)||((pipes.find(p=>p.foto)||{}).foto)||'';
+  // Precio publicado vs. logrado (venta o alquiler)
+  const txClosed=txs.find(m=>m.origenPipe);
+  const listP=(txClosed&&(txClosed.precioLista||(txClosed.origenPipe&&txClosed.origenPipe.precioLista)))||(pipes[0]&&pipes[0].precioLista)||0;
+  const closeP=(txClosed&&txClosed.precioCierre)||0;
+  const isAlqProp=(txClosed&&(isAlquilerCat(txClosed.categoria)||/alquiler/i.test((txClosed.origenPipe||{}).concepto||'')))||(pipes[0]&&/alquiler/i.test(pipes[0].concepto||''));
+  const pSuf=isAlqProp?'/mes':'';
+  let priceLine='';
+  if(listP>0){
+    const pr=closeP>0?Math.round(closeP/listP*100):null;
+    const prCol=pr===null?'var(--muted)':(pr>=98?'var(--ingreso)':(pr>=92?'var(--gold)':'var(--gasto)'));
+    priceLine=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span style="color:var(--muted)">${isAlqProp?'Precio de alquiler':'Precio de venta'}</span><span class="num" style="color:var(--paper);font-weight:700">${listP.toLocaleString('es-CR')}${pSuf}${closeP>0?` <span style="color:var(--muted2);font-weight:500">→</span> ${closeP.toLocaleString('es-CR')}${pSuf} <b style="color:${prCol}">(${pr}%)</b>`:' <small style="color:var(--muted2)">publicado</small>'}</span></div>`;
+  }
   document.getElementById('propSheet').innerHTML=`<div class="grab"></div>
     <h2 style="font-family:'Newsreader',serif;font-size:21px;margin:8px 0 2px">⌂ ${name}</h2>
     ${cov?`<img class="propcover" src="${cov}" alt="">`:''}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${txs.length} ${txs.length===1?'transacción':'transacciones'} · Neto <b style="color:var(--neto)">${fmtCRC(i-g)}</b>${pend?` · Por cobrar <b style="color:var(--gold)">${fmtCRC(pend)}</b>`:''}</div>
+    ${priceLine}
     ${rentInfo}${rows}${pipeRows}
     ${CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===key)?`<button class="ghostbtn" style="width:100%;margin-top:14px;border-color:var(--gold);color:var(--gold)" onclick="closePropFicha();reporteGestion('${name.replace(/'/g,"\\'")}')">📄 Reporte de gestión</button>`:''}
     <button class="ghostbtn" style="width:100%;margin-top:10px" onclick="closePropFicha()">Cerrar</button>`;
@@ -3185,23 +3223,31 @@ function openPipe(id){
     pSetMon(p.moneda); document.getElementById('pTC').value=p.tc;
     pSetProb(p.prob??100); pSetMeses(p.meses||1);
     document.getElementById('pCreado').value=pipeCreado(p);
+    document.getElementById('pPrecioLista').value=p.precioLista||'';
     pCover=p.foto||'';
   } else {
-    ['pProp','pDet','pMonto','pTC','pCorredor'].forEach(i=>document.getElementById(i).value='');
+    ['pProp','pDet','pMonto','pTC','pCorredor','pPrecioLista'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('pCreado').value=new Date().toISOString().slice(0,10);
     pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
     pCover='';
   }
+  pPrecioLbl();
   renderCover('p');
 }
 function closePipe(){document.getElementById('poverlay').classList.remove('open');}
+function pPrecioLbl(){
+  const cpt=document.getElementById('pCat').value||'';
+  const alq=isAlquilerCat(PIPE_TO_CAT[cpt]||'')||/alquiler/i.test(cpt);
+  document.getElementById('pLblPrecio').innerHTML=(alq?'Precio de alquiler (mensual)':'Precio de venta')+' <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small>';
+  document.getElementById('pPrecioNote').textContent=alq?'Renta mensual a la que se publicó. Sirve para mostrarle al dueño qué % del precio pedido lograste.':'Precio de venta publicado. Sirve para mostrarle al dueño qué % del precio pedido lograste al cerrar.';
+}
 function savePipe(){
   const monto=parseFloat(document.getElementById('pMonto').value);
   if(!monto||monto<=0){toast('Ingresá la comisión esperada');return;}
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
   const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
   const creado=document.getElementById('pCreado').value||((ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10));
-  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||''};
+  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||'',precioLista:parseFloat(document.getElementById('pPrecioLista').value)||0};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
 }
@@ -3219,6 +3265,15 @@ function openClose(id){
   const avg=dias.length?Math.round(dias.reduce((a,b)=>a+b,0)/dias.length):null;
   const cmp=avg!==null?(dd<=avg?`<b style="color:var(--ingreso)">más rápido que tu promedio (${avg} días)</b>`:`<b style="color:var(--gasto)">sobre tu promedio (${avg} días)</b>`):'';
   document.getElementById('closeDias').innerHTML=`⏱ Gestionado <b>${dd} ${dd===1?'día':'días'}</b> en pipeline${cmp?' · '+cmp:''}`;
+  // Precio de cierre (list-to-sale)
+  var alq=isAlquilerCat(PIPE_TO_CAT[p.concepto]||'')||/alquiler/i.test(p.concepto);
+  var lblP=document.getElementById('closePrecioLbl'), inP=document.getElementById('closePrecio');
+  if(lblP&&inP){
+    lblP.innerHTML=(alq?'Precio de alquiler logrado (mensual)':'Precio de venta logrado')+' <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small>';
+    inP.value=p.precioLista||'';
+    inP.oninput=function(){closePrecioCmpUpd(p,alq);};
+    closePrecioCmpUpd(p,alq);
+  }
   var cpEl=document.getElementById('closePend'); if(cpEl) cpEl.checked=false;
   // Selector de cita que cerró el negocio (solo si hay citas vivas ligadas a este pipeline)
   var linked=CITAS.filter(c=>c.lid===id && CITA_VIVAS.indexOf(c.estado)>=0);
@@ -3232,12 +3287,25 @@ function openClose(id){
   document.getElementById('closeOverlay').classList.add('open');
 }
 function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
+function closePrecioCmpUpd(p,alq){
+  var inP=document.getElementById('closePrecio'), cmpP=document.getElementById('closePrecioCmp');
+  if(!inP||!cmpP)return;
+  var lista=p.precioLista||0, cierre=parseFloat(inP.value)||0;
+  if(lista>0&&cierre>0){
+    var pct=Math.round(cierre/lista*100);
+    var col=pct>=98?'var(--ingreso)':(pct>=92?'var(--gold)':'var(--gasto)');
+    cmpP.innerHTML='Lográs <b style="color:'+col+'">'+pct+'%</b> del precio publicado'+(alq?' de alquiler':'')+'.';
+  } else cmpP.innerHTML='';
+}
 function confirmClose(){
   const p=PIPE.find(x=>x.id===closeId); if(!p){closeCloseModal();return;}
   const d=document.getElementById('closeDate').value; if(!d){toast('Elegí la fecha de cierre');return;}
   const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
   const newId=Date.now();
-  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p)}};
+  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p),precioLista:p.precioLista||0}};
+  var _precioCierre=parseFloat((document.getElementById('closePrecio')||{}).value)||0;
+  if(p.precioLista>0) rec.precioLista=p.precioLista;
+  if(_precioCierre>0) rec.precioCierre=_precioCierre;
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
   var cpEl=document.getElementById('closePend'); if(cpEl&&cpEl.checked) rec.cobro='pend';
   DATA.push(rec);
@@ -3613,7 +3681,18 @@ function reporteGestion(prop){
       +'<td class="r"><span class="gst" style="background:'+SBG[col]+';color:'+SCOL[col]+'">'+CITA_LBL[c.estado]+'</span>'+(c.motivo?'<div style="font-size:9px;color:#444;font-style:italic;margin-top:3px;text-align:right">'+c.motivo.replace(/</g,'&lt;')+'</div>':'')+'</td></tr>';
   }).join('');
   const cerrada=cs.find(c=>c.estado==='cerro');
-  const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
+  const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+(realizadas>0?' y '+realizadas+' visita'+(realizadas===1?'':'s'):'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
+  // Precio publicado vs. logrado
+  const _isAlq=cs[0].tipo==='alquiler';
+  const _listP=(tx&&(tx.precioLista||(tx.origenPipe&&tx.origenPipe.precioLista)))||(pipe&&pipe.precioLista)||0;
+  const _closeP=(tx&&tx.precioCierre)||0;
+  const _pSuf=_isAlq?' /mes':'';
+  let precioRow='';
+  if(_listP>0){
+    const _pr=_closeP>0?Math.round(_closeP/_listP*100):null;
+    precioRow='<tr><td class="fl">'+(_isAlq?'Precio de alquiler':'Precio de venta')+'</td><td class="fv">₡'+_listP.toLocaleString('es-CR')+_pSuf
+      +(_closeP>0?' → cerrado en ₡'+_closeP.toLocaleString('es-CR')+_pSuf+' <b>('+_pr+'% del precio publicado)</b>':' (publicado)')+'</td></tr>';
+  }
   const GEST_CSS=`.gcards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid;page-break-inside:avoid}.gcard{border:1px solid #E2E6EE;border-radius:11px;padding:11px 12px;text-align:center;break-inside:avoid}.gcard .v{font-family:'Newsreader',serif;font-size:24px;font-weight:600;color:#1C3D60}.gcard .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:3px}.gcard.g{background:#E4F3EC;border-color:#BFE0CC}.gcard.g .v{color:#15805A}.gsegwrap{margin:4px 0 0;break-inside:avoid;page-break-inside:avoid}.gsegt{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin:8px 0 4px}.gseg{display:flex;flex-wrap:wrap;gap:6px}.gsg{font-size:10px;background:#F2F5F9;border:1px solid #E2E6EE;border-radius:999px;padding:3px 9px;color:#3A4656}.gsg b{color:#1C3D60}.gsg.g{background:#E4F3EC;color:#15805A}.gsg.g b{color:#15805A}.gsg.y{background:#FBF1DD;color:#9A6B1E}.gsg.y b{color:#9A6B1E}.gsg.r{background:#FBE7E1;color:#BE3A22}.gsg.r b{color:#BE3A22}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin:2px 0 6px}.gst{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid;page-break-inside:avoid}.ficha h4{break-after:avoid;page-break-after:avoid}`;
   const INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de gestión de la propiedad</div><div class="rep-period">'+prop+' · '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
@@ -3622,6 +3701,7 @@ function reporteGestion(prop){
     +'<tr><td class="fl">Propiedad</td><td class="fv">'+prop+'</td></tr>'
     +(owner?'<tr><td class="fl">Propietario</td><td class="fv">'+owner+'</td></tr>':'')
     +'<tr><td class="fl">Tipo de negocio</td><td class="fv">'+(cs[0].tipo==='alquiler'?'Alquiler':'Venta')+'</td></tr>'
+    +precioRow
     +(ingreso?'<tr><td class="fl">Ingreso al portafolio</td><td class="fv">'+fmtFecha(ingreso)+'</td></tr>':'')
     +'</tbody></table>'
     +'<div class="gcards">'
