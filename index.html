@@ -770,8 +770,9 @@
   .rentmclear:hover{background:#F1E4CF}
   .rentres{font-size:12px;color:var(--muted);margin:2px 0 10px;font-weight:600}
   .fichabtn{width:100%;margin-top:12px;border:1px solid var(--line2);background:var(--surface);color:var(--gold);border-radius:10px;padding:11px;font-size:12.5px;font-weight:700;letter-spacing:.01em}
-  .rentbtns{display:flex;gap:8px;margin-top:12px}
-  .rentbtns .fichabtn{margin-top:0;flex:1}
+  .rentbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .rentbtns .fichabtn{margin-top:0;flex:1 1 130px}
+  .fichabtn.desemp{color:var(--ingreso)}
   .fichabtn.recibo{color:var(--navy,#1C3D60)}
   html[data-theme="dark"] .fichabtn.recibo{color:var(--paper)}
   .fichabtn:hover{border-color:var(--gold);background:var(--gold-soft)}
@@ -2292,6 +2293,18 @@ function rentPortfolioHTML(){
 }
 function fmtDiaPago(p){ if(!p)return '\u2014'; if(typeof p==='string'&&p.indexOf('-')>=0)p=p.split('-')[2]||''; return p?('D\u00eda '+p):'\u2014'; }
 function rentList(){ return DATA.filter(m=>m.tipo==='ingreso' && (m.alquiler || isAlquilerCat(m.categoria))).sort((a,b)=>b.fecha.localeCompare(a.fecha)); }
+function alqCardBtns(m){
+  const prop=(m.propiedad||'').trim(); const pe=prop.replace(/'/g,"\\'"); const key=prop.toLowerCase();
+  const hasCitas=CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===key);
+  const hasClosed=!!m.origenPipe || DATA.some(x=>x.origenPipe&&(x.propiedad||'').trim().toLowerCase()===key);
+  let b='';
+  if(prop) b+=`<button class="fichabtn" onclick="event.stopPropagation();propFicha('${pe}')">⌂ Historial</button>`;
+  if(hasCitas) b+=`<button class="fichabtn" onclick="event.stopPropagation();reporteGestion('${pe}')">📄 Gestión</button>`;
+  if(hasClosed) b+=`<button class="fichabtn desemp" onclick="event.stopPropagation();reporteDesempeno('${pe}')">🏆 Desempeño</button>`;
+  b+=`<button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙ Ficha resumen</button>`;
+  b+=`<button class="fichabtn recibo" onclick="event.stopPropagation();reciboPago(${m.id})">🧾 Recibo de pago</button>`;
+  return b;
+}
 let RENTQ='', RENTCRIT='todos', RENTMONTH=null, RENTVENC='';
 function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
 function setRentVenc(k){ RENTVENC=(RENTVENC===k)?'':k; renderAlquileres(); }
@@ -2338,7 +2351,7 @@ function renderAlquileres(keepFocus){
       </div>
       ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
-      ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<div class="rentbtns"><button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙  Ficha resumen</button><button class="fichabtn recibo" onclick="event.stopPropagation();reciboPago(${m.id})">🧾  Recibo de pago</button></div>`}
+      ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<div class="rentbtns">${alqCardBtns(m)}</div>`}
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
   document.getElementById('view').innerHTML=`
