@@ -471,16 +471,15 @@
   .citahead{margin-bottom:10px}
   .scr-title{font-family:'Newsreader',serif;font-size:23px;font-weight:600;color:var(--paper);line-height:1.1}
   .scr-sub{font-size:12px;color:var(--muted);margin-top:2px}
-  .citacards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0 10px}
-  .citatop{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin:12px 0 10px}
-  .citatop .citacards{grid-template-columns:repeat(2,minmax(0,1fr));margin:0;flex:1}
+  .citacards{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:9px;margin:0 0 12px}
+  .citatop{display:flex;justify-content:center;margin:12px 0 10px}
   .cdonutwrap{display:flex;flex-direction:column;align-items:center;gap:7px;flex:0 0 auto}
   .cdonut{width:96px;height:96px;transform:rotate(-90deg)}
   .cdonut .cdtext{transform:rotate(90deg);transform-origin:21px 21px;font-size:11px;font-weight:800;fill:var(--paper);text-anchor:middle;dominant-baseline:central;font-family:'Plus Jakarta Sans',sans-serif}
   .cdleg{display:flex;flex-direction:column;gap:3px}
   .cdleg span{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
   .cdleg i{width:8px;height:8px;border-radius:2px;display:inline-block;flex:0 0 auto}
-  @media(max-width:480px){.citatop{grid-template-columns:1fr;justify-items:center}.citatop .cdleg{flex-direction:row;gap:12px}.citatop .citacards{width:100%}}
+  @media(max-width:480px){.citatop .cdleg{flex-direction:row;gap:12px}}
   .ccard{border:1px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;background:var(--surface)}
   .ccard .cv{font-family:'Newsreader',serif;font-size:25px;font-weight:600;color:var(--paper);font-variant-numeric:tabular-nums}
   .ccard .ck{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
@@ -3277,14 +3276,21 @@ function citaStats(list){
   const vivas=list.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0).length;
   const rojas=list.filter(c=>CITA_COL[c.estado]==='r').length;
   const noCont=list.filter(c=>c.estado==='nocontinua').length;
+  const poragendar=list.filter(c=>c.estado==='poragendar').length;
+  const enagenda=list.filter(c=>c.estado==='agendada'||c.estado==='espera').length;
   const efectuadas=list.filter(c=>CITA_EFECTUADAS.indexOf(c.estado)>=0).length;  // base de efectividad: citas realizadas
   const efec=efectuadas>0?Math.round(cierres/efectuadas*100):null;
-  return {total:list.length,cierres,vivas,rojas,noCont,efectuadas,conResultado:efectuadas,efec};
+  return {total:list.length,cierres,vivas,rojas,noCont,poragendar,enagenda,efectuadas,conResultado:efectuadas,efec};
 }
 let CITAS_TIPO='todos', CITAS_Q='', CITAS_EST='todos';
 function setCitasTipo(t){CITAS_TIPO=t;renderCitas();}
 function setCitasEst(e){CITAS_EST=e;renderCitas();}
-function citasSearch(v){CITAS_Q=(v||'').toLowerCase().trim();renderCitas();}
+function citaListInner(){
+  const list=citasFiltered();
+  return list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin citas en este período o búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`;
+}
+function renderCitaList(){ const el=document.getElementById('citaListWrap'); if(el) el.innerHTML=citaListInner(); }
+function citasSearch(v){CITAS_Q=(v||'').toLowerCase().trim();renderCitaList();}
 function citaDate(c){ return c.fecha || c.ingreso || ''; }
 function citaDonut(g,y,r){
   const tot=g+y+r;
@@ -3370,12 +3376,13 @@ function renderCitas(){
     ${periodBarHTML()}
     <div class="citatop">
       <div class="cdonutwrap">${citaDonut(s.cierres,s.vivas,s.rojas)}<div class="cdleg"><span><i style="background:#15805A"></i>Cerró</span><span><i style="background:#C99A33"></i>Vivas</span><span><i style="background:#C75A3C"></i>No concretó</span></div></div>
-      <div class="citacards">
-        <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
-        <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
-        <div class="ccard y"><div class="cv">${s.vivas}</div><div class="ck">Vivas / en proceso</div></div>
-        <div class="ccard r"><div class="cv">${s.rojas}</div><div class="ck">No concretaron</div></div>
-      </div>
+    </div>
+    <div class="citacards">
+      <div class="ccard"><div class="cv">${s.total}</div><div class="ck">Prospectos</div></div>
+      <div class="ccard g"><div class="cv">${s.cierres}</div><div class="ck">Cerró negocio</div></div>
+      <div class="ccard y"><div class="cv">${s.enagenda}</div><div class="ck">Agendadas / en espera</div></div>
+      <div class="ccard y"><div class="cv">${s.poragendar}</div><div class="ck">Por agendar</div></div>
+      <div class="ccard r"><div class="cv">${s.rojas}</div><div class="ck">No concretaron</div></div>
     </div>
     <div class="efeccita">
       <div><div class="ef-k">Efectividad de citas</div><div class="ef-v">${s.efec!==null?s.efec+'%':'—'}</div><div class="ef-d">${s.efectuadas?`${s.cierres} ${s.cierres===1?'cierre':'cierres'} de ${s.efectuadas} ${s.efectuadas===1?'visita realizada':'visitas realizadas'}`:'se calcula sobre las visitas efectuadas'}</div></div>
@@ -3401,7 +3408,7 @@ function renderCitas(){
         </optgroup>
       </select>
     </div>
-    ${list.length?list.map(citaRow).join(''):`<div class="empty"><div class="big">◷</div>${CITAS.length?'Sin citas en este período o búsqueda.':'Todavía no hay citas.<br>Agregá una visita o agendala desde una propiedad del pipeline.'}</div>`}
+    <div id="citaListWrap">${citaListInner()}</div>
     ${repBtns}
   `;
 }
@@ -3576,9 +3583,21 @@ function reporteGestion(prop){
   const pipe=PIPE.concat(LOST).find(p=>(p.propiedad||'').trim().toLowerCase()===prop.toLowerCase());
   const tx=DATA.find(m=>(m.propiedad||'').trim().toLowerCase()===prop.toLowerCase() && m.origenPipe);
   const s=citaStats(cs);
-  const realizadas=cs.filter(c=>['cerro','espera','nocontinua','rechazopost'].indexOf(c.estado)>=0).length;
-  const pend=cs.filter(c=>['agendada','poragendar'].indexOf(c.estado)>=0).length;
-  const norealiz=Math.max(0, s.total - realizadas - pend);
+  const cerro=cs.filter(c=>c.estado==='cerro').length;
+  const espera=cs.filter(c=>c.estado==='espera').length;
+  const nocont=cs.filter(c=>c.estado==='nocontinua').length;
+  const rechpost=cs.filter(c=>c.estado==='rechazopost').length;
+  const realizadas=cerro+espera+nocont+rechpost;
+  const agendadas=cs.filter(c=>c.estado==='agendada').length;
+  const poragendar=cs.filter(c=>c.estado==='poragendar').length;
+  const noshow=cs.filter(c=>c.estado==='noshow').length;
+  const cancel=cs.filter(c=>c.estado==='cancelada').length;
+  const rechpre=cs.filter(c=>c.estado==='rechazopre').length;
+  const cerroOtro=cs.filter(c=>c.estado==='cerradoantes').length;
+  const norealiz=noshow+cancel+rechpre+cerroOtro;
+  const segReal=[['🟢 Cerró negocio',cerro,'g'],['🟡 En espera de respuesta',espera,'y'],['🔴 Cliente no continúa',nocont,'r'],['🔴 Rechazado tras la cita',rechpost,'r']].filter(x=>x[1]>0);
+  const segNo=[['🔴 No se presentó',noshow,'r'],['🔴 Cancelada antes de la visita',cancel,'r'],['🔴 Rechazado pre-cita',rechpre,'r'],['🔴 Cerré con otro cliente',cerroOtro,'r']].filter(x=>x[1]>0);
+  const segHTML=(t,arr)=>arr.length?'<div class="gsegwrap"><div class="gsegt">'+t+'</div><div class="gseg">'+arr.map(function(x){return '<span class="gsg '+x[2]+'">'+x[0]+': <b>'+x[1]+'</b></span>';}).join('')+'</div></div>':'';
   let ingreso=''; if(pipe) ingreso=pipeCreado(pipe); else if(tx&&tx.origenPipe) ingreso=tx.origenPipe.creado;
   const dias=ingreso?Math.max(0,Math.round((new Date()-new Date(ingreso))/86400000)):null;
   const owner = tx&&tx.alquiler&&tx.alquiler.ownName ? tx.alquiler.ownName : '';
@@ -3595,7 +3614,7 @@ function reporteGestion(prop){
   }).join('');
   const cerrada=cs.find(c=>c.estado==='cerro');
   const estadoTxt = cerrada ? ('Negocio cerrado'+(cerrada.fecha?' el '+fmtFecha(cerrada.fecha):'')+(dias!==null?' tras '+dias+' días de gestión':'')+'.') : (pipe&&LOST.indexOf(pipe)>=0 ? 'Negocio no concretado.' : 'En gestión activa'+(dias!==null?' · '+dias+' días':'')+'.');
-  const GEST_CSS=`.gcards{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid;page-break-inside:avoid}.gcard{border:1px solid #E2E6EE;border-radius:11px;padding:11px 12px;text-align:center;break-inside:avoid}.gcard .v{font-family:'Newsreader',serif;font-size:24px;font-weight:600;color:#1C3D60}.gcard .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:3px}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin:2px 0 6px}.gst{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid;page-break-inside:avoid}.ficha h4{break-after:avoid;page-break-after:avoid}`;
+  const GEST_CSS=`.gcards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid;page-break-inside:avoid}.gcard{border:1px solid #E2E6EE;border-radius:11px;padding:11px 12px;text-align:center;break-inside:avoid}.gcard .v{font-family:'Newsreader',serif;font-size:24px;font-weight:600;color:#1C3D60}.gcard .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:3px}.gcard.g{background:#E4F3EC;border-color:#BFE0CC}.gcard.g .v{color:#15805A}.gsegwrap{margin:4px 0 0;break-inside:avoid;page-break-inside:avoid}.gsegt{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin:8px 0 4px}.gseg{display:flex;flex-wrap:wrap;gap:6px}.gsg{font-size:10px;background:#F2F5F9;border:1px solid #E2E6EE;border-radius:999px;padding:3px 9px;color:#3A4656}.gsg b{color:#1C3D60}.gsg.g{background:#E4F3EC;color:#15805A}.gsg.g b{color:#15805A}.gsg.y{background:#FBF1DD;color:#9A6B1E}.gsg.y b{color:#9A6B1E}.gsg.r{background:#FBE7E1;color:#BE3A22}.gsg.r b{color:#BE3A22}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin:2px 0 6px}.gst{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid;page-break-inside:avoid}.ficha h4{break-after:avoid;page-break-after:avoid}`;
   const INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de gestión de la propiedad</div><div class="rep-period">'+prop+' · '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
     +(dias!==null?'<div class="gsince">⏱ En gestión desde el '+fmtFecha(ingreso)+' · '+dias+' días</div>':'')
@@ -3607,10 +3626,14 @@ function reporteGestion(prop){
     +'</tbody></table>'
     +'<div class="gcards">'
       +'<div class="gcard"><div class="v">'+s.total+'</div><div class="k">Prospectos</div></div>'
+      +'<div class="gcard g"><div class="v">'+cerro+'</div><div class="k">Cerró negocio</div></div>'
       +'<div class="gcard"><div class="v">'+realizadas+'</div><div class="k">Visitas realizadas</div></div>'
-      +'<div class="gcard"><div class="v">'+pend+'</div><div class="k">Pendientes</div></div>'
+      +'<div class="gcard"><div class="v">'+agendadas+'</div><div class="k">Agendadas</div></div>'
+      +'<div class="gcard"><div class="v">'+poragendar+'</div><div class="k">Por agendar</div></div>'
       +'<div class="gcard"><div class="v">'+norealiz+'</div><div class="k">No realizadas</div></div>'
     +'</div>'
+    +segHTML('Detalle de visitas realizadas',segReal)
+    +segHTML('Detalle de no realizadas',segNo)
     +'<h4>Bitácora de citas y visitas</h4>'
     +'<table class="ftbl"><thead><tr><th>Ingreso del prospecto</th><th>Fecha de cita</th><th>Hora</th><th>Cliente</th><th class="r">Resultado</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
