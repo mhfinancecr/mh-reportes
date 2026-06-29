@@ -3689,17 +3689,22 @@ const ORIG_COL={redes:'#27557F',referido:'#C99A33',colega:'#7C6F9B',directo:'#8B
 function mktEnsure(mk){ if(!MKT[mk])MKT[mk]={fan:0,props:{}}; if(!MKT[mk].props)MKT[mk].props={}; return MKT[mk]; }
 function mktNav(d){ let a=MKT_MONTH.split('-'),y=+a[0],m=+a[1]; m+=d; while(m<1){m+=12;y--;} while(m>12){m-=12;y++;} MKT_MONTH=y+'-'+('0'+m).slice(-2); renderEmbudo(); }
 function mktSaveFan(v){ mktEnsure(MKT_MONTH).fan=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
+function mktPrevFanTotal(mk){ const ks=Object.keys(MKT).filter(k=>k<mk && MKT[k]&&MKT[k].fanTotal!=null).sort(); return ks.length?(+MKT[ks[ks.length-1]].fanTotal):null; }
+function mktSaveFanTotal(v){ const M=mktEnsure(MKT_MONTH); const n=parseFloat(v); if(isNaN(n)){ delete M.fanTotal; } else { M.fanTotal=n; const pv=mktPrevFanTotal(MKT_MONTH); if(pv!=null) M.fan=Math.max(0,n-pv); } persist(); renderEmbudo(); }
+function mktActiveProps(){ const seen={},out=[]; PIPE.forEach(x=>{ if(x.coloc==='colega')return; const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out; }
+function mktCycleStart(key){ let best=null; PIPE.forEach(x=>{ if(x.coloc==='colega')return; if((x.propiedad||'').trim().toLowerCase()!==key)return; const c=(x.creado||'').slice(0,7); if(c&&(!best||c>best))best=c; }); return best; }
+function mktHist(scope){ if(scope==='todas')return null; const cs=mktCycleStart(scope); if(!cs)return null; let v=0,c=0; Object.keys(MKT).forEach(mk=>{ if(mk>=cs)return; const p=(MKT[mk].props||{})[scope]; if(p){v+=(+p.mkt||0);c+=(+p.cons||0);} }); return (v||c)?{v,c}:null; }
 function mktSaveProp(key,field,v){ const M=mktEnsure(MKT_MONTH); if(!M.props[key])M.props[key]={mkt:0,cons:0}; M.props[key][field]=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
 function mktSetScope(v){ MKT_SCOPE=v; mktRefreshFunnel(); }
 function mktSetPer(p){ MKT_PER=p; renderEmbudo(); }
 function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===now.toISOString().slice(0,7); if(MKT_PER==='ano')return mk.slice(0,4)===String(now.getFullYear()); return true; }
 function mktFunnel(scope){
-  let views=0,cons=0;
-  Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ const M=MKT[mk]||{}, ps=M.props||{};
+  let views=0,cons=0; const cs=(scope!=='todas')?mktCycleStart(scope):null;
+  Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ if(cs&&mk<cs)return; const M=MKT[mk]||{}, ps=M.props||{};
     if(scope==='todas'){ views+=(+M.fan||0); Object.keys(ps).forEach(k=>{views+=(+ps[k].mkt||0);cons+=(+ps[k].cons||0);}); }
     else { const p=ps[scope]||{}; views+=(+p.mkt||0); cons+=(+p.cons||0); }
   });
-  const cz=CITAS.filter(c=>{ if((c.origen||'redes')!=='redes')return false; const d=c.fecha||c.ingreso||''; if(!d||!mktPerTest(d.slice(0,7)))return false; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return false; return true; });
+  const cz=CITAS.filter(c=>{ if((c.origen||'redes')!=='redes')return false; const d=c.fecha||c.ingreso||''; if(!d||!mktPerTest(d.slice(0,7)))return false; if(cs&&d.slice(0,7)<cs)return false; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return false; return true; });
   return {views,cons,citas:cz.length,cierres:cz.filter(c=>c.estado==='cerro').length};
 }
 function mktOrigen(scope){ const mix={redes:0,referido:0,colega:0,directo:0};
@@ -3718,6 +3723,8 @@ function mktFunnelHTML(){
   });
   const gl=f.views>0?(f.cierres/f.views*100):0;
   h+=`<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.5">${isAll?'De cada':'En esta propiedad, de cada'} <b>${nf(f.views)}</b> ${isAll?'que te vieron':'vistas'}, cerraste <b>${f.cierres}</b> \u2014 conversi\u00f3n <b>${gl.toFixed(2)}%</b>.</div>`;
+  const hist=mktHist(MKT_SCOPE);
+  if(hist){ h+=`<div style="font-size:11px;color:var(--muted2);text-align:center;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line2);line-height:1.5">↺ Publicación anterior (otro ciclo): <b>${nf(hist.v)}</b> vistas · <b>${nf(hist.c)}</b> consultas. <small>No suma al conteo actual.</small></div>`; }
   // Origen interno
   const mix=mktOrigen(MKT_SCOPE); const tot=Object.keys(mix).reduce((a,k)=>a+mix[k],0);
   let ob='';
@@ -3746,16 +3753,24 @@ function renderEmbudo(){
   const props=ownProps();
   const M=MKT[MKT_MONTH]||{fan:0,props:{}};
   const fan=M.fan||0;
+  const nf=n=>new Intl.NumberFormat('es-CR').format(Math.round(n||0));
+  const fanTot=(M.fanTotal!=null)?M.fanTotal:'';
+  const prevTot=mktPrevFanTotal(MKT_MONTH);
+  const fanDelta=(M.fanTotal!=null&&prevTot!=null)?Math.max(0,M.fanTotal-prevTot):null;
   const MES_N=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _ma=MKT_MONTH.split('-');
   const monthLbl=MES_N[(+_ma[1])-1]+' '+_ma[0];
-  const rows=props.length?props.map(p=>{ const k=p.trim().toLowerCase(); const pd=(M.props||{})[k]||{}; 
+  const _nameMap={}; ownProps().forEach(p=>_nameMap[p.trim().toLowerCase()]=p);
+  const _seen={}; const rowList=[];
+  mktActiveProps().forEach(p=>{const k=p.trim().toLowerCase(); if(!_seen[k]){_seen[k]=1;rowList.push({k,name:p,active:true});}});
+  Object.keys(M.props||{}).forEach(k=>{ if(!_seen[k]){_seen[k]=1;rowList.push({k,name:_nameMap[k]||k,active:false});}});
+  const rows=rowList.length?rowList.map(o=>{ const k=o.k; const pd=(M.props||{})[k]||{};
     return `<div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)">
-      <div style="font-size:13px;font-weight:600;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.replace(/</g,'&lt;')}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.name.replace(/</g,'&lt;')}${o.active?'':' <small style=\"color:var(--muted2);font-weight:500\">· cerrada</small>'}</div>
       <input type="number" inputmode="numeric" value="${pd.mkt||''}" placeholder="vistas" onchange="mktSaveProp('${k.replace(/'/g,"\\'")}','mkt',this.value)" style="font:inherit;font-size:13px;text-align:right;border:1px solid var(--line2);border-radius:8px;padding:7px 8px;color:var(--paper);background:var(--surface2)">
       <input type="number" inputmode="numeric" value="${pd.cons||''}" placeholder="consultas" onchange="mktSaveProp('${k.replace(/'/g,"\\'")}','cons',this.value)" style="font:inherit;font-size:13px;text-align:right;border:1px solid var(--line2);border-radius:8px;padding:7px 8px;color:var(--paper);background:var(--surface2)">
     </div>`;
-  }).join(''):'<div style="font-size:12.5px;color:var(--muted2);padding:10px 0">Aún no tenés propiedades propias en pipeline o transacciones.</div>';
+  }).join(''):'<div style="font-size:12.5px;color:var(--muted2);padding:10px 0">No tenés propiedades activas en pipeline este mes.</div>';
   document.getElementById('view').innerHTML=`
     <div class="citahead"><div><h2 class="scr-title">Embudo de marketing</h2><p class="scr-sub">De cuánta gente te ve, a cuántos negocios cerrás</p></div></div>
     <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm);margin-bottom:14px">
@@ -3764,10 +3779,11 @@ function renderEmbudo(){
         <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:600;color:var(--paper);text-transform:capitalize">${monthLbl}</div>
         <button onclick="mktNav(1)" style="font:inherit;font-size:18px;border:1px solid var(--line2);background:var(--surface2);color:var(--paper);border-radius:9px;width:36px;height:34px;cursor:pointer">›</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 130px;gap:9px;align-items:center;margin-bottom:6px">
-        <div><div style="font-size:13.5px;font-weight:600;color:var(--paper)">Alcance Fan page <small style="font-weight:500;color:var(--muted2)">· global del mes</small></div></div>
-        <input type="number" inputmode="numeric" value="${fan||''}" placeholder="alcance" onchange="mktSaveFan(this.value)" style="font:inherit;font-size:14px;font-weight:600;text-align:right;border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--paper);background:var(--surface2)">
+      <div style="display:grid;grid-template-columns:1fr 130px;gap:9px;align-items:center;margin-bottom:4px">
+        <div><div style="font-size:13.5px;font-weight:600;color:var(--paper)">Total de la página <small style="font-weight:500;color:var(--muted2)">· acumulado que muestra Facebook</small></div></div>
+        <input type="number" inputmode="numeric" value="${fanTot}" placeholder="total FB" onchange="mktSaveFanTotal(this.value)" style="font:inherit;font-size:14px;font-weight:600;text-align:right;border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--paper);background:var(--surface2)">
       </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">${fanDelta!=null?`Alcance de este mes: <b style="color:var(--paper)">${nf(fanDelta)}</b> <small>(total − mes anterior ${nf(prevTot)})</small>`:(fan?`Alcance de este mes: <b style="color:var(--paper)">${nf(fan)}</b> <small>(manual)</small>`:`Ingresá el total acumulado; con el del mes anterior calculo el alcance del mes.`)}</div>
       <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:10px;padding-bottom:2px"><div>Propiedad</div><div style="text-align:right">Vistas Mkt</div><div style="text-align:right">Consultas</div></div>
       ${rows}
       <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Vistas Marketplace y consultas <b>por propiedad</b>. El alcance de Fan page es global. Citas y cierres salen solos de tus Citas (origen «Redes»).</div>
