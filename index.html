@@ -2800,7 +2800,7 @@ function undoToPipe(){
   if(!editId)return; const m=DATA.find(x=>x.id===editId); if(!m||!m.origenPipe){closeForm();return;}
   if(!confirm('¿Devolver este negocio al pipeline? Se quitará de tus transacciones reales.'))return;
   const op=m.origenPipe;
-  PIPE.push({id:Date.now(),creado:op.creado||new Date().toISOString().slice(0,10),concepto:op.concepto||'Comisión por venta',propiedad:m.propiedad||'',detalle:m.detalle||'',moneda:m.moneda,monto:m.monto,tc:m.tc,prob:(op.prob??75),meses:op.meses||1});
+  PIPE.push({id:Date.now(),creado:op.creado||new Date().toISOString().slice(0,10),concepto:op.concepto||'Comisión por venta',propiedad:m.propiedad||'',detalle:m.detalle||'',moneda:m.moneda,monto:m.monto,tc:m.tc,prob:(op.prob??75),meses:op.meses||1,coloc:m.coloc||'propia',corredor:m.corredor||'',foto:m.foto||'',precioLista:m.precioLista||(op.precioLista||0)});
   DATA=DATA.filter(x=>x.id!==editId);
   persist();closeForm();render();toast('↩ Devuelto al pipeline');
 }
@@ -3448,6 +3448,8 @@ function renderCitas(){
   const s=citaStats(periodList);
   const props=[...new Set(periodList.map(c=>c.propiedad).filter(Boolean))];
   const repBtns=props.length?`<div class="citareps"><div class="crlbl">Reporte de gestión por propiedad</div>${props.map(p=>`<button onclick="reporteGestion('${p.replace(/'/g,"\\'")}')">📄 ${p}</button>`).join('')}</div>`:'';
+  const cerradas=[...new Set(DATA.filter(m=>m.origenPipe).map(m=>m.propiedad).filter(Boolean))];
+  const desempBtns=cerradas.length?`<div class="citareps"><div class="crlbl">Reporte de desempeño (negocios cerrados)</div>${cerradas.map(p=>`<button style="border-color:var(--ingreso);color:var(--ingreso)" onclick="reporteDesempeno('${p.replace(/'/g,"\\'")}')">🏆 ${p}</button>`).join('')}</div>`:'';
   const cmpOn=SET.citasCmp;
   let cmpBlock='';
   if(cmpOn){
@@ -3497,6 +3499,7 @@ function renderCitas(){
     </div>
     <div id="citaListWrap">${citaListInner()}</div>
     ${repBtns}
+    ${desempBtns}
   `;
 }
 
