@@ -3701,7 +3701,7 @@ function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===no
 function mktFunnel(scope){
   let views=0,cons=0; const cs=(scope!=='todas')?mktCycleStart(scope):null;
   Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ if(cs&&mk<cs)return; const M=MKT[mk]||{}, ps=M.props||{};
-    if(scope==='todas'){ views+=(+M.fan||0); Object.keys(ps).forEach(k=>{views+=(+ps[k].mkt||0);cons+=(+ps[k].cons||0);}); }
+    if(scope==='todas'){ views+=(+M.fan||0); Object.keys(ps).forEach(k=>{cons+=(+ps[k].cons||0);}); }
     else { const p=ps[scope]||{}; views+=(+p.mkt||0); cons+=(+p.cons||0); }
   });
   const cz=CITAS.filter(c=>{ if((c.origen||'redes')!=='redes')return false; const d=c.fecha||c.ingreso||''; if(!d||!mktPerTest(d.slice(0,7)))return false; if(cs&&d.slice(0,7)<cs)return false; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return false; return true; });
