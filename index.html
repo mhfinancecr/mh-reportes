@@ -60,6 +60,7 @@
   html[data-theme="dark"] .chkbtns button.na.on{background:#33405A;border-color:#5A6B8C;color:#C9D4E6}
   html[data-theme="dark"] .icsbtn:hover{background:var(--surface2)}
   html[data-theme="dark"] .rent.cancel{background:#161D2A}
+  html[data-theme="dark"] .rent.aviso{background:#241B10;border-color:#5A4426}
   html[data-theme="dark"] .rentmclear:hover,html[data-theme="dark"] .fichabtn:active{background:rgba(143,180,220,.16)}
   html,body{background:var(--ink);color:var(--paper);font-family:'Plus Jakarta Sans',-apple-system,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
   body{padding-bottom:96px;min-height:100vh;-webkit-text-size-adjust:100%;background-image:radial-gradient(120% 80% at 50% -10%, #FFFFFF 0%, var(--ink) 55%)}
@@ -757,11 +758,15 @@
   .rent:hover{border-color:var(--line2);transform:translateY(-1px);box-shadow:var(--shadow)}
   .rent:active{transform:translateY(0)}
   .rent.cancel{opacity:.72;background:#FAFAFB}
+  .rent.aviso{border-color:#E3B888;background:#FFF9F1}
+  .recibibtn{width:100%;margin-top:10px;padding:11px;border:none;border-radius:11px;background:#B5651D;color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+  .recibibtn:active{background:#9A551A}
   .rent-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .rent-prop{font-size:15px;font-weight:700;color:var(--paper);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .estchip{flex:0 0 auto;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px}
   .estchip.on{background:var(--ingreso-soft);color:var(--ingreso)}
   .estchip.off{background:var(--gasto-soft);color:var(--gasto)}
+  .estchip.aviso{background:#FBE6D6;color:#B5651D}
   .rent-amt{font-family:'Newsreader',serif;font-size:20px;font-weight:600;color:var(--neto);margin-top:6px}
   .rent-amt span{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:500;color:var(--muted2)}
   .rent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
@@ -993,10 +998,11 @@
       <div class="twocol">
         <div class="formrow"><label>Día de pago del alquiler</label><select id="fRentPago"></select></div>
         <div class="formrow"><label>Estado del contrato</label>
-          <select id="fRentEstado" onchange="updRentCanc()"><option value="vigente">Vigente</option><option value="cancelado">Cancelado</option></select>
+          <select id="fRentEstado" onchange="updRentCanc()"><option value="vigente">Vigente</option><option value="aviso">En aviso de salida</option><option value="cancelado">Cancelado</option></select>
         </div>
       </div>
       <div class="formrow hide" id="rentCancRow"><label>Fecha de cancelación del contrato</label><input type="date" id="fRentCanc"></div>
+      <div class="formrow hide" id="rentSalidaRow"><label>Fecha de entrega (aviso de salida)</label><input type="date" id="fRentSalida"></div>
       <div class="twocol">
         <div class="formrow">
           <label>Moneda de la cuota</label>
@@ -1923,8 +1929,8 @@ function propFicha(name){
   const pipeRows=pipes.map(p=>`<div class="brk pcrow"><span class="name">En pipeline <small>${p.concepto||''}</small></span><span class="amt num" style="color:var(--gold)">${fmtCRC(p.moneda==='USD'?p.monto*p.tc:p.monto)}</span></div>`).join('');
   const rentas=txs.filter(m=>m.alquiler&&(m.alquiler.inicio||m.alquiler.vencimiento)).sort((a,b)=>(a.alquiler.inicio||a.fecha).localeCompare(b.alquiler.inicio||b.fecha));
   const fD=d=>d?d.split('-').reverse().join('/'):'—';
-  const rentInfo=rentas.length?`<div class="brk" style="border-bottom:none;padding-bottom:2px"><span class="name" style="font-weight:700;color:var(--paper)">Alquilada ${rentas.length} ${rentas.length===1?'vez':'veces'}</span></div>`+rentas.map((m,ix)=>{const a=m.alquiler;const canc=a.estado==='cancelado';
-    return `<div class="brk pcrow" onclick="closePropFicha();openForm(${m.id})"><span class="name">Contrato ${ix+1} · ${canc?'cancelado':'vigente'} <small>${fD(a.inicio)} → ${canc?(fD(a.cancelado||a.vencimiento)+' (cancelación)'):fD(a.vencimiento)}</small></span><span class="amt num">${a.cuota?fmtCRC(a.cuotaMon==='USD'?a.cuota*(m.tc||SET.tc||1):a.cuota)+'/mes':''}</span></div>`;}).join(''):'';;
+  const rentInfo=rentas.length?`<div class="brk" style="border-bottom:none;padding-bottom:2px"><span class="name" style="font-weight:700;color:var(--paper)">Alquilada ${rentas.length} ${rentas.length===1?'vez':'veces'}</span></div>`+rentas.map((m,ix)=>{const a=m.alquiler;const canc=a.estado==='cancelado';const avi=a.estado==='aviso';
+    return `<div class="brk pcrow" onclick="closePropFicha();openForm(${m.id})"><span class="name">Contrato ${ix+1} · ${canc?'cancelado':(avi?'en aviso':'vigente')} <small>${fD(a.inicio)} → ${canc?(fD(a.cancelado||a.vencimiento)+' (cancelación)'):(avi&&a.salida?fD(a.salida)+' (entrega)':fD(a.vencimiento))}</small></span><span class="amt num">${a.cuota?fmtCRC(a.cuotaMon==='USD'?a.cuota*(m.tc||SET.tc||1):a.cuota)+'/mes':''}</span></div>`;}).join(''):'';;
   const cov=((txs.find(m=>m.foto)||{}).foto)||((pipes.find(p=>p.foto)||{}).foto)||'';
   // Precio publicado vs. logrado (venta o alquiler)
   const txClosed=txs.find(m=>m.origenPipe);
@@ -2334,7 +2340,20 @@ function alqCardBtns(m){
   b+=`<button class="fichabtn recibo" onclick="event.stopPropagation();reciboPago(${m.id})">🧾 Recibo de pago</button>`;
   return b;
 }
-let RENTQ='', RENTCRIT='todos', RENTMONTH=null, RENTVENC='';
+let RENTQ='', RENTCRIT='todos', RENTMONTH=null, RENTVENC='', RENTAVISO=false;
+function setRentAviso(){RENTAVISO=!RENTAVISO; if(RENTAVISO)RENTVENC=''; renderAlquileres();}
+function recibirApto(id){
+  const m=DATA.find(x=>x.id===id); if(!m||!m.alquiler||m.alquiler.estado!=='aviso'){return;}
+  const a=m.alquiler;
+  if(!confirm('¿Recibiste el apartamento de "'+(m.propiedad||'esta propiedad')+'"?\n\nEl contrato pasará a Cancelado y la propiedad volverá al Pipeline para volver a gestionarla. Si el dueño no te da la correduría de nuevo, la borrás del Pipeline.'))return;
+  a.estado='cancelado'; a.cancelado=a.salida||new Date().toISOString().slice(0,10);
+  const key=(m.propiedad||'').trim().toLowerCase();
+  const dup=PIPE.some(p=>/alquiler/i.test(p.concepto||'')&&(p.propiedad||'').trim().toLowerCase()===key);
+  if(!dup && key){
+    PIPE.push({id:Date.now(),creado:new Date().toISOString().slice(0,10),concepto:'Comisión por alquiler',propiedad:m.propiedad||'',detalle:'Reingresó tras entrega del apartamento',moneda:m.moneda,monto:m.monto||0,tc:m.tc||1,prob:75,meses:1,coloc:m.coloc||'propia',corredor:m.corredor||'',foto:m.foto||'',precioLista:(a.cuota||0)});
+  }
+  persist();render();toast(dup?'✓ Apto recibido · contrato cancelado':'✓ Recibido · de vuelta en el pipeline');
+}
 function setRentCrit(c){RENTCRIT=c;renderAlquileres(true);}
 function setRentVenc(k){ RENTVENC=(RENTVENC===k)?'':k; renderAlquileres(); }
 function vencBucket(m){
@@ -2353,21 +2372,23 @@ function renderAlquileres(keepFocus){
   const q=(RENTQ||'').trim().toLowerCase();
   let list = all;
   if(RENTVENC) list = list.filter(m=>vencBucket(m)===RENTVENC);
+  if(RENTAVISO) list = list.filter(m=>m.alquiler && m.alquiler.estado==='aviso');
   if(RENTMONTH) list = list.filter(m=> RENTMONTH.indexOf('-')>=0 ? mkey(m.fecha)===RENTMONTH : m.fecha.slice(0,4)===RENTMONTH);
   if(q) list = list.filter(m=>{const prop=(m.propiedad||'').toLowerCase();const notes=(m.detalle||'').toLowerCase(); if(RENTCRIT==='propiedad')return prop.indexOf(q)>=0; if(RENTCRIT==='propietario'||RENTCRIT==='inquilino')return notes.indexOf(q)>=0; return prop.indexOf(q)>=0||notes.indexOf(q)>=0;});
-  const vig=all.filter(m=>!m.alquiler || m.alquiler.estado!=='cancelado');
+  const aviso=all.filter(m=>m.alquiler && m.alquiler.estado==='aviso');
+  const vig=all.filter(m=>!m.alquiler || (m.alquiler.estado!=='cancelado' && m.alquiler.estado!=='aviso'));
   const can=all.filter(m=>m.alquiler && m.alquiler.estado==='cancelado');
   const cards = list.length ? list.map(m=>{
-    const a=m.alquiler||{}; const cancel=a.estado==='cancelado';
+    const a=m.alquiler||{}; const cancel=a.estado==='cancelado'; const enaviso=a.estado==='aviso';
     const orig=m.moneda==='USD'?` · ${fmtUSD(m.monto)} · TC ${m.tc}`:'';
     const inc=rentIncrease(m);
     const cuotaTxt = a.cuota ? (inc.applies && inc.years>0 && inc.current!==a.cuota ? `${fmtCuotaVal(a,inc.current)} <span class="cuotaup">↑ desde ${fmtCuotaVal(a,a.cuota)}</span>` : fmtCuotaVal(a,a.cuota)) : '\u2014';
     const ppl = [a.ownName?`Propietario: ${a.ownName}`:'', a.tenName?`Inquilino: ${a.tenName}`:'', colocTag(m)?`Corredor: ${corredorOf(m)||'—'} (${colocTag(m)})`:''].filter(Boolean).join(' · ');
-    return `<div class="rent ${cancel?'cancel':''}" onclick="openForm(${m.id})">
+    return `<div class="rent ${cancel?'cancel':''}${enaviso?' aviso':''}" onclick="openForm(${m.id})">
       <div class="rent-top">
         ${m.foto?`<img class="rentthumb" src="${m.foto}" alt="">`:''}
         <div class="rent-prop">${m.propiedad||'(Sin propiedad)'}</div>
-        <span class="estchip ${cancel?'off':'on'}">${cancel?'Cancelado':'Vigente'}</span>
+        <span class="estchip ${cancel?'off':(enaviso?'aviso':'on')}">${cancel?'Cancelado':(enaviso?('En aviso'+(a.salida?' · entrega '+fmtFecha(a.salida):'')):'Vigente')}</span>
       </div>
       <div class="rent-amt">${fmtCRC(crc(m))}<span>${orig} · comisión ${fmtFecha(m.fecha)}</span></div>
       <div class="rent-grid">
@@ -2380,6 +2401,7 @@ function renderAlquileres(keepFocus){
       </div>
       ${ppl?`<div class="rent-det">${ppl}</div>`:''}
       ${m.detalle?`<div class="rent-det">${m.detalle}</div>`:''}
+      ${enaviso?`<button class="recibibtn" onclick="event.stopPropagation();recibirApto(${m.id})">✓ Recibí el apartamento · reactivar gestión</button>`:''}
       ${m.coloc==='colega'?'<div class="rent-det" style="opacity:.7;font-style:italic">Propiedad de portafolio de colega — la ficha al propietario la entrega el corredor dueño del listado.</div>':`<div class="rentbtns">${alqCardBtns(m)}</div>`}
     </div>`;
   }).join('') : `<div class="empty"><div class="big">${(q||RENTMONTH)?'\u26b2':'\u2302'}</div>${(q||RENTMONTH)?'Sin resultados para tu b\u00fasqueda.':'Todav\u00eda no hay alquileres.<br>Registr\u00e1 una comisi\u00f3n por alquiler (o cerr\u00e1 un alquiler del pipeline) para verlo ac\u00e1.'}</div>`;
@@ -2389,6 +2411,7 @@ function renderAlquileres(keepFocus){
    <div class="statstrip" style="margin-top:4px">
      <div class="stat"><div class="sv num">${all.length}</div><div class="sk">Contratos</div></div>
      <div class="stat"><div class="sv num" style="color:var(--ingreso)">${vig.length}</div><div class="sk">Vigentes</div></div>
+     <div class="stat" onclick="setRentAviso()" style="cursor:pointer${RENTAVISO?';outline:2px solid #B5651D;outline-offset:-2px;border-radius:12px':''}"><div class="sv num" style="color:#B5651D">${aviso.length}</div><div class="sk">En aviso</div></div>
      <div class="stat"><div class="sv num" style="color:var(--gasto)">${can.length}</div><div class="sk">Cancelados</div></div>
    </div>
    <div class="section">
@@ -2416,7 +2439,7 @@ function printRentReport(){
   const list=rentList();
   const vig=list.filter(m=>!m.alquiler||m.alquiler.estado!=='cancelado');
   const totVig=vig.reduce((a,m)=>a+crc(m),0);
-  const rows=list.map(function(m){var a=m.alquiler||{}; var cancel=a.estado==='cancelado'; var est=cancel?'<span style="color:#B85138">Cancelado</span>':'<span style="color:#15805A">Vigente</span>'; var orig=m.moneda==='USD'?fmtUSD(m.monto)+' · TC '+m.tc:'\u2014'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+est+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+(m.detalle||'')+'</td><td class="r">'+orig+'</td><td class="r" style="color:#15805A">'+fmtCRC(crc(m))+'</td></tr>';}).join('');
+  const rows=list.map(function(m){var a=m.alquiler||{}; var cancel=a.estado==='cancelado'; var avi=a.estado==='aviso'; var est=cancel?'<span style="color:#B85138">Cancelado</span>':(avi?'<span style="color:#B5651D">En aviso'+(a.salida?' · '+fmtFecha(a.salida):'')+'</span>':'<span style="color:#15805A">Vigente</span>'); var orig=m.moneda==='USD'?fmtUSD(m.monto)+' · TC '+m.tc:'\u2014'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+est+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+(m.detalle||'')+'</td><td class="r">'+orig+'</td><td class="r" style="color:#15805A">'+fmtCRC(crc(m))+'</td></tr>';}).join('');
   var INNER='<div class="rep">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de alquileres</div><div class="rep-period">Contratos y comisiones \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
     +'<div class="rep-cards"><div><span>Cantidad de contratos</span><b>'+vig.length+'</b></div></div>'
@@ -2509,7 +2532,7 @@ function fichaPDF(id){
   }
   var INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Ficha de contrato de alquiler</div><div class="rep-period">'+(m.propiedad||'Propiedad')+' \u00b7 '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
-    +'<div class="festado '+(a.estado==='cancelado'?'off':'on')+'">'+(a.estado==='cancelado'?'Contrato cancelado':'Contrato vigente')+'</div>'
+    +'<div class="festado '+(a.estado==='cancelado'?'off':(a.estado==='aviso'?'aviso':'on'))+'">'+(a.estado==='cancelado'?'Contrato cancelado':(a.estado==='aviso'?('En aviso de salida'+(a.salida?' · entrega '+fmtFecha(a.salida):'')):'Contrato vigente'))+'</div>'
     +'<h4>Datos del contrato</h4>'
     +'<table class="ftbl big"><tbody>'
     +row('Propiedad', m.propiedad)
@@ -2560,7 +2583,7 @@ function updCorredoresList(){
   dl.innerHTML=names.map(n=>`<option value="${n.replace(/"/g,'&quot;')}"></option>`).join('');
 }
 function setColoc(c){fColoc=c; updColega(); document.querySelectorAll('#segColoc button').forEach(b=>b.classList.toggle('on',b.dataset.c===c)); const h=document.getElementById('colocHint'); if(h){h.textContent=COLOC_HINTS[c]||''; h.classList.toggle('hide',!COLOC_HINTS[c]);}}
-function updRentCanc(){var r=document.getElementById('rentCancRow'); if(r)r.classList.toggle('hide',document.getElementById('fRentEstado').value!=='cancelado');}
+function updRentCanc(){var v=document.getElementById('fRentEstado').value; var r=document.getElementById('rentCancRow'); if(r)r.classList.toggle('hide',v!=='cancelado'); var s=document.getElementById('rentSalidaRow'); if(s)s.classList.toggle('hide',v!=='aviso');}
 let fInspF='', fInspH='', fFotos=[], fCheck={}, CHKOPEN=false;
 let fCover='', pCover='';
 function pickCover(ev,which){
@@ -2706,7 +2729,7 @@ function openForm(id){
     document.getElementById('fRentVen').value=al.vencimiento||'';
     var _pg=al.pago||''; if(_pg.indexOf('-')>=0)_pg=_pg.split('-')[2]||''; document.getElementById('fRentPago').value=_pg;
     document.getElementById('fRentEstado').value=al.estado||'vigente';
-    document.getElementById('fRentCanc').value=al.cancelado||''; updRentCanc();
+    document.getElementById('fRentCanc').value=al.cancelado||''; document.getElementById('fRentSalida').value=al.salida||''; updRentCanc();
     document.getElementById('fRentCuota').value=al.cuota||'';
     setCuotaMon(al.cuotaMon||'CRC');
     fInspF=al.inspFecha||''; fInspH=al.inspHora||'';
@@ -2736,7 +2759,7 @@ function openForm(id){
     setCobro('ok');
     document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnCed','fOwnTel','fOwnMail','fTenName','fTenCed','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
+    document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; document.getElementById('fRentSalida').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
     document.getElementById('fIban').value=''; document.getElementById('fTitName').value=''; document.getElementById('fTitCed').value=''; document.getElementById('fNise').value=''; document.getElementById('fNis').value=''; document.getElementById('fTitSame').checked=false; updTitSame();
     document.getElementById('undoPipeBtn').classList.add('hide');
@@ -2774,7 +2797,7 @@ function saveMov(){
     foto:fCover||''
   };
   if(fTipo==='ingreso' && isAlquilerCat(cat)){
-    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownCed:document.getElementById('fOwnCed').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenCed:document.getElementById('fTenCed').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim(), iban:document.getElementById('fIban').value.trim().toUpperCase(), titSame:document.getElementById('fTitSame').checked, titName:document.getElementById('fTitName').value.trim(), titCed:document.getElementById('fTitCed').value.trim(), nise:document.getElementById('fNise').value.trim(), nis:document.getElementById('fNis').value.trim() };
+    rec.alquiler={ inicio:document.getElementById('fRentIni').value||'', vencimiento:document.getElementById('fRentVen').value||'', cancelado:document.getElementById('fRentCanc').value||'', salida:document.getElementById('fRentSalida').value||'', pago:document.getElementById('fRentPago').value||'', estado:document.getElementById('fRentEstado').value||'vigente', cuota:parseFloat(document.getElementById('fRentCuota').value)||0, cuotaMon:fCuotaMon, inspFecha:fInspF, inspHora:fInspH, llaves:parseInt(document.getElementById('fLlaves').value)||0, fotos:fFotos.slice(), check:Object.assign({},fCheck), chkNotas:document.getElementById('fChkNotas').value.trim(), ownName:document.getElementById('fOwnName').value.trim(), ownCed:document.getElementById('fOwnCed').value.trim(), ownTel:document.getElementById('fOwnTel').value.trim(), ownMail:document.getElementById('fOwnMail').value.trim(), tenName:document.getElementById('fTenName').value.trim(), tenCed:document.getElementById('fTenCed').value.trim(), tenTel:document.getElementById('fTenTel').value.trim(), tenMail:document.getElementById('fTenMail').value.trim(), iban:document.getElementById('fIban').value.trim().toUpperCase(), titSame:document.getElementById('fTitSame').checked, titName:document.getElementById('fTitName').value.trim(), titCed:document.getElementById('fTitCed').value.trim(), nise:document.getElementById('fNise').value.trim(), nis:document.getElementById('fNis').value.trim() };
   }
   if(rec.tipo==='ingreso'&&!rec.lid) rec.lid=rec.id;
   if(editId){ const old=DATA.find(x=>x.id===editId); if(old&&old.origenPipe) rec.origenPipe=old.origenPipe; if(old&&old.lid) rec.lid=old.lid; const i=DATA.findIndex(x=>x.id===editId);DATA[i]=rec;} else DATA.push(rec);
@@ -3049,6 +3072,9 @@ function renderManual(){
     <div class="mh2"><span>5.</span> Alquileres</div>
     <ul class="mul">
       <li>Un ingreso de categoría <b>alquiler</b> habilita el contrato: inicio, vencimiento, día de pago, estado, cuota, datos de <b>propietario e inquilino</b> (con cédula) e IBAN.</li>
+      <li><b>Estado del contrato:</b> <span class="mok">Vigente</span> · <b style="color:#B5651D">En aviso de salida</b> (el inquilino avisó la salida — ponés la <b>fecha de entrega</b>; sigue contando como activo y sale del semáforo de vencimientos) · <span class="mno">Cancelado</span>. Un recuadro <b>En aviso</b> en la cejilla cuenta y filtra esos contratos.</li>
+      <li><b>Recibí el apartamento:</b> en un contrato «En aviso» tocás <b>✓ Recibí el apartamento</b> (antes o después de la fecha) → el contrato pasa a <b>Cancelado</b> y la propiedad <b>vuelve sola al Pipeline</b> para volver a gestionarla, heredando corredor, colocación y precio. El historial se conserva. Si el dueño no te da la correduría de nuevo, la <b>borrás del Pipeline</b>.</li>
+      <li><b>Botones de cada tarjeta:</b> ⌂ Historial · 📄 Gestión · 🏆 Desempeño · ⎙ Ficha resumen · 🧾 Recibo de pago (los de reporte aparecen según haya citas o cierre).</li>
       <li><b>Ficha PDF:</b> contrato, cuota, cédulas, IBAN, aumento por IPC, fotos de inspección (6 por página) y checklist. Solo para tu portafolio (no en "De colega").</li>
       <li><b>Vencimientos:</b> semáforo según la ventana legal de aviso de 3 meses + botón para agregar a tu Calendario de Apple.</li>
       <li>Buscá por propiedad, propietario o inquilino; filtrá por mes/año. El portafolio muestra vigentes, desocupadas y reparto colones/dólares.</li>
@@ -3058,6 +3084,7 @@ function renderManual(){
     <ul class="mul">
       <li>Cada negocio en proceso con su comisión y plazo (1/2/3 meses). Suma solo en su casilla de plazo.</li>
       <li><b>Fecha de ingreso editable</b> · <b>⏱ días en gestión</b> en cada ficha · a los 3 meses pasa a <b>Vencido</b>.</li>
+      <li><b>Antigüedad (aging):</b> tramos <b>0-30 / 31-60 / 61-90 / +90 días</b> con semáforo verde→rojo, con cantidad y monto — para ver de un vistazo qué reactivar o soltar.</li>
       <li><b>Cerrado:</b> se traslada solo a tus cifras reales (con deshacer). <b>Perdido:</b> al histórico (con devolver).</li>
       <li><b>Precio de venta / alquiler:</b> campo opcional (el rótulo cambia solo según el concepto). Al cerrar te pide el <b>precio logrado</b> y calcula el <b>% del precio pedido</b>. Se ve en la ficha de la propiedad y en los reportes al propietario.</li>
     </ul>
@@ -3065,6 +3092,7 @@ function renderManual(){
     <div class="mf"><code>Efectividad (₡)</code> = ₡ cerrados ÷ (₡ cerrados + ₡ perdidos) · pesa colones</div>
     <div class="mf"><code>Velocidad de pipeline</code> = activos × % cierre × comisión promedio ÷ días de ciclo (₡/mes que mueve tu cartera)</div>
     <div class="mf"><code>Absorción</code> = meses para colocar el pipeline actual al ritmo de los últimos 6 meses</div>
+    <div class="mf"><code>Ritmo vs meta (run-rate)</code> = ingreso del año ÷ fracción transcurrida — proyecta el cierre de año bajo la barra de meta del <b>Resumen</b> (verde ≥100% · oro 80-94% · rojo &lt;80%)</div>
     <div class="mtip">«% de cierre» cuenta negocios; «Efectividad» pesa colones. Si cerrás chicos y perdés uno grande, el % puede ser alto y la efectividad baja.</div>
 
     <div class="mh2"><span>7.</span> Citas (seguimiento comercial)</div>
@@ -4173,6 +4201,7 @@ const FICHA_CSS=`
   .ficha .festado{display:inline-block;font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;margin:4px 0 6px}
   .ficha .festado.on{background:#E4F1EA;color:#15805A}
   .ficha .festado.off{background:#F6E1DA;color:#B85138}
+  .ficha .festado.aviso{background:#FBE6D6;color:#B5651D}
   .ftbl{width:100%;border-collapse:collapse;margin:4px 0 10px}
   .ftbl td{padding:7px 6px;border-bottom:1px solid #eee;font-size:12px;vertical-align:top}
   .ftbl.big td{font-size:13px;padding:9px 6px}
@@ -4319,7 +4348,7 @@ function printReport(){
   }
   var rentHTML='';
   if(rentList2.length){
-    var rr=rentList2.map(function(m){var a=m.alquiler; var est=a.estado==='cancelado'?'<span style="color:#B85138">Cancelado</span>':'<span style="color:#15805A">Vigente</span>'; return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+est+'</td></tr>';}).join('');
+    var rr=rentList2.map(function(m){var a=m.alquiler; var est=a.estado==='cancelado'?'<span style="color:#B85138">Cancelado</span>':(a.estado==='aviso'?'<span style="color:#B5651D">En aviso'+(a.salida?' · '+fmtFecha(a.salida):'')+'</span>':'<span style="color:#15805A">Vigente</span>'); return '<tr><td>'+(m.propiedad||'\u2014')+'</td><td>'+(a.inicio?fmtFecha(a.inicio):'\u2014')+'</td><td>'+(a.vencimiento?fmtFecha(a.vencimiento):'\u2014')+'</td><td>'+fmtDiaPago(a.pago)+'</td><td>'+est+'</td></tr>';}).join('');
     rentHTML='<h4>Contratos de alquiler</h4><table class="rep-tbl small"><thead><tr><th>Propiedad</th><th>Inicio contrato</th><th>Vencimiento</th><th>D\u00eda de pago</th><th>Estado</th></tr></thead><tbody>'+rr+'</tbody></table>';
   }
   var REPORT_INNER=`
