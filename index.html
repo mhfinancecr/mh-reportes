@@ -1530,7 +1530,7 @@ function render(){
 
 /* ---------- Vista HOY (centro de mando) ---------- */
 function renderHoy(){
-  const today=new Date(); const todayISO=today.toISOString().slice(0,10); const mk=todayISO.slice(0,7);
+  const today=new Date(); const todayISO=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'); const mk=todayISO.slice(0,7);
   const cobrado=DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk).reduce((a,m)=>a+crc(m),0);
   const nOps=DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk).length;
   const esperado=PIPE.filter(p=>!isVencido(p)&&(p.meses||1)===1).reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0);
@@ -1817,17 +1817,21 @@ function metaSectionHTML(){
   const pRun=meta>0?Math.round(runRate/meta*100):0;
   const runCol=pRun>=100?'var(--ingreso)':pRun>=80?'var(--gold)':'var(--gasto)';
   const runTxt=ing>0&&meta>0?`<div class="runrate"><span class="rr-l">A tu ritmo actual cerrás el año en</span><span class="rr-v" style="color:${runCol}">${fmtCRC(runRate)}</span><span class="rr-p" style="color:${runCol}">${pRun}% de la meta</span></div>`:'';
-  const nowMk2=new Date().toISOString().slice(0,7);
+  const _nowD=new Date();
+  const nowMk2=_nowD.getFullYear()+'-'+String(_nowD.getMonth()+1).padStart(2,'0');
   const metaMes=Math.round(meta/12);
-  const ingMes=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)===nowMk2).reduce((a,m)=>a+crc(m),0);
-  const pM=metaMes?Math.min(100,Math.round(ingMes/metaMes*100)):0;
-  const ratioM=metaMes?ingMes/metaMes:0;
+  const perMonths=(typeof PER==='object'&&PER.desde&&PER.hasta)?monthsInRange(PER.desde,PER.hasta):[nowMk2];
+  const nPer=perMonths.length||1;
+  const metaPer=Math.round(meta/12*nPer);
+  const ingPer=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)>=perMonths[0]&&mkey(m.fecha)<=perMonths[nPer-1]).reduce((a,m)=>a+crc(m),0);
+  const pM=metaPer?Math.min(100,Math.round(ingPer/metaPer*100)):0;
+  const ratioM=metaPer?ingPer/metaPer:0;
   const gradM=ratioM>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratioM>=0.8?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
-  const faltaM=Math.max(0,metaMes-ingMes);
-  const mesNom=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][new Date().getMonth()];
-  const mesBar=metaMes?`<div class="metalbl" style="margin-top:13px">Este mes · ${mesNom} · ${fmtCRC(metaMes)}</div>
+  const faltaM=Math.max(0,metaPer-ingPer);
+  const perLbl=nPer===1?('Mes · '+fmtMesAno(perMonths[0])):('Período · '+nPer+' meses ('+fmtMesAno(perMonths[0])+' – '+fmtMesAno(perMonths[nPer-1])+')');
+  const mesBar=metaPer?`<div class="metalbl" style="margin-top:13px">${perLbl} · meta ${fmtCRC(metaPer)}</div>
     <div class="metabar"><div class="fill" style="width:${pM}%;background:${gradM}"></div><span class="pct">${pM}%</span></div>
-    <div class="metainfo"><span><b>${fmtCRC(ingMes)}</b> cobrado (${pM}%)</span>${faltaM>0?`<span>· faltan ${fmtCRC(faltaM)} este mes</span>`:'<span class="hit">· ¡Mes cumplido! 🎉</span>'}</div>`:'';
+    <div class="metainfo"><span><b>${fmtCRC(ingPer)}</b> cobrado (${pM}%)</span>${faltaM>0?`<span>· faltan ${fmtCRC(faltaM)}</span>`:'<span class="hit">· ¡Meta del período cumplida! 🎉</span>'}</div>`:'';
   return `<div class="section" style="margin-bottom:14px">
     <h3>Meta anual ${cy} <span class="small">meta ${fmtCRC(meta)}</span>${growTxt}</h3>
     <div class="metalbl">Año completo · ${fmtCRC(meta)}</div>
@@ -3096,7 +3100,7 @@ function renderManual(){
     <div class="mf"><code>Saldo</code> = Ingresos − Gastos + ajuste de IVA declarado</div>
     <ul class="mul">
       <li><b>Ajuste de IVA:</b> al final del mes digitá el IVA realmente pagado a Hacienda; la diferencia <u>solo corrige el saldo</u>. Dejá el mes <b>vacío</b> si aún no declarás; <b>0</b> solo si declaraste en cero.</li>
-      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Una tercera barra <b>Este mes</b> compara lo cobrado del mes contra la meta mensual (meta ÷ 12). Color térmico: <span class="mok">verde ≥95%</span> · oro 80-94% · rojo &lt;80%.</li>pan>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
+      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Una tercera barra <b>sigue el período filtrado</b>: un mes → lo cobrado de ese mes vs meta mensual (meta ÷ 12); un rango de N meses → lo del período vs meta proporcional (meta ÷ 12 × N). Color térmico: <span class="mok">verde ≥95%</span> · oro 80-94% · rojo &lt;80%.</li>pan>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
     </ul>
 
     <div class="mh2"><span>5.</span> Alquileres</div>
