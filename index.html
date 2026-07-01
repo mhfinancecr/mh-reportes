@@ -3877,15 +3877,49 @@ function renderEmbudo(){
         <button onclick="mktNav(1)" style="font:inherit;font-size:18px;border:1px solid var(--line2);background:var(--surface2);color:var(--paper);border-radius:9px;width:36px;height:34px;cursor:pointer">›</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 130px;gap:9px;align-items:center;margin-bottom:4px">
-        <div><div style="font-size:13.5px;font-weight:600;color:var(--paper)">Total de la página <small style="font-weight:500;color:var(--muted2)">· acumulado que muestra Facebook</small></div></div>
-        <input type="number" inputmode="numeric" value="${fanTot}" placeholder="total FB" onchange="mktSaveFanTotal(this.value)" style="font:inherit;font-size:14px;font-weight:600;text-align:right;border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--paper);background:var(--surface2)">
+        <div><div style="font-size:13.5px;font-weight:700;color:var(--paper)">Alcance de este mes <small style="font-weight:500;color:var(--muted2)">· lo que usa el embudo</small></div></div>
+        <input type="number" inputmode="numeric" value="${fan||''}" placeholder="alcance" onchange="mktSaveFan(this.value)" style="font:inherit;font-size:15px;font-weight:700;text-align:right;border:1px solid var(--gold);border-radius:9px;padding:8px 10px;color:var(--paper);background:var(--surface2)">
       </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">${fanDelta!=null?`Alcance de este mes: <b style="color:var(--paper)">${nf(fanDelta)}</b> <small>(total − mes anterior ${nf(prevTot)})</small>`:(fan?`Alcance de este mes: <b style="color:var(--paper)">${nf(fan)}</b> <small>(manual)</small>`:`Ingresá el total acumulado; con el del mes anterior calculo el alcance del mes.`)}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">Escribí el alcance que te muestra Facebook para el mes (métrica de los últimos 28 días). Ese es el número que usa el embudo.</div>
       <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:10px;padding-bottom:2px"><div>Propiedad</div><div style="text-align:right">Vistas Mkt</div><div style="text-align:right">Consultas</div></div>
       ${rows}
       <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Vistas Marketplace y consultas <b>por propiedad</b>. El alcance de Fan page es global. Citas y cierres salen solos de tus Citas (origen «Redes»).</div>
     </div>
-    <div id="mktAfter">${mktScopeBarHTML()}${mktFunnelHTML()}</div>`;
+    <div id="mktAfter">${mktTrendHTML()}${mktScopeBarHTML()}${mktFunnelHTML()}</div>`;
+}
+
+function mktTrendHTML(){
+  // Últimos 6 meses con alcance registrado (M.fan) hasta el mes seleccionado
+  const nf=n=>new Intl.NumberFormat('es-CR').format(Math.round(n||0));
+  const mk=MKT_MONTH;
+  const keys=Object.keys(MKT).filter(k=>k<=mk && MKT[k] && (+MKT[k].fan||0)>0).sort();
+  if(keys.length<2) return '';
+  const last=keys.slice(-6);
+  const vals=last.map(k=>+MKT[k].fan||0);
+  const max=Math.max(...vals,1);
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=k=>{const a=k.split('-');return MES[(+a[1])-1]+' '+a[0].slice(2);};
+  const cur=vals[vals.length-1], prev=vals[vals.length-2];
+  const delta=prev>0?((cur-prev)/prev*100):null;
+  const up=delta!=null&&delta>=0;
+  const dCol=delta==null?'var(--muted)':(delta>=0?'var(--ingreso)':'var(--gasto)');
+  const dTxt=delta==null?'—':(up?'▲ +':'▼ ')+Math.abs(delta).toFixed(0)+'%';
+  const bars=last.map((k,i)=>{
+    const h=Math.max(6,Math.round(vals[i]/max*72));
+    const isCur=i===last.length-1;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0">
+      <div style="font-size:10px;font-weight:700;color:${isCur?'var(--paper)':'var(--muted)'};white-space:nowrap">${nf(vals[i])}</div>
+      <div style="width:100%;max-width:34px;height:${h}px;border-radius:6px 6px 3px 3px;background:${isCur?'var(--gold)':'var(--gold-2)'};opacity:${isCur?1:.5}"></div>
+      <div style="font-size:9.5px;color:var(--muted);white-space:nowrap">${lbl(k)}</div>
+    </div>`;
+  }).join('');
+  return `<div style="border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;margin-bottom:14px;background:var(--surface)">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <div style="font-size:13.5px;font-weight:700;color:var(--paper)">Tendencia de alcance <small style="font-weight:500;color:var(--muted2)">· mes a mes</small></div>
+      <div style="font-size:13px;font-weight:800;color:${dCol}">${dTxt}<small style="font-weight:600;color:var(--muted);margin-left:5px">vs. mes anterior</small></div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:104px">${bars}</div>
+  </div>`;
 }
 
 /* ----- Reporte de gestión por propiedad (PDF) ----- */
