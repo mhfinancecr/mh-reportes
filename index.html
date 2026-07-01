@@ -3504,11 +3504,14 @@ function citaDonut(g,y,r){
   });
   return `<svg viewBox="0 0 42 42" class="cdonut">${arcs}<text x="21" y="21" class="cdtext">${tot}</text></svg>`;
 }
-function citasInPeriod(list,desde,hasta){ return list.filter(c=>{ const d=citaDate(c); if(!d) return false; const k=d.slice(0,7); return k>=desde && k<=hasta; }); }
+function citasInPeriod(list,desde,hasta,incSF){ return list.filter(c=>{ const d=citaDate(c); if(!d) return !!incSF; const k=d.slice(0,7); return k>=desde && k<=hasta; }); }
 function citasShiftYear(ym,n){ const p=ym.split('-'); return (+p[0]+n)+'-'+p[1]; }
 function citasPerLabel(desde,hasta){ return desde===hasta?fmtMesAno(desde):fmtMesAno(desde)+' – '+fmtMesAno(hasta); }
 function citasFiltered(){
-  let l=citasInPeriod(CITAS,PER.desde,PER.hasta);
+  let l=citasInPeriod(CITAS,PER.desde,PER.hasta,true);
+  // Las citas ACTIVAS (agendada / por agendar / en espera) se ven siempre,
+  // aunque su fecha caiga fuera del período (p.ej. agendada a futuro).
+  CITAS.forEach(c=>{ if(CITA_VIVAS.indexOf(c.estado)>=0 && l.indexOf(c)<0) l.push(c); });
   if(CITAS_TIPO!=='todos') l=l.filter(c=>c.tipo===CITAS_TIPO);
   if(CITAS_EST!=='todos'){
     if(CITAS_EST==='_vivas') l=l.filter(c=>CITA_VIVAS.indexOf(c.estado)>=0);
@@ -3620,10 +3623,11 @@ function renderCitas(){
 let citaEditId=null, citaTipo='venta', citaIng='', citaFec='', citaHor='', citaHist=[];
 function setCitaTipo(t){citaTipo=t;document.querySelectorAll('#segCitaTipo button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
 function ownProps(){ const seen={},out=[]; DATA.concat(PIPE).forEach(x=>{ if(x.coloc==='colega')return; const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out.sort((a,b)=>a.localeCompare(b,'es')); }
+function citaPropList(){ const seen={},out=[]; DATA.concat(PIPE).concat(CITAS).forEach(x=>{ const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out.sort((a,b)=>a.localeCompare(b,'es')); }
 function openCita(id,pre){
   pre=pre||{};
   document.getElementById('citaEstado').innerHTML=CITA_ESTADOS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');
-  document.getElementById('propsList').innerHTML=ownProps().map(p=>`<option value="${p.replace(/"/g,'&quot;')}"></option>`).join('');
+  document.getElementById('propsList').innerHTML=citaPropList().map(p=>`<option value="${p.replace(/"/g,'&quot;')}"></option>`).join('');
   if(id){
     const c=CITAS.find(x=>x.id===id); if(!c)return;
     citaEditId=id; setCitaTipo(c.tipo||'venta');
