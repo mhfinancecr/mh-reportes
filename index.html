@@ -816,6 +816,7 @@
   .ipcrow button{flex:0 0 auto;background:none;border:none;color:var(--muted2);font-size:14px;padding:2px 6px}
   .ipcrow button:hover{color:var(--gasto)}
   .ipcempty{font-size:12.5px;color:var(--muted2);padding:8px 2px}
+  .metaover{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;background:linear-gradient(90deg,#0E7A57,#E0B341);color:#fff;font-weight:800;font-size:11.5px;letter-spacing:.02em;box-shadow:0 1px 6px rgba(224,179,65,.35)}
 
   /* ===== COMPARACIÓN LIBRE A vs B ===== */
   .cmpside{display:flex;gap:8px;align-items:center;margin-bottom:10px}
@@ -1796,8 +1797,10 @@ function backupBannerHTML(){ return ''; }
 function metaSectionHTML(){
   const meta=+SET.meta||0; if(!meta) return '';
   const cy=new Date().getFullYear();
+  const metaGrad=r=>r>=1.10?'linear-gradient(90deg,#0E7A57,#1FA36B,#E0B341)':r>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':r>=0.80?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const overBadge=(r,pct)=>r>=1.10?` <span class="metaover">🔥 +${pct-100}% sobre la meta</span>`:'';
   const ing=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&+m.fecha.slice(0,4)===cy).reduce((a,m)=>a+crc(m),0);
-  const p=Math.min(100,Math.round(ing/meta*100));
+  const pReal=Math.round(ing/meta*100); const p=Math.min(100,pReal);
   const falta=Math.max(0,meta-ing);
   const mesesRest=12-(new Date().getMonth()+1)+1;
   const porMes=falta>0&&mesesRest>0?`<span>· necesitás ${fmtCRC(Math.ceil(falta/mesesRest))}/mes</span>`:'';
@@ -1808,13 +1811,13 @@ function metaSectionHTML(){
   const growTxt=grow===null?'':`<span class="metagrow">${grow>=0?'+':''}${grow}% vs ${prevMeta?('meta '+(cy-1)):('real '+(cy-1))}</span>`;
   const frac=(new Date().getMonth()+1)/12;
   const ratio=frac>0?(ing/meta)/frac:0;
-  const grad=ratio>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratio>=0.8?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const grad=metaGrad(ratio);
   const nowM=new Date().getMonth()+1;
   const metaYtd=Math.round(meta/12*nowM);
-  const pY=metaYtd?Math.min(100,Math.round(ing/metaYtd*100)):0;
+  const pYReal=metaYtd?Math.round(ing/metaYtd*100):0; const pY=Math.min(100,pYReal);
   const faltaY=Math.max(0,metaYtd-ing);
   const ratioY=metaYtd?ing/metaYtd:0;
-  const gradY=ratioY>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratioY>=0.8?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const gradY=metaGrad(ratioY);
   const runRate=frac>0?Math.round(ing/frac):0;
   const pRun=meta>0?Math.round(runRate/meta*100):0;
   const runCol=pRun>=100?'var(--ingreso)':pRun>=80?'var(--gold)':'var(--gasto)';
@@ -1826,22 +1829,22 @@ function metaSectionHTML(){
   const nPer=perMonths.length||1;
   const metaPer=Math.round(meta/12*nPer);
   const ingPer=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)>=perMonths[0]&&mkey(m.fecha)<=perMonths[nPer-1]).reduce((a,m)=>a+crc(m),0);
-  const pM=metaPer?Math.min(100,Math.round(ingPer/metaPer*100)):0;
+  const pMReal=metaPer?Math.round(ingPer/metaPer*100):0; const pM=Math.min(100,pMReal);
   const ratioM=metaPer?ingPer/metaPer:0;
-  const gradM=ratioM>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratioM>=0.8?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const gradM=metaGrad(ratioM);
   const faltaM=Math.max(0,metaPer-ingPer);
   const perLbl=nPer===1?('Mes · '+fmtMesAno(perMonths[0])):('Período · '+nPer+' meses ('+fmtMesAno(perMonths[0])+' – '+fmtMesAno(perMonths[nPer-1])+')');
   const mesBar=metaPer?`<div class="metalbl" style="margin-top:13px">${perLbl} · meta ${fmtCRC(metaPer)}</div>
-    <div class="metabar"><div class="fill" style="width:${pM}%;background:${gradM}"></div><span class="pct">${pM}%</span></div>
-    <div class="metainfo"><span><b>${fmtCRC(ingPer)}</b> cobrado (${pM}%)</span>${faltaM>0?`<span>· faltan ${fmtCRC(faltaM)}</span>`:'<span class="hit">· ¡Meta del período cumplida! 🎉</span>'}</div>`:'';
+    <div class="metabar"><div class="fill" style="width:${pM}%;background:${gradM}"></div><span class="pct">${pMReal}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ingPer)}</b> cobrado (${pMReal}%)</span>${faltaM>0?`<span>· faltan ${fmtCRC(faltaM)}</span>`:'<span class="hit">· ¡Meta del período cumplida! 🎉</span>'}${overBadge(ratioM,pMReal)}</div>`:'';
   return `<div class="section" style="margin-bottom:14px">
     <h3>Meta anual ${cy} <span class="small">meta ${fmtCRC(meta)}</span>${growTxt}</h3>
     <div class="metalbl">Año completo · ${fmtCRC(meta)}</div>
-    <div class="metabar"><div class="fill" style="width:${p}%;background:${grad}"></div><span class="pct">${p}%</span></div>
-    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${p}%)</span>${falta>0?`<span>· pendiente ${fmtCRC(falta)} (${100-p}%)</span>${porMes}`:'<span class="hit">· ¡Meta alcanzada! 🎉</span>'}</div>
+    <div class="metabar"><div class="fill" style="width:${p}%;background:${grad}"></div><span class="pct">${pReal}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${pReal}%)</span>${falta>0?`<span>· pendiente ${fmtCRC(falta)} (${100-p}%)</span>${porMes}`:'<span class="hit">· ¡Meta alcanzada! 🎉</span>'}${overBadge(ratio,pReal)}</div>
     <div class="metalbl" style="margin-top:13px">A la fecha · YTD ${nowM} ${nowM===1?'mes':'meses'} · ${fmtCRC(metaYtd)}</div>
-    <div class="metabar"><div class="fill" style="width:${pY}%;background:${gradY}"></div><span class="pct">${pY}%</span></div>
-    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${pY}%)</span>${faltaY>0?`<span>· pendiente ${fmtCRC(faltaY)} (${100-pY}%)</span>`:`<span class="hit">· ¡Al día con la meta! ✓</span>`}</div>
+    <div class="metabar"><div class="fill" style="width:${pY}%;background:${gradY}"></div><span class="pct">${pYReal}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${pYReal}%)</span>${faltaY>0?`<span>· pendiente ${fmtCRC(faltaY)} (${100-pY}%)</span>`:`<span class="hit">· ¡Al día con la meta! ✓</span>`}${overBadge(ratioY,pYReal)}</div>
     ${mesBar}
     ${runTxt}
   </div>`;
@@ -3102,7 +3105,7 @@ function renderManual(){
     <div class="mf"><code>Saldo</code> = Ingresos − Gastos + ajuste de IVA declarado</div>
     <ul class="mul">
       <li><b>Ajuste de IVA:</b> al final del mes digitá el IVA realmente pagado a Hacienda; la diferencia <u>solo corrige el saldo</u>. Dejá el mes <b>vacío</b> si aún no declarás; <b>0</b> solo si declaraste en cero.</li>
-      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Una tercera barra <b>sigue el período filtrado</b>: un mes → lo cobrado de ese mes vs meta mensual (meta ÷ 12); un rango de N meses → lo del período vs meta proporcional (meta ÷ 12 × N). Color térmico: <span class="mok">verde ≥95%</span> · oro 80-94% · rojo &lt;80%.</li>pan>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
+      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Una tercera barra <b>sigue el período filtrado</b>: un mes → lo cobrado de ese mes vs meta mensual (meta ÷ 12); un rango de N meses → lo del período vs meta proporcional (meta ÷ 12 × N). El <b>porcentaje mostrado es real</b> (puede pasar del 100%; el relleno se llena y se queda lleno). Color térmico: <span class="mok">verde ≥95%</span> · oro 80-94% · rojo &lt;80% · <b style="color:#0E7A57">esmeralda→oro 🔥 al superar 110%</b>.</li>pan>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
     </ul>
 
     <div class="mh2"><span>5.</span> Alquileres</div>
