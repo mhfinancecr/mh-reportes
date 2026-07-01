@@ -1319,7 +1319,9 @@ function clipCopy(text){ try{ var p=navigator.clipboard&&navigator.clipboard.wri
 function fallbackCopy(text){ try{ var ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }catch(e){} }
 
 /* ---------- Estado de filtro de período ---------- */
-function thisMonth(){const d=new Date();return d.toISOString().slice(0,7);}
+function mkLocal(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function isoLocal(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function thisMonth(){return mkLocal();}
 let PER = { desde: new Date().getFullYear()+'-01', hasta: thisMonth(), preset:'año' };
 if(!SET.cmp2){var _tm=thisMonth();var _py=(+_tm.slice(0,4)-1)+_tm.slice(4);SET.cmp2={aD:_tm,aH:_tm,bD:_py,bH:_py,on:false};}
 let CMP=SET.cmp2;
@@ -1404,7 +1406,7 @@ function wheelTo(which,i){
 function openDateWheel(title,value,cb){
   _wheel.cb=cb; _wheel.mode='dmy'; _wheel.years=yearRange();
   document.getElementById('wheelTitle').textContent=title;
-  const v=(value&&value.length===10)?value:new Date().toISOString().slice(0,10);
+  const v=(value&&value.length===10)?value:isoLocal();
   const [y,m,d]=v.split('-').map(Number);
   if(_wheel.years.indexOf(y)<0){_wheel.years.push(y);_wheel.years.sort((a,b)=>a-b);}
   const dc=document.getElementById('wheelDay');
@@ -1579,10 +1581,10 @@ function renderHoy(){
 function setPreset(p){
   const now=new Date(), y=now.getFullYear(), m=thisMonth();
   if(p==='mes'){PER={desde:m,hasta:m,preset:'mes'};}
-  else if(p==='mesPasado'){const d=new Date(y,now.getMonth()-1,1).toISOString().slice(0,7);PER={desde:d,hasta:d,preset:'mesPasado'};}
+  else if(p==='mesPasado'){const d=mkLocal(new Date(y,now.getMonth()-1,1));PER={desde:d,hasta:d,preset:'mesPasado'};}
   else if(p==='año'){PER={desde:y+'-01',hasta:m,preset:'año'};}
   else if(p==='añoPasado'){PER={desde:(y-1)+'-01',hasta:(y-1)+'-12',preset:'añoPasado'};}
-  else if(p==='12m'){const d=new Date(y,now.getMonth()-11,1).toISOString().slice(0,7);PER={desde:d,hasta:m,preset:'12m'};}
+  else if(p==='12m'){const d=mkLocal(new Date(y,now.getMonth()-11,1));PER={desde:d,hasta:m,preset:'12m'};}
   render();
 }
 function setDesde(v){PER.desde=v;PER.preset='';render();}
@@ -2791,7 +2793,7 @@ function openForm(id){
   } else {
     setTipo('ingreso'); fillCats(); setMon('CRC');
     setCobro('ok');
-    document.getElementById('fFecha').value=new Date().toISOString().slice(0,10);
+    document.getElementById('fFecha').value=isoLocal();
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnCed','fOwnTel','fOwnMail','fTenName','fTenCed','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; document.getElementById('fRentSalida').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
@@ -3351,7 +3353,7 @@ function openPipe(id){
     pCover=p.foto||'';
   } else {
     ['pProp','pDet','pMonto','pTC','pCorredor','pPrecioLista'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('pCreado').value=new Date().toISOString().slice(0,10);
+    document.getElementById('pCreado').value=isoLocal();
     pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
     pCover='';
   }
@@ -3382,7 +3384,7 @@ let closeId=null;
 function openClose(id){
   closeId=id; const p=PIPE.find(x=>x.id===id); if(!p)return;
   document.getElementById('closeName').textContent=(p.propiedad||p.concepto)+' · '+fmtCRC(crc(p));
-  document.getElementById('closeDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('closeDate').value=isoLocal();
   const dd=diasEnPipe(p);
   const closed=DATA.filter(m=>m.origenPipe&&m.origenPipe.creado);
   const dias=closed.map(m=>Math.max(0,Math.round((new Date(m.fecha)-new Date(m.origenPipe.creado))/86400000)));
@@ -3635,7 +3637,7 @@ function openCita(id,pre){
     citaEditId=null; setCitaTipo(pre.tipo||'venta');
     document.getElementById('citaProp').value=pre.propiedad||'';
     document.getElementById('citaCli').value='';
-    citaIng=new Date().toISOString().slice(0,10); citaFec=''; citaHor='';
+    citaIng=isoLocal(); citaFec=''; citaHor='';
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
     document.getElementById('citaMotivo').value='';
     document.getElementById('citaOrigen').value='redes';
@@ -3775,7 +3777,7 @@ function loseLinkedCitas(pipeId){
 }
 
 /* ----- Embudo de marketing (Negocio → Marketing) ----- */
-let MKT_MONTH=new Date().toISOString().slice(0,7), MKT_SCOPE='todas', MKT_PER='ano';
+let MKT_MONTH=mkLocal(), MKT_SCOPE='todas', MKT_PER='ano';
 const ORIG_LBL={redes:'Redes',referido:'Referido',colega:'Colega',directo:'Directo'};
 const ORIG_COL={redes:'#27557F',referido:'#C99A33',colega:'#7C6F9B',directo:'#8B97A6'};
 function mktEnsure(mk){ if(!MKT[mk])MKT[mk]={fan:0,props:{}}; if(!MKT[mk].props)MKT[mk].props={}; return MKT[mk]; }
@@ -3789,7 +3791,7 @@ function mktHist(scope){ if(scope==='todas')return null; const cs=mktCycleStart(
 function mktSaveProp(key,field,v){ const M=mktEnsure(MKT_MONTH); if(!M.props[key])M.props[key]={mkt:0,cons:0}; M.props[key][field]=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
 function mktSetScope(v){ MKT_SCOPE=v; mktRefreshFunnel(); }
 function mktSetPer(p){ MKT_PER=p; renderEmbudo(); }
-function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===now.toISOString().slice(0,7); if(MKT_PER==='ano')return mk.slice(0,4)===String(now.getFullYear()); return true; }
+function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===mkLocal(now); if(MKT_PER==='ano')return mk.slice(0,4)===String(now.getFullYear()); return true; }
 function mktFunnel(scope){
   let views=0,cons=0; const cs=(scope!=='todas')?mktCycleStart(scope):null;
   Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ if(cs&&mk<cs)return; const M=MKT[mk]||{}, ps=M.props||{};
@@ -4105,7 +4107,7 @@ function genRecibo(id, fechaPago){
 
 /* ====================== COACHING MENSUAL (buenas prácticas · vía Claude Pro) ====================== */
 let COACH_YEAR='', COACH_GEN=false, COACH_PROMPT='';
-function monthKey(d){ d=d||new Date(); return d.toISOString().slice(0,7); }
+function monthKey(d){ return mkLocal(d||new Date()); }
 function coachMetrics(){
   const now=new Date(), cy=now.getFullYear();
   const inY=m=>m.fecha&&(+m.fecha.slice(0,4)===cy);
