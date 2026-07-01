@@ -1539,6 +1539,12 @@ function renderHoy(){
   const sinCita=PIPE.filter(p=>!isVencido(p)&&(p.prob??100)>=75&&p.coloc!=='colega'&&!CITAS.some(c=>c.lid===p.id&&CITA_VIVAS.indexOf(c.estado)>=0));
   const avisos=DATA.filter(m=>vencBucket(m)==='rojo').map(m=>({m,d:Math.round((new Date(m.alquiler.vencimiento+'T00:00:00')-new Date(todayISO+'T00:00:00'))/86400000)})).sort((a,b)=>a.d-b.d);
   const cierres=PIPE.filter(p=>!isVencido(p)&&(p.prob??100)>=75).sort((a,b)=>crc(b)-crc(a));
+  const aniv=DATA.filter(m=>m.alquiler&&(m.alquiler.estado==='vigente'||m.alquiler.estado==='aviso')&&m.coloc!=='colega').map(m=>{
+      const inc=rentIncrease(m); if(!inc.applies) return null;
+      let hit=(inc.steps||[]).find(s=>s.date&&s.date.slice(0,7)===mk);
+      if(!hit && inc.pend && inc.pend.date && inc.pend.date.slice(0,7)===mk) hit=inc.pend;
+      return hit?{m,hit}:null;
+    }).filter(Boolean).sort((a,b)=>a.hit.date.localeCompare(b.hit.date));
   const dname=today.toLocaleDateString('es-CR',{weekday:'long'});
   const dfull=today.toLocaleDateString('es-CR',{day:'numeric',month:'long',year:'numeric'});
   const row=(dot,title,sub,right)=>`<div class="hrow"><span class="hdot" style="background:${dot}"></span><div class="hrmain"><div class="hrtitle">${title}</div>${sub?`<div class="hrsub">${sub}</div>`:''}</div>${right?`<div class="hrright">${right}</div>`:''}</div>`;
@@ -1548,10 +1554,11 @@ function renderHoy(){
   if(citasHoy[0]) prio.push(['Confirmá la <b>cita de las '+(citasHoy[0].hora||'hoy')+'</b>'+(citasHoy[0].cliente?' con '+citasHoy[0].cliente:''),'cita hoy']);
   if(segs[0]&&segs[0].d>=5) prio.push(['Llamá a <b>'+(segs[0].c.propiedad||'un prospecto')+'</b> — '+segs[0].d+' días sin avanzar','negocio vivo enfriándose']);
   if(avisos[0]) prio.push(['Enviá aviso de vencimiento a <b>'+(avisos[0].m.propiedad||'un contrato')+'</b>',avisos[0].d<0?'vencido':'dentro de la ventana legal']);
+  if(aniv[0]&&prio.length<3) prio.push(['Aplicá el aumento por IPC a <b>'+(aniv[0].m.propiedad||'un contrato')+'</b>','aniversario de contrato este mes']);
   if(sinCita[0]&&prio.length<3) prio.push(['Agendá cita para <b>'+(sinCita[0].propiedad||sinCita[0].concepto)+'</b>','alta probabilidad sin próxima cita']);
   if(cierres[0]&&prio.length<3) prio.push(['Empujá el cierre de <b>'+(cierres[0].propiedad||cierres[0].concepto)+'</b>','probable cierre este mes']);
   while(prio.length<3) prio.push(['Registrá tus movimientos del día','mantén tus cifras al día']);
-  const hasAny=citasHoy.length||segs.length||avisos.length||cierres.length;
+  const hasAny=citasHoy.length||segs.length||avisos.length||cierres.length||aniv.length;
   document.getElementById('view').innerHTML=`
    <div class="hoyhead"><div><h2 class="scr-title">Hoy</h2><p class="scr-sub">Qué hacer, en 10 segundos</p></div><div class="hoydate">${dname}<br>${dfull}</div></div>
    <div class="hmoney">
@@ -1561,6 +1568,7 @@ function renderHoy(){
    ${citasHoy.length?`<div class="hsec">Citas de hoy <span class="hcnt">${citasHoy.length}</span></div>`+citasHoy.map(c=>row('#C99A33',c.propiedad||'(Sin propiedad)',c.cliente||'',`<span class="htime">${c.hora||'—'}</span>`)).join(''):''}
    ${segs.length?`<div class="hsec">Seguimientos pendientes <span class="hcnt">${segs.length}</span></div>`+segs.map(o=>row(sdot(CITA_COL[o.c.estado]),o.c.propiedad||'(Sin propiedad)',CITA_LBL[o.c.estado],`<span class="hchip y">${o.d} días</span>`)).join(''):''}
    ${avisos.length?`<div class="hsec warn">Contratos · ventana de aviso <span class="hcnt">${avisos.length}</span></div>`+avisos.map(o=>row('#C75A3C',o.m.propiedad||'(Sin propiedad)','Vence '+fmtFecha(o.m.alquiler.vencimiento),`<span class="hchip r">${o.d<0?'vencido':o.d+' días'}</span>`)).join(''):''}
+   ${aniv.length?`<div class="hsec gold">Aniversario de contrato · aplicar IPC <span class="hcnt">${aniv.length}</span></div>`+aniv.map(o=>row('#B98A2F',o.m.propiedad||'(Sin propiedad)','Cuota '+fmtCRC(o.hit.from)+' → '+fmtCRC(o.hit.to)+(o.hit.pct!=null?' · IPC '+o.hit.pct+'%':' · falta cargar IPC'),`<span class="hchip y">${fmtFecha(o.hit.date)}</span>`)).join(''):''}
    ${cierres.length?`<div class="hsec gold">Probable cierre este mes <span class="hcnt">${cierres.length}</span></div>`+cierres.map(p=>row('#15805A',p.propiedad||p.concepto,(/alquiler/i.test(p.concepto)?'Alquiler':'Venta')+' · '+(p.prob??100)+'%',`<span style="color:var(--ingreso);font-weight:700">${fmtC(crc(p))}</span>`)).join(''):''}
    ${!hasAny?`<div class="empty"><div class="big">◈</div>Sin pendientes para hoy.<br>Agregá citas, pipeline o alquileres y acá verás tu día de un vistazo.</div>`:''}
    <div class="hprio"><h3>✦ Tus 3 prioridades</h3>${prio.slice(0,3).map((p,i)=>`<div class="hptask"><div class="hpn">${i+1}</div><div><div class="hpt">${p[0]}</div><div class="hpwhy">${p[1]}</div></div></div>`).join('')}</div>
@@ -1809,6 +1817,17 @@ function metaSectionHTML(){
   const pRun=meta>0?Math.round(runRate/meta*100):0;
   const runCol=pRun>=100?'var(--ingreso)':pRun>=80?'var(--gold)':'var(--gasto)';
   const runTxt=ing>0&&meta>0?`<div class="runrate"><span class="rr-l">A tu ritmo actual cerrás el año en</span><span class="rr-v" style="color:${runCol}">${fmtCRC(runRate)}</span><span class="rr-p" style="color:${runCol}">${pRun}% de la meta</span></div>`:'';
+  const nowMk2=new Date().toISOString().slice(0,7);
+  const metaMes=Math.round(meta/12);
+  const ingMes=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)===nowMk2).reduce((a,m)=>a+crc(m),0);
+  const pM=metaMes?Math.min(100,Math.round(ingMes/metaMes*100)):0;
+  const ratioM=metaMes?ingMes/metaMes:0;
+  const gradM=ratioM>=0.95?'linear-gradient(90deg,#15805A,#2AA876)':ratioM>=0.8?'linear-gradient(90deg,#B98A2F,#D4A94A)':'linear-gradient(90deg,#B85138,#D4775F)';
+  const faltaM=Math.max(0,metaMes-ingMes);
+  const mesNom=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][new Date().getMonth()];
+  const mesBar=metaMes?`<div class="metalbl" style="margin-top:13px">Este mes · ${mesNom} · ${fmtCRC(metaMes)}</div>
+    <div class="metabar"><div class="fill" style="width:${pM}%;background:${gradM}"></div><span class="pct">${pM}%</span></div>
+    <div class="metainfo"><span><b>${fmtCRC(ingMes)}</b> cobrado (${pM}%)</span>${faltaM>0?`<span>· faltan ${fmtCRC(faltaM)} este mes</span>`:'<span class="hit">· ¡Mes cumplido! 🎉</span>'}</div>`:'';
   return `<div class="section" style="margin-bottom:14px">
     <h3>Meta anual ${cy} <span class="small">meta ${fmtCRC(meta)}</span>${growTxt}</h3>
     <div class="metalbl">Año completo · ${fmtCRC(meta)}</div>
@@ -1817,11 +1836,12 @@ function metaSectionHTML(){
     <div class="metalbl" style="margin-top:13px">A la fecha · YTD ${nowM} ${nowM===1?'mes':'meses'} · ${fmtCRC(metaYtd)}</div>
     <div class="metabar"><div class="fill" style="width:${pY}%;background:${gradY}"></div><span class="pct">${pY}%</span></div>
     <div class="metainfo"><span><b>${fmtCRC(ing)}</b> alcanzado (${pY}%)</span>${faltaY>0?`<span>· pendiente ${fmtCRC(faltaY)} (${100-pY}%)</span>`:`<span class="hit">· ¡Al día con la meta! ✓</span>`}</div>
+    ${mesBar}
     ${runTxt}
   </div>`;
 }
 function porCobrarSectionHTML(){
-  const pend=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro==='pend').sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const pend=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro==='pend').sort((a,b)=>(daysSince(b.fecha)||0)-(daysSince(a.fecha)||0));
   if(!pend.length) return '';
   const tot=pend.reduce((a,m)=>a+crc(m),0);
   const cptOf=m=>(m.origenPipe&&m.origenPipe.concepto)||m.categoria||'';
@@ -1829,13 +1849,23 @@ function porCobrarSectionHTML(){
   const isVen=m=>/venta/i.test(m.categoria)||/venta/i.test(cptOf(m));
   const pv=pend.filter(isVen), pa=pend.filter(isAlq);
   const totV=pv.reduce((a,m)=>a+crc(m),0), totA=pa.reduce((a,m)=>a+crc(m),0);
-  const rows=pend.map(m=>`<div class="brk pcrow" onclick="openForm(${m.id})"><span class="name">${m.propiedad||m.categoria}${isAlq(m)?' <small class="pendtag" style="background:#1C3D60">ALQ</small>':isVen(m)?' <small class="pendtag" style="background:var(--gold)">VENTA</small>':''} <small>${m.fecha.split('-').reverse().join('/')}</small></span><span class="amt num">${fmtCRC(crc(m))}</span></div>`).join('');
+  const ageOf=m=>daysSince(m.fecha)||0;
+  const sb=arr=>arr.reduce((a,m)=>a+crc(m),0);
+  const b1=pend.filter(m=>ageOf(m)<=30), b2=pend.filter(m=>{const d=ageOf(m);return d>30&&d<=60;}), b3=pend.filter(m=>ageOf(m)>60);
+  const ageCol=d=>d<=30?'#15805A':d<=60?'#B98A2F':'#C75A3C';
+  const aging=`<div class="statstrip" style="grid-template-columns:1fr 1fr 1fr;margin:2px 0 12px">
+      <div class="stat"><div class="sv num" style="color:#15805A">${fmtC(sb(b1))}</div><div class="sk">0–30 días (${b1.length})</div></div>
+      <div class="stat"><div class="sv num" style="color:#B98A2F">${fmtC(sb(b2))}</div><div class="sk">31–60 días (${b2.length})</div></div>
+      <div class="stat"><div class="sv num" style="color:#C75A3C">${fmtC(sb(b3))}</div><div class="sk">+60 días (${b3.length})</div></div>
+    </div>`;
+  const rows=pend.map(m=>{const d=ageOf(m);return `<div class="brk pcrow" onclick="openForm(${m.id})"><span class="name">${m.propiedad||m.categoria}${isAlq(m)?' <small class="pendtag" style="background:#1C3D60">ALQ</small>':isVen(m)?' <small class="pendtag" style="background:var(--gold)">VENTA</small>':''} <small>${m.fecha.split('-').reverse().join('/')} · <b style="color:${ageCol(d)}">${d}d</b></small></span><span class="amt num">${fmtCRC(crc(m))}</span></div>`;}).join('');
   return `<div class="section pcsec" data-fold="pc">
     <h3>Comisiones por cobrar <span class="small">cierres pendientes de pago · no suman en tus cifras</span></h3>
-    <div class="statstrip duo" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+    <div class="statstrip duo" style="grid-template-columns:1fr 1fr;margin-bottom:10px">
       <div class="stat"><div class="sv num" style="color:var(--gold)">${fmtC(totV)}</div><div class="sk">Ventas (${pv.length})</div></div>
       <div class="stat"><div class="sv num" style="color:var(--gold)">${fmtC(totA)}</div><div class="sk">Alquileres (${pa.length})</div></div>
     </div>
+    ${aging}
     ${rows}
     <div class="brk pctotal"><span class="name">Total por cobrar (${pend.length})</span><span class="amt num">${fmtCRC(tot)}</span></div>
   </div>`;
@@ -3042,7 +3072,7 @@ function renderManual(){
     <p>La pantalla de inicio. <b>No guarda nada nuevo</b>: lee y prioriza lo que ya está en las otras pantallas.</p>
     <ul class="mul">
       <li><b>Cobrado · este mes</b> y <b>Esperado · próx. mes</b> (pipeline ponderado a 1 mes).</li>
-      <li><b>Citas de hoy</b> · <b>Seguimientos pendientes</b> · <b>Contratos en ventana de aviso</b> (3 meses legales) · <b>Probable cierre este mes</b> (prob ≥75%).</li>
+      <li><b>Citas de hoy</b> · <b>Seguimientos pendientes</b> · <b>Contratos en ventana de aviso</b> (3 meses legales) · <b>Aniversario de contrato</b> (alquileres en colones que cumplen año este mes, con la cuota nueva ya calculada por IPC) · <b>Probable cierre este mes</b> (prob ≥75%).</li>
       <li><b>Tus 3 prioridades:</b> las tres acciones más urgentes, armadas solas.</li>
     </ul>
 
@@ -3054,7 +3084,7 @@ function renderManual(){
       <li><b>Comisión al colega:</b> se precarga al 50% — editala si el acuerdo es otro. Al guardar crea el gasto solo.</li>
       <li><b>Facturado:</b> la app calcula el IVA (13% del neto), lo suma al ingreso (bruto) y crea el gasto de IVA.</li>
       <li><b>Referido:</b> nombre y monto — crea el gasto en "Pago de comisiones por referidos".</li>
-      <li><b>Cobro:</b> <i>Cobrado</i> entra ya; <i>Por cobrar</i> queda en espera sin sumar hasta marcarlo cobrado.</li>
+      <li><b>Cobro:</b> <i>Cobrado</i> entra ya; <i>Por cobrar</i> queda en espera sin sumar hasta marcarlo cobrado. En el <b>Resumen</b>, la sección <b>Comisiones por cobrar</b> las agrupa por antigüedad (<span class="mok">0–30</span> · 31–60 · <span class="mno">+60 días</span>) para saber a quién apurar.</li>
     </ul>
     <div class="mtip"><b class="mno">No digités a mano</b> los gastos de IVA, comisión a colega o referido de un cierre: la app los crea sola. Hacerlo manual los duplicaría.</div>
     <p><b>Para corregir montos:</b> editá la <b>ficha del ingreso</b> y los gastos automáticos se actualizan solos — o editá el gasto individual y se refleja de vuelta. Sin duplicar.</p>
@@ -3066,7 +3096,7 @@ function renderManual(){
     <div class="mf"><code>Saldo</code> = Ingresos − Gastos + ajuste de IVA declarado</div>
     <ul class="mul">
       <li><b>Ajuste de IVA:</b> al final del mes digitá el IVA realmente pagado a Hacienda; la diferencia <u>solo corrige el saldo</u>. Dejá el mes <b>vacío</b> si aún no declarás; <b>0</b> solo si declaraste en cero.</li>
-      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Color térmico: <span class="mok">verde ≥95%</span>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
+      <li><b>Meta anual:</b> ingresos cobrados del año ÷ meta. La barra <b>YTD</b> compara contra la meta proporcional al mes (meta ÷ 12 × meses). Una tercera barra <b>Este mes</b> compara lo cobrado del mes contra la meta mensual (meta ÷ 12). Color térmico: <span class="mok">verde ≥95%</span> · oro 80-94% · rojo &lt;80%.</li>pan>, ámbar 80–94%, <span class="mno">rojo &lt;80%</span>.</li>
     </ul>
 
     <div class="mh2"><span>5.</span> Alquileres</div>
