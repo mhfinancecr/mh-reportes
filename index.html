@@ -690,9 +690,12 @@
   .cc-body h5{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);font-weight:800;margin:14px 0 7px}
   .cc-body h5:first-child{margin-top:0}
   .cc-body p{font-size:12.5px;color:var(--paper);margin:6px 0;line-height:1.55;text-wrap:pretty}
-  .cc-body .cfu{list-style:none;display:flex;flex-direction:column;gap:7px;margin:4px 0}
-  .cc-body .cfu li{display:flex;gap:8px;font-size:12.5px;color:var(--paper);line-height:1.5;text-wrap:pretty}
-  .cc-body .cfu li::before{content:"→";color:var(--gold);font-weight:800;flex:0 0 auto}
+  .cc-body .cfu{list-style:none;display:flex;flex-direction:column;gap:10px;margin:4px 0;padding:0}
+  .cc-body .cfu li{position:relative;padding:0 0 0 22px;font-size:12.5px;color:var(--paper);line-height:1.6;text-wrap:pretty}
+  .cc-body .cfu li::before{content:"→";position:absolute;left:0;top:0;color:var(--gold);font-weight:800}
+  .cc-body .cfu li b{color:var(--gold-2);font-weight:700}
+  .cc-body h5{background:var(--gold-soft);padding:6px 11px;border-radius:7px;display:inline-block}
+  html[data-theme="dark"] .cc-body h5{background:rgba(185,138,47,.14)}
   .estfilter{margin:0 0 12px}
   .estfilter select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--paper);font-size:13px;font-weight:600;font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238A8575' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
   /* Bloque de alquiler en formulario */
