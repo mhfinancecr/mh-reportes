@@ -294,6 +294,11 @@
   .monsplit b{color:var(--paper)}
   .metainfo b{color:var(--neto)}.metainfo .hit{color:var(--ingreso);font-weight:700}
   .proplink{display:inline-block;margin-top:7px;background:none;border:none;font:inherit;font-size:12px;font-weight:600;color:var(--paper);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
+  .searchbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:16px;cursor:pointer;flex:0 0 auto;color:var(--paper)}
+  .searchbtn:active{background:var(--surface2)}
+  .searchrow{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:14.5px;color:var(--paper)}
+  .searchrow:active{background:var(--surface2)}
+  .searchrow small{color:var(--muted);font-size:12px}
   .overlay{position:fixed;inset:0;z-index:40;background:rgba(10,8,6,.6);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
   #propOverlay{z-index:70}
   .overlay.open{display:flex}
@@ -874,10 +879,20 @@
     <span class="sub">Gestión de Negocios</span>
   </div>
   <button class="addbtn" onclick="fabAdd()">＋ Nuevo</button>
+  <button class="searchbtn" onclick="openSearch()" aria-label="Buscar">🔍</button>
   <button class="gearbtn" onclick="go('ajustes')">⚙︎<span class="bdot hide" id="gearDot"></span></button>
 </header>
 
 <main id="view"></main>
+
+<!-- BÚSQUEDA GLOBAL -->
+<div class="overlay" id="searchOverlay">
+  <div class="sheet" style="max-height:82vh">
+    <div class="grab"></div>
+    <input id="searchInput" type="search" placeholder="Buscar propiedad, cliente o corredor…" oninput="onGlobalSearch(this.value)" style="width:100%;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;background:var(--surface2);color:var(--paper)">
+    <div id="searchResults"></div>
+  </div>
+</div>
 
 <nav>
   <button id="nav-hoy" class="active" onclick="goGroup('hoy')"><span class="ic">◈</span>Hoy</button>
@@ -2281,6 +2296,7 @@ function renderAjustes(){
       <input class="miniInput num" type="number" value="${SET.meta||''}" placeholder="0" onchange="SET.meta=parseFloat(this.value)||0;if(!SET.metas)SET.metas={};SET.metas[new Date().getFullYear()]=SET.meta;persist();toast('Meta guardada')">
     </div>
     <div class="setrow"><div class="l">Último respaldo<small>${SET.lastBackup?SET.lastBackup.split('-').reverse().join('/'):'Nunca desde este dispositivo'}</small></div><button class="ghostbtn" onclick="exportJSON()">Respaldar</button></div>
+    <div class="setrow"><div class="l">Notificaciones<small>${notifStatus()==='denied'?'Bloqueadas en el navegador — activalas desde Ajustes de Safari/iOS':'Alertas del sistema al abrir la app: vencimientos, aniversario IPC, seguimientos sin avanzar'}</small></div><button class="ghostbtn" onclick="toggleNotif()" ${notifStatus()==='denied'?'disabled style="opacity:.5"':''}>${SET.notif&&notifStatus()==='granted'?'Activadas ✓':'Activar'}</button></div>
     <div class="setrow"><div class="l">Movimientos registrados<small>${DATA.length} en total</small></div><div class="num" style="color:var(--gold);font-weight:600">${DATA.length}</div></div>
     <div class="setrow"><div class="l">Ingreso neto histórico<small>Todos los períodos</small></div><div class="num" style="color:var(--gold);font-weight:600">${fmtCRC(tot.n)}</div></div>
   </div>
@@ -3066,8 +3082,9 @@ function renderManual(){
     <div class="mh1">Manual de uso</div>
     <div class="msub">MH Finance Costa Rica · Gestión de negocios</div>
 
-    <div class="mh2"><span>1.</span> Navegación: 5 grupos</div>
-    <p>La barra inferior tiene <b>5 botones</b>. Los que agrupan varias pantallas muestran un <b>control segmentado</b> arriba para cambiar entre ellas.</p>
+    <div class="mh2"><span>1.</span> Navegación: 5 grupos + búsqueda + notificaciones</div>
+    <p>La barra inferior tiene <b>5 botones</b>. Los que agrupan varias pantallas muestran un <b>control segmentado</b> arriba para cambiar entre ellas. Arriba, junto al botón «+», el ícono <b>🔍</b> abre una <b>búsqueda global</b>: escribís y salen coincidencias de propiedades, clientes/citas y corredores — tocás el resultado y saltás directo a la ficha o pantalla correspondiente.</p>
+    <p>En <b>Ajustes → Notificaciones</b> podés activar alertas del sistema (banner nativo del dispositivo): al abrir la app, si hay contratos en ventana de aviso, aniversarios de IPC del mes o seguimientos de citas sin avanzar 5+ días, te llega una notificación (máximo una por día). Requiere dar permiso una vez; si el dispositivo lo bloquea, hay que habilitarlo desde Ajustes de Safari/iOS.</p>
     <table class="mtbl">
       <tr><td>◈ Hoy</td><td>Centro de mando del día. Es la pantalla de inicio.</td></tr>
       <tr><td>₡ Finanzas</td><td><b>Resumen</b> · <b>Gráficos</b> · <b>Movim.</b> · <b>Reportes</b>.</td></tr>
@@ -4707,7 +4724,60 @@ function logout(){
   go('resumen'); window.scrollTo(0,0);
   setTimeout(()=>{try{document.getElementById('passInput').focus();}catch(e){}},80);
 }
-function tryUnlock(){var v=document.getElementById('passInput').value;if(v===PASS){document.getElementById('lock').style.display='none';}else{document.getElementById('passErr').style.display='block';var i=document.getElementById('passInput');i.value='';i.focus();}}
+function tryUnlock(){var v=document.getElementById('passInput').value;if(v===PASS){document.getElementById('lock').style.display='none';checkAlerts();}else{document.getElementById('passErr').style.display='block';var i=document.getElementById('passInput');i.value='';i.focus();}}
+/* ---------- Búsqueda global ---------- */
+function openSearch(){ document.getElementById('searchOverlay').classList.add('open'); const inp=document.getElementById('searchInput'); inp.value=''; document.getElementById('searchResults').innerHTML=''; setTimeout(()=>inp.focus(),200); }
+function closeSearch(){ document.getElementById('searchOverlay').classList.remove('open'); }
+function globalSearch(q){
+  q=(q||'').trim().toLowerCase(); if(!q) return {props:[],citas:[],corr:[]};
+  const props = citaPropList().filter(p=>p.toLowerCase().indexOf(q)>=0).slice(0,8);
+  const citas = CITAS.filter(c=>((c.cliente||'').toLowerCase().indexOf(q)>=0)).slice(0,6);
+  const corrSet={}; DATA.concat(PIPE).forEach(x=>{const c=(x.corredor||'').trim(); if(c && c.toLowerCase().indexOf(q)>=0) corrSet[c]=1;});
+  return {props, citas, corr:Object.keys(corrSet).slice(0,6)};
+}
+function onGlobalSearch(v){
+  const r=globalSearch(v);
+  const box=document.getElementById('searchResults');
+  if(!v.trim()){ box.innerHTML=''; return; }
+  if(!r.props.length && !r.citas.length && !r.corr.length){ box.innerHTML='<div class="empty" style="padding:30px 0"><div class="big">◈</div>Sin resultados</div>'; return; }
+  let h='';
+  if(r.props.length) h+=`<div class="crlbl">Propiedades</div>`+r.props.map(p=>`<div class="searchrow" onclick="closeSearch();propFicha('${p.replace(/'/g,"\\'")}')">🏠 ${p}</div>`).join('');
+  if(r.citas.length) h+=`<div class="crlbl">Citas / clientes</div>`+r.citas.map(c=>`<div class="searchrow" onclick="closeSearch();go('citas');citasSearch('${(c.cliente||'').replace(/'/g,"\\'")}')">👤 ${c.cliente||'(sin nombre)'} <small>· ${c.propiedad||''}</small></div>`).join('');
+  if(r.corr.length) h+=`<div class="crlbl">Corredores</div>`+r.corr.map(c=>`<div class="searchrow" onclick="closeSearch();go('movimientos');setMSearch('${c.replace(/'/g,"\\'")}')">🤝 ${c}</div>`).join('');
+  box.innerHTML=h;
+}
+/* ---------- Notificaciones del sistema (al abrir la app) ---------- */
+function notifSupported(){ return typeof Notification!=='undefined'; }
+function notifStatus(){ return notifSupported()?Notification.permission:'unsupported'; }
+function toggleNotif(){
+  if(!notifSupported()){ toast('Este dispositivo no soporta notificaciones'); return; }
+  if(Notification.permission==='granted'){ SET.notif=!SET.notif; persist(); render(); toast(SET.notif?'Notificaciones activadas':'Notificaciones desactivadas'); return; }
+  Notification.requestPermission().then(p=>{ SET.notif=(p==='granted'); persist(); render(); toast(SET.notif?'Notificaciones activadas':'Permiso no concedido'); });
+}
+function checkAlerts(){
+  try{
+    if(!SET.notif || !notifSupported() || Notification.permission!=='granted') return;
+    const today=new Date(); const todayISO=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    if(SET.notifLastDay===todayISO) return; // una vez al día
+    const mk=todayISO.slice(0,7);
+    const msgs=[];
+    const avisos=DATA.filter(m=>vencBucket(m)==='rojo');
+    if(avisos.length) msgs.push('⏰ '+avisos.length+' contrato(s) en ventana de aviso de vencimiento');
+    const aniv=DATA.filter(m=>m.alquiler&&(m.alquiler.estado==='vigente'||m.alquiler.estado==='aviso')&&m.coloc!=='colega').filter(m=>{
+      const r=rentIncrease(m); if(!r)return false;
+      const steps=(r.steps||[]).some(s=>(s.date||'').slice(0,7)===mk);
+      const pend=r.pend&&(r.pend.date||'').slice(0,7)===mk;
+      return steps||pend;
+    });
+    if(aniv.length) msgs.push('📈 '+aniv.length+' contrato(s) cumplen aniversario de IPC este mes');
+    const segs=CITAS.filter(c=>c.estado==='espera'||c.estado==='poragendar').filter(c=>(daysSince(c.fecha||c.ingreso)||0)>=5);
+    if(segs.length) msgs.push('📋 '+segs.length+' seguimiento(s) sin avanzar hace 5+ días');
+    if(!msgs.length) return;
+    SET.notifLastDay=todayISO; persist();
+    new Notification('MH Finance — Gestión de negocios', {body:msgs.join(' · '), tag:'mh-alertas'});
+  }catch(e){}
+}
+document.getElementById('searchOverlay').addEventListener('click',e=>{if(e.target.id==='searchOverlay')closeSearch();});
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeForm();});
 document.getElementById('propOverlay').addEventListener('click',e=>{if(e.target.id==='propOverlay')closePropFicha();});
 document.getElementById('poverlay').addEventListener('click',e=>{if(e.target.id==='poverlay')closePipe();});
