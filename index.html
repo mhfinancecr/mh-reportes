@@ -3795,17 +3795,30 @@ function mktPrevFanTotal(mk){ const ks=Object.keys(MKT).filter(k=>k<mk && MKT[k]
 function mktSaveFanTotal(v){ const M=mktEnsure(MKT_MONTH); const n=parseFloat(v); if(isNaN(n)){ delete M.fanTotal; } else { M.fanTotal=n; const pv=mktPrevFanTotal(MKT_MONTH); if(pv!=null) M.fan=Math.max(0,n-pv); } persist(); renderEmbudo(); }
 function mktActiveProps(){ const seen={},out=[]; PIPE.forEach(x=>{ if(x.coloc==='colega')return; const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out; }
 function mktCycleStart(key){ let best=null; PIPE.forEach(x=>{ if(x.coloc==='colega')return; if((x.propiedad||'').trim().toLowerCase()!==key)return; const c=(x.creado||'').slice(0,7); if(c&&(!best||c>best))best=c; }); return best; }
-function mktHist(scope){ if(scope==='todas')return null; const cs=mktCycleStart(scope); if(!cs)return null; let v=0,c=0; Object.keys(MKT).forEach(mk=>{ if(mk>=cs)return; const p=(MKT[mk].props||{})[scope]; if(p){v+=(+p.mkt||0);c+=(+p.cons||0);} }); return (v||c)?{v,c}:null; }
+function mktHist(scope){ if(scope==='todas')return null; const cs=mktCycleStart(scope); if(!cs)return null; const months=Object.keys(MKT).filter(mk=>mk<cs&&(MKT[mk].props||{})[scope]).sort(); if(!months.length)return null; const p=MKT[months[months.length-1]].props[scope]; const v=+p.mkt||0,c=+p.cons||0; return (v||c)?{v,c}:null; }
 function mktSaveProp(key,field,v){ const M=mktEnsure(MKT_MONTH); if(!M.props[key])M.props[key]={mkt:0,cons:0}; M.props[key][field]=parseFloat(v)||0; persist(); mktRefreshFunnel(); }
 function mktSetScope(v){ MKT_SCOPE=v; mktRefreshFunnel(); }
 function mktSetPer(p){ MKT_PER=p; renderEmbudo(); }
 function mktPerTest(mk){ const now=new Date(); if(MKT_PER==='mes')return mk===mkLocal(now); if(MKT_PER==='ano')return mk.slice(0,4)===String(now.getFullYear()); return true; }
+function mktPropLatest(key,cs){ // último valor digitado para esa propiedad (acumulado desde publicación, no se suma entre meses)
+  const months=Object.keys(MKT).filter(mk=>(!cs||mk>=cs)&&MKT[mk].props&&MKT[mk].props[key]).sort();
+  if(!months.length) return {mkt:0,cons:0};
+  const last=MKT[months[months.length-1]].props[key];
+  return {mkt:+last.mkt||0, cons:+last.cons||0};
+}
 function mktFunnel(scope){
   let views=0,cons=0; const cs=(scope!=='todas')?mktCycleStart(scope):null;
-  Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ if(cs&&mk<cs)return; const M=MKT[mk]||{}, ps=M.props||{};
-    if(scope==='todas'){ views+=(+M.fan||0); Object.keys(ps).forEach(k=>{cons+=(+ps[k].cons||0);}); }
-    else { const p=ps[scope]||{}; views+=(+p.mkt||0); cons+=(+p.cons||0); }
-  });
+  if(scope==='todas'){
+    // Alcance: última cifra de la Fan page dentro del período elegido (es acumulado, no se suma entre meses)
+    const fanMonths=Object.keys(MKT).filter(mktPerTest).filter(mk=>MKT[mk].fan).sort();
+    views = fanMonths.length? (+MKT[fanMonths[fanMonths.length-1]].fan||0) : 0;
+    // Consultas: última cifra por propiedad (acumulada), sumada entre propiedades
+    const seen={};
+    Object.keys(MKT).filter(mktPerTest).forEach(mk=>{ Object.keys(MKT[mk].props||{}).forEach(k=>{seen[k]=1;}); });
+    Object.keys(seen).forEach(k=>{ cons+=mktPropLatest(k,null).cons; });
+  } else {
+    const p=mktPropLatest(scope,cs); views=p.mkt; cons=p.cons;
+  }
   const cz=CITAS.filter(c=>{ if((c.origen||'redes')!=='redes')return false; const d=c.fecha||c.ingreso||''; if(!d||!mktPerTest(d.slice(0,7)))return false; if(cs&&d.slice(0,7)<cs)return false; if(scope!=='todas'&&(c.propiedad||'').trim().toLowerCase()!==scope)return false; return true; });
   return {views,cons,citas:cz.length,cierres:cz.filter(c=>c.estado==='cerro').length};
 }
@@ -3888,7 +3901,7 @@ function renderEmbudo(){
       <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">Escribí el alcance que te muestra Facebook para el mes (métrica de los últimos 28 días). Ese es el número que usa el embudo.</div>
       <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:10px;padding-bottom:2px"><div>Propiedad</div><div style="text-align:right">Vistas Mkt</div><div style="text-align:right">Consultas</div></div>
       ${rows}
-      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Vistas Marketplace y consultas <b>por propiedad</b>. El alcance de Fan page es global. Citas y cierres salen solos de tus Citas (origen «Redes»).</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">Vistas Marketplace y consultas <b>por propiedad</b> — digitá el <b>total acumulado</b> que te muestra Facebook desde que publicaste (no se suma entre meses, se toma el último dato). El alcance de Fan page es global. Citas y cierres salen solos de tus Citas (origen «Redes»).</div>
     </div>
     <div id="mktAfter">${mktTrendHTML()}${mktScopeBarHTML()}${mktFunnelHTML()}</div>`;
 }
