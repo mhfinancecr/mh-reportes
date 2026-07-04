@@ -1916,7 +1916,10 @@ function pipeAgingHTML(){
 }
 function pipeRiskHTML(){
   const active=PIPE.filter(p=>!isVencido(p));
-  if(!active.length) return '';
+  if(!active.length) return `<div class="section" style="margin-bottom:14px">
+     <h3>Radar de riesgo <span class="small">propiedades que necesitan una decisión</span></h3>
+     <div class="empty" style="padding:18px 0"><div class="big">✓</div>Ningún negocio activo por ahora.</div>
+   </div>`;
   const items=active.map(p=>{
     const dias=diasEnPipe(p);
     const prob=p.prob??100;
@@ -3186,6 +3189,7 @@ function renderManual(){
       <li>Cada negocio en proceso con su comisión y plazo (1/2/3 meses). Suma solo en su casilla de plazo.</li>
       <li><b>Fecha de ingreso editable</b> · <b>⏱ días en gestión</b> en cada ficha · a los 3 meses pasa a <b>Vencido</b>.</li>
       <li><b>Antigüedad (aging):</b> tramos <b>0-30 / 31-60 / 61-90 / +90 días</b> con semáforo verde→rojo, con cantidad y monto — para ver de un vistazo qué reactivar o soltar.</li>
+      <li><b>Radar de riesgo:</b> cruza días sin cerrar, visitas registradas y probabilidad de cada negocio activo. Si acumula señales suficientes, aparece con etiqueta <b style="color:#B98A2F">Atención</b> o <b style="color:#C75A3C">Alto riesgo</b> y el motivo puntual (ej. "62 días sin cerrar · sin visitas registradas"). Sin negocios en riesgo, muestra un check. Solo lectura — no cambia cifras.</li>
       <li><b>Cerrado:</b> se traslada solo a tus cifras reales (con deshacer). <b>Perdido:</b> al histórico (con devolver).</li>
       <li><b>Precio de venta / alquiler:</b> campo opcional (el rótulo cambia solo según el concepto). Al cerrar te pide el <b>precio logrado</b> y calcula el <b>% del precio pedido</b>. Se ve en la ficha de la propiedad y en los reportes al propietario.</li>
     </ul>
