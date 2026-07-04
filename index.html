@@ -281,6 +281,11 @@
   .agefill{height:100%;border-radius:999px;transition:width .4s;min-width:2px}
   .agen{font-size:13px;font-weight:800;text-align:right;color:var(--paper);font-variant-numeric:tabular-nums}
   .aget{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+  .riskwrap{display:flex;flex-direction:column;gap:9px}
+  .riskrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:0 10px 10px 0;padding:10px 12px}
+  .riskname{font-size:13.5px;font-weight:700;color:var(--paper)}
+  .riskreasons{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .risktag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border:1px solid;border-radius:999px;padding:3px 9px;white-space:nowrap;flex:none}
   .runrate{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-top:12px;padding-top:11px;border-top:1px dashed var(--line2)}
   .runrate .rr-l{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted2);font-weight:700}
   .runrate .rr-v{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -1909,6 +1914,43 @@ function pipeAgingHTML(){
     <div class="agewrap">${rows}</div>
   </div>`;
 }
+function pipeRiskHTML(){
+  const active=PIPE.filter(p=>!isVencido(p));
+  if(!active.length) return '';
+  const items=active.map(p=>{
+    const dias=diasEnPipe(p);
+    const prob=p.prob??100;
+    const visitas=CITAS.filter(c=>c.lid===p.id&&CITA_EFECTUADAS.indexOf(c.estado)>=0).length;
+    const reasons=[]; let score=0;
+    if(dias>=60){score+=2;reasons.push(dias+' días sin cerrar');}
+    else if(dias>=30){score+=1;reasons.push(dias+' días en proceso');}
+    if(visitas===0&&dias>=21){score+=2;reasons.push('sin visitas registradas');}
+    else if(visitas<=1&&dias>=45){score+=1;reasons.push('solo '+visitas+' visita'+(visitas===1?'':'s'));}
+    if(prob<=40){score+=2;reasons.push('probabilidad baja · '+prob+'%');}
+    else if(prob<=60){score+=1;reasons.push('probabilidad '+prob+'%');}
+    return {p,score,reasons};
+  }).filter(x=>x.score>=2).sort((a,b)=>b.score-a.score);
+  if(!items.length) return `<div class="section" style="margin-bottom:14px">
+     <h3>Radar de riesgo <span class="small">propiedades que necesitan una decisión</span></h3>
+     <div class="empty" style="padding:18px 0"><div class="big">✓</div>Ningún negocio activo muestra señales de riesgo.</div>
+   </div>`;
+  const lvl=s=>s>=4?{l:'Alto riesgo',c:'#C75A3C'}:{l:'Atención',c:'#B98A2F'};
+  const rows=items.map(x=>{
+    const L=lvl(x.score);
+    return `<div class="riskrow" style="border-left:3px solid ${L.c}">
+       <div class="riskmain">
+         <div class="riskname">${x.p.propiedad||x.p.concepto||'(Sin nombre)'}</div>
+         <div class="riskreasons">${x.reasons.join(' · ')}</div>
+       </div>
+       <div class="risktag" style="color:${L.c};border-color:${L.c}">${L.l}</div>
+     </div>`;
+  }).join('');
+  return `<div class="section" style="margin-bottom:14px">
+     <h3>Radar de riesgo <span class="small">${items.length} ${items.length===1?'propiedad necesita':'propiedades necesitan'} una decisión</span></h3>
+     <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.5">Cruza tiempo sin cerrar, visitas y probabilidad. Si algo aparece acá: ajustá el precio, replanteá el marketing, o soltala.</p>
+     <div class="riskwrap">${rows}</div>
+   </div>`;
+}
 function pipeEffHTML(){
   const closed=DATA.filter(m=>m.origenPipe);
   if(!closed.length&&!PIPE.length&&!LOST.length) return '';
@@ -3336,6 +3378,7 @@ function renderPipeline(){
    </div>
    <button class="addpipe" onclick="openPipe()">+  Agregar propiedad al pipeline</button>
    ${pipeAgingHTML()}
+   ${pipeRiskHTML()}
    ${pipeEffHTML()}
    ${activeList.length ? `<div class="sortbar"><div class="res"><b>${activeList.length}</b> por cerrar · Total <b>${fmtCRC(porCerrar)}</b></div></div>`+activeList.map(p=>pipeRow(p,false)).join('')
       : (PIPE.length ? '' : `<div class="empty"><div class="big">⇗</div>Tu pipeline está vacío.<br>Agregá las propiedades en proceso o en cartera para proyectar tu crecimiento.</div>`)}
