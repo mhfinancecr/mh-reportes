@@ -840,7 +840,7 @@
   .swapbtn{display:block;margin:2px auto 12px;font-size:12px;color:var(--gold);font-weight:600;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);white-space:nowrap}
   .swapbtn:hover{border-color:var(--gold);background:var(--gold-soft)}
   #printArea{display:none}
-  @page{margin:12mm}
+  @page{margin:16mm}
   @media print{
     body{background:#fff !important;color:#1a1a1a !important;padding:0 !important}
     header,nav,.fab,main,#overlay,#toast{display:none !important}
@@ -2385,19 +2385,24 @@ function rentIncrease(m){
   if(cuotaMonOf(a)!=='CRC' || !a.inicio || !a.cuota) return {applies:false};
   const start=new Date(a.inicio+'T00:00:00'); if(isNaN(start)) return {applies:false};
   const today=new Date(); today.setHours(0,0,0,0);
-  let cur=a.cuota, steps=[], y=1, pend=null;
+  const venc=a.vencimiento?new Date(a.vencimiento+'T00:00:00'):null;
+  let cur=a.cuota, steps=[], y=1, pend=null, futuros=[];
   while(y<=30){
     const ann=new Date(start); ann.setFullYear(start.getFullYear()+y);
+    if(venc && !isNaN(venc) && ann>=venc) break; // el aniversario que coincide con el fin del contrato no cuenta como ajuste (es renovación)
     const annStr=ann.toISOString().slice(0,10), mk=annStr.slice(0,7);
-    if(ann>today){ // próximo aniversario (pendiente)
-      const e=ipcForMonth(mk); pend={date:annStr, pct:e?e.pct:null, from:cur, to:e?Math.round(cur*(1+e.pct/100)):cur}; break;
+    if(ann>today){ // próximo(s) aniversario(s) pendientes dentro de la vigencia
+      const e=ipcForMonth(mk); const f={date:annStr, pct:e?e.pct:null, from:cur, to:e?Math.round(cur*(1+e.pct/100)):cur};
+      futuros.push(f); if(!pend) pend=f;
+      if(!venc || isNaN(venc)){ break; } // sin fecha de vencimiento conocida, solo mostramos el próximo
+      y++; continue;
     }
     const e=ipcForMonth(mk);
     if(e){ const from=cur; cur=Math.round(cur*(1+e.pct/100)); steps.push({date:annStr,pct:e.pct,from,to:cur,mesIpc:e.mes}); }
     else steps.push({date:annStr,pct:null,from:cur,to:cur});
     y++;
   }
-  return {applies:steps.length>0||!!pend, years:steps.length, base:a.cuota, current:cur, steps, pend};
+  return {applies:steps.length>0||!!pend, years:steps.length, base:a.cuota, current:cur, steps, pend, futuros};
 }
 
 /* ---------- Vista ALQUILERES ---------- */
@@ -2586,8 +2591,9 @@ function fichaPDF(id){
         +'<table class="ftbl"><thead><tr><th>Aniversario</th><th class="r">% IPC</th><th class="r">Cuota anterior</th><th class="r">Cuota ajustada</th></tr></thead><tbody>'+(stepRows||'<tr><td colspan="4">Sin índices IPC registrados para los aniversarios</td></tr>')+'</tbody></table>'
         +'<div class="fcuota">Cuota vigente: <b>'+fmtCRC(inc.current)+'</b> <span>(cuota base '+fmtCRC(inc.base)+')</span></div>';
     }
-    if(inc.pend){
-      incBlock+='<div class="fnext">Próximo ajuste: '+fmtFecha(inc.pend.date)+(inc.pend.pct!=null?' · IPC '+inc.pend.pct.toFixed(2)+'% → '+fmtCRC(inc.pend.to):' · pendiente del % IPC del MIVAH')+'</div>';
+    if(inc.futuros && inc.futuros.length){
+      const fechas=inc.futuros.map(f=>fmtFecha(f.date)).join(' · ');
+      incBlock+='<div class="fnext">'+(inc.futuros.length>1?'Próximos aumentos anuales dentro de la vigencia: '+fechas:'Próximo aumento anual: '+fechas)+'</div>';
     }
   }
   let inspBlock='';
@@ -4331,8 +4337,8 @@ function renderCoaching(){
 /* ---------- Reporte PDF (impresión) ---------- */
 const REP_CSS=`
   body{margin:0;background:#fff;color:#1a1a1a;font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
-  @page{margin:12mm}
-  .rep{padding:4mm}
+  @page{margin:16mm}
+  .rep{padding:6mm}
   .rep-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1C3D60;padding-bottom:14px;margin-bottom:18px}
   .rep-head>div{flex:1;min-width:0}
   .rep-logo{height:50px;width:auto;display:block;flex:0 0 auto}
