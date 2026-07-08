@@ -2154,7 +2154,44 @@ function renderGraficos(){
        <div><div class="cmpk">A\u00f1o anterior</div><div class="cmpv num" style="color:var(--muted)">${fmtCRC(totPrev)}</div></div>
        <div><div class="cmpk">Variaci\u00f3n</div><div class="cmpv num ${pct===0?'':good?'up':'down'}">${arr} ${Math.abs(pct)}%</div></div>
      </div>
-   </div>`;
+   </div>
+   ${seasonalityHTML()}`;
+}
+
+function seasonalityHTML(){
+  const ing=DATA.filter(m=>m.tipo==='ingreso'&&!m.virt);
+  if(!ing.length) return '';
+  const years=new Set(ing.map(m=>m.fecha.slice(0,4)));
+  if(years.size<2) return `<div class="section"><h3>Estacionalidad <span class="small">patr\u00f3n hist\u00f3rico</span></h3><p style="font-size:12.5px;color:var(--muted);line-height:1.5">Necesit\u00e1s cierres registrados en al menos <b style="color:var(--paper)">dos a\u00f1os distintos</b> para detectar un patr\u00f3n de estacionalidad confiable. Segu\u00ed cargando negocios y esta secci\u00f3n se ir\u00e1 completando sola.</p></div>`;
+  const byMonth=Array.from({length:12},()=>({tot:0,n:0,years:new Set()}));
+  ing.forEach(m=>{const mo=+m.fecha.slice(5,7)-1, y=m.fecha.slice(0,4); byMonth[mo].tot+=crc(m); byMonth[mo].n++; byMonth[mo].years.add(y);});
+  const avgs=byMonth.map((o,i)=>({i,avg:o.years.size?o.tot/o.years.size:0,n:o.n}));
+  const max=Math.max(...avgs.map(a=>a.avg))||1;
+  const sorted=[...avgs].sort((a,b)=>b.avg-a.avg);
+  const top3=sorted.slice(0,3).filter(a=>a.avg>0);
+  const bot3=[...avgs].sort((a,b)=>a.avg-b.avg).slice(0,3).filter(a=>a.avg>0);
+  const bars=avgs.map(a=>{
+    const h=Math.max(3,Math.round(a.avg/max*100));
+    const isTop=top3.some(t=>t.i===a.i);
+    const isBot=bot3.some(t=>t.i===a.i)&&!isTop;
+    const c=isTop?'var(--ingreso)':isBot?'var(--gasto)':'var(--gold-2)';
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0">
+      <div style="font-size:9.5px;color:var(--muted2);font-weight:700">${a.avg>0?fmtC(a.avg):''}</div>
+      <div style="width:100%;max-width:26px;height:100px;display:flex;align-items:flex-end">
+        <div style="width:100%;height:${h}%;background:${c};border-radius:5px 5px 2px 2px;transition:height .3s"></div>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);font-weight:700">${MES[a.i].slice(0,3)}</div>
+    </div>`;
+  }).join('');
+  const topTxt=top3.map(t=>MES[t.i]).join(', ');
+  const botTxt=bot3.length?bot3.map(t=>MES[t.i]).join(', '):'';
+  return `<div class="section">
+    <h3>Estacionalidad <span class="small">promedio hist\u00f3rico por mes \u00b7 ${years.size} a\u00f1o${years.size===1?'':'s'}</span></h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.5">Promedio de ingresos de cada mes calendario a lo largo de tu historial completo \u2014 te muestra en qu\u00e9 meses sol\u00e9s cerrar m\u00e1s y en cu\u00e1les menos, para planear tu esfuerzo comercial.</p>
+    <div style="display:flex;gap:4px;align-items:flex-end;margin-bottom:14px">${bars}</div>
+    ${topTxt?`<div class="mtip" style="background:var(--panel2);border-left-color:var(--ingreso);color:var(--paper)">\ud83d\udcc8 Tus mejores meses hist\u00f3ricamente: <b style="color:var(--ingreso)">${topTxt}</b></div>`:''}
+    ${botTxt?`<div class="mtip" style="background:var(--panel2);border-left-color:var(--gasto);color:var(--paper);margin-top:8px">\ud83d\udcc9 Tus meses m\u00e1s flojos: <b style="color:var(--gasto)">${botTxt}</b> \u2014 reforz\u00e1 prospecci\u00f3n y marketing en esos meses.</div>`:''}
+  </div>`;
 }
 
 function svgLineChart(months,cur,prev,col){
