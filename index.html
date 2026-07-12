@@ -362,6 +362,13 @@
   .cmpv.up{color:var(--ingreso)}.cmpv.down{color:var(--gasto)}
   .pdfbtn{width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold);font-weight:600;font-size:14px;padding:14px;border-radius:12px;margin-bottom:16px}
   .pdfbtn:hover{background:var(--gold-soft);box-shadow:0 0 0 3px var(--gold-soft)}
+  .rcard{border:1px solid var(--line);border-radius:13px;padding:14px 15px;margin-bottom:11px;background:var(--surface)}
+  .rcard:last-child{margin-bottom:0}
+  .rcard .rct{font-size:14px;font-weight:700;color:var(--paper);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+  .rcard .rcd{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:11px}
+  .rcard button{width:100%;background:transparent;border:1px solid var(--gold);color:var(--gold);font-weight:600;font-size:13px;padding:10px;border-radius:10px}
+  .rcard button:hover{background:var(--gold-soft)}
+  .rcard button.sec{border-color:var(--line);color:var(--muted)}
   /* RESPONSIVE — iPad / MacBook aprovechan el ancho */
   @media (min-width:760px){
     main{max-width:900px;padding:10px 28px 26px}
@@ -2382,10 +2389,33 @@ function renderReportes(){
      <label class="cmptoggle"><input type="checkbox" ${on?'checked':''} onchange="toggleCmp(this.checked)"> Incluir este comparativo en el PDF</label>
    </div>
    <div class="section">
-     <h3>Generar reportes <span class="small">del período</span></h3>
-     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5">Elegí el período arriba y generá el documento. Se abre el cuadro de impresión del sistema, donde podés <b style="color:var(--paper)">Guardar como PDF</b> o compartirlo.</p>
-     <button class="pdfbtn" style="margin-bottom:10px" onclick="printReport()">⎙  Generar PDF · ${on?'comparativo + ':''}${CMP.on?'comparación A/B + ':''}gráfico + resumen + movimientos</button>
-     <button class="pdfbtn" onclick="exportCSV()">⇣  Exportar CSV · para Numbers</button>
+     <h3>Documentos disponibles <span class="small">reportes de negocio · no incluye fichas de propiedad</span></h3>
+     <p style="font-size:12px;color:var(--muted);margin:-4px 0 13px;line-height:1.5">Las fichas por propiedad (ficha resumen, reporte de gestión, de desempeño y recibo de pago) se generan desde la tarjeta de cada propiedad — en Alquileres, Pipeline o Citas.</p>
+     <div class="rcard">
+       <div class="rct">📄 Reporte del período</div>
+       <div class="rcd">Ingresos y gastos por categoría (con el detalle de "Otros gastos"), movimiento a movimiento, cierres por colocación/facturación/corredor, IVA declarado, contratos de alquiler y — si el período incluye el año en curso — un resumen del Forecast fiscal. Con los comparativos que hayas activado.</div>
+       <button onclick="printReport()">⎙ Generar PDF</button>
+     </div>
+     <div class="rcard">
+       <div class="rct">🏠 Reporte de alquileres</div>
+       <div class="rcd">Portafolio de contratos con estado, fechas y cuota — respeta el filtro (mes/año/búsqueda) que tengas activo en la pestaña Alquileres.</div>
+       <button onclick="printRentReport()">⎙ Generar PDF</button>
+     </div>
+     <div class="rcard">
+       <div class="rct">📚 Histórico por año</div>
+       <div class="rcd">Meta, ingresos brutos, gastos y saldo neto de todos tus años — el mismo consolidado de Finanzas → Histórico.</div>
+       <button onclick="printHistorico()">⎙ Generar PDF</button>
+     </div>
+     <div class="rcard">
+       <div class="rct">📈 Histórico de IPC</div>
+       <div class="rcd">Todos los índices de inflación (MIVAH) que has registrado, con fecha de publicación — para respaldar los aumentos anuales aplicados a contratos en colones.</div>
+       <button onclick="printIPC()" ${(SET.ipc||[]).length?'':'disabled style="opacity:.5"'}>⎙ Generar PDF${(SET.ipc||[]).length?'':' · sin índices registrados'}</button>
+     </div>
+     <div class="rcard">
+       <div class="rct">⇣ Exportar CSV</div>
+       <div class="rcd">Todos los movimientos (histórico completo), listos para abrir en Numbers o Excel.</div>
+       <button class="sec" onclick="exportCSV()">⇣ Descargar CSV</button>
+     </div>
    </div>
    <div class="section">
      <h3>¿Dónde queda el archivo?</h3>
@@ -3383,10 +3413,23 @@ function renderManual(){
     </ul>
     <div class="mtip">El embudo cuenta <b>solo</b> los leads con origen «Redes», para no inflar la conversión con referidos o clientes de colegas. La exposición (alcance/consultas) también alimenta el <b>reporte de desempeño</b> al propietario.</div>
 
-    <div class="mh2"><span>9.</span> Reportes</div>
+    <div class="mh2"><span>9.</span> Reportes (Finanzas → Reportes)</div>
+    <p>Hub central de documentos de negocio. <b>No incluye</b> las fichas por propiedad (ficha resumen, gestión, desempeño, recibo) — esas viven en la tarjeta de cada propiedad (Alquileres, Pipeline o Citas).</p>
     <ul class="mul">
-      <li>Elegí período y <b>Generar PDF</b>: tarjetas, evolución, tabla por mes, colocación, facturación, corredores, IVA, movimientos y contratos.</li>
-      <li><b>Comparativos:</b> vs. año anterior o A vs B (libre). El <b>CSV</b> exporta todo para Excel.</li>
+      <li><b>📄 Reporte del período</b> — el más completo. Según el período que elijas arriba, incluye: tarjetas de ingreso/gasto/saldo, gráfico de evolución mensual, tabla mes a mes, <b>ingresos por categoría</b> (venta/alquiler/referido/otro), <b>gastos por categoría</b> (con el desglose de "Otros gastos" en IVA/legal/mantenimiento/cashback), cierres por <b>colocación</b> (propia/50-50/colega), por <b>facturación</b>, por <b>corredor</b>, <b>IVA declarado</b> a Hacienda mes a mes, un resumen del <b>Forecast fiscal</b> (si el período incluye el año en curso), el <b>detalle de cada movimiento</b> y los <b>contratos de alquiler</b> del período. Si activaste los comparativos (año anterior o A vs. B libre), también se agregan.</li>
+      <li><b>🏠 Reporte de alquileres</b> — portafolio de contratos: propiedad, estado (vigente/en aviso/cancelado), fechas de inicio y vencimiento, día de pago y cantidad de contratos. Respeta el filtro de mes/año/búsqueda que tengas activo en la pestaña Alquileres.</li>
+      <li><b>📚 Histórico por año</b> — el mismo consolidado de Finanzas → Histórico: meta, ingresos brutos, gastos y saldo neto de <b>todos tus años</b> con datos, columna por columna.</li>
+      <li><b>📈 Histórico de IPC</b> — lista completa de los índices de inflación del MIVAH que registraste (mes de publicación + % autorizado), para respaldar ante un propietario los aumentos anuales aplicados.</li>
+      <li><b>⇣ Exportar CSV</b> — todos los movimientos del histórico completo (no solo el período filtrado), listos para Excel/Numbers.</li>
+      <li><b>Comparativos</b> (arriba de los documentos): vs. año anterior (automático, según el período elegido) o A vs. B (dos rangos libres, ej. enero 2025 vs. enero 2026) — ambos se pueden incluir o excluir del PDF del período con su casilla.</li>
+    </ul>
+
+    <div class="mh2"><span>9.1</span> Histórico (Finanzas → Histórico)</div>
+    <ul class="mul">
+      <li><b>Meta vs. alcance por año:</b> una barra por año con lo cobrado real contra la meta vigente ese año (línea punteada), coloreada por cumplimiento (verde ≥100%, oro 80-99%, rojo &lt;80%).</li>
+      <li><b>Estacionalidad:</b> promedio de ingresos por mes calendario a través de todos tus años — resalta tus 3 mejores y 3 meses más flojos.</li>
+      <li><b>Tabla consolidada:</b> meta, ingresos brutos, gastos, saldo neto y % de meta de cada año; el año en curso añade el Forecast de cierre (bruto/neto) resaltado.</li>
+      <li><b>Editor de metas por año:</b> único lugar para guardar la meta de cada año (pasado, actual o futuro) — así el Resumen compara bien cuando filtrás un año anterior.</li>
     </ul>
 
     <div class="mh2"><span>10.</span> Forecast fiscal (Finanzas → Forecast)</div>
@@ -3423,7 +3466,6 @@ function renderManual(){
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
-      <li><b>Finanzas → Histórico (nueva pestaña):</b> todo tu historial multianual en un solo lugar — <b>Meta vs. alcance por año</b> (barra por año contra su meta, coloreada por cumplimiento), <b>Estacionalidad</b> (promedio de ingresos por mes calendario, resaltando tus 3 mejores y 3 meses más flojos), la <b>tabla consolidada</b> (meta, bruto, gastos, saldo neto y % de meta de cada año) y el <b>único editor de metas por año</b> (incluida la del año en curso — Ajustes ya no tiene un campo aparte, solo un enlace). También genera su propio <b>reporte PDF</b>. Así, cuando filtrás un año anterior en el Resumen, la barra de avance compara contra la meta que en verdad tenías vigente ese año, no contra la de hoy.</li>
       <li><b>Espacio en el dispositivo:</b> Ajustes muestra el % de memoria local usada. Si llega a llenarse (por ejemplo, muchas fotos de inspección de alquileres), la app te pide autorización para liberar automáticamente las fotos más antiguas (priorizando contratos ya cancelados) antes de perder un guardado — nunca borra sin que le des OK, y nunca toca la foto de portada.</li>
     </ul>
 
@@ -4649,6 +4691,47 @@ function printReport(){
   var fb=factBreak(cur);
   var fRows=[['si','Facturado · IVA 13%'],['no','Sin factura']].map(function(p){var f=p[0],name=p[1],o=fb.r[f]; var pct=fb.totI?Math.round(o.i/fb.totI*100):0; return '<tr><td>'+name+'</td><td class="r c">'+o.n+'</td><td class="r" style="color:#1C3D60;font-weight:700">'+pct+'%</td><td class="r" style="color:#15805A">'+(o.i?fmtCRC(o.i):'—')+'</td><td class="r" style="color:#B85138">'+(f==='si'&&o.iva?fmtCRC(o.iva):'—')+'</td></tr>';}).join('');
   var factRepHTML='<h4>Cierres por facturación</h4><table class="rep-tbl"><thead><tr><th>Facturación</th><th class="r">N°</th><th class="r">% cierre</th><th class="r">Ingresos</th><th class="r">IVA</th></tr></thead><tbody>'+fRows+'</tbody></table>';
+  // Ingresos y gastos por categoría (con detalle de "Otros gastos de negocio")
+  var incByCat={}; cur.forEach(function(m){ if(m.tipo==='ingreso'){ incByCat[m.categoria]=(incByCat[m.categoria]||0)+crc(m); } });
+  var incCatKeys=Object.keys(incByCat).sort(function(a,b){return incByCat[b]-incByCat[a];});
+  var incCatHTML = incCatKeys.length ? ('<h4>Ingresos por categoría</h4><table class="rep-tbl"><thead><tr><th>Categoría</th><th class="r">%</th><th class="r">Monto</th></tr></thead><tbody>'
+    + incCatKeys.map(function(k){ var pct=s.i?Math.round(incByCat[k]/s.i*100):0; return '<tr><td>'+k+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#15805A">'+fmtCRC(incByCat[k])+'</td></tr>'; }).join('')
+    + '</tbody></table>') : '';
+  var OGCAT='Otros gastos de negocio';
+  var gasByCat={}; cur.forEach(function(m){ if(m.tipo==='gasto'&&!m.virt){ gasByCat[m.categoria]=(gasByCat[m.categoria]||0)+crc(m); } });
+  var gasCatKeys=Object.keys(gasByCat).sort(function(a,b){return gasByCat[b]-gasByCat[a];});
+  if(gasCatKeys.indexOf(OGCAT)>=0){ gasCatKeys=gasCatKeys.filter(function(k){return k!==OGCAT;}); gasCatKeys.push(OGCAT); }
+  var ogSub={}; cur.forEach(function(m){ if(m.tipo==='gasto'&&!m.virt&&m.categoria===OGCAT){ var sc=subcatOf(m); ogSub[sc]=(ogSub[sc]||0)+crc(m); } });
+  var ogAdj=cur.filter(function(m){return m.virt;}).reduce(function(a,m){return a+crc(m);},0);
+  var gasCatRows=gasCatKeys.map(function(k){
+    var pct=s.g?Math.round(gasByCat[k]/s.g*100):0;
+    var row='<tr><td>'+k+'</td><td class="r">'+pct+'%</td><td class="r" style="color:#B85138">'+fmtCRC(gasByCat[k])+'</td></tr>';
+    if(k===OGCAT){
+      var subKeys=Object.keys(ogSub).sort(function(a,b){return ogSub[b]-ogSub[a];});
+      row+=subKeys.map(function(sk){
+        var line='<tr><td style="padding-left:22px;color:#888">↳ '+sk+'</td><td class="r"></td><td class="r" style="color:#888">'+fmtCRC(ogSub[sk])+'</td></tr>';
+        if(sk==='IVA'&&ogAdj) line+='<tr><td style="padding-left:22px;color:#888">↳ IVA ajustado <small>(según declarado)</small></td><td class="r"></td><td class="r" style="color:#888">'+fmtCRC(ogSub[sk]+ogAdj)+'</td></tr>';
+        return line;
+      }).join('');
+      if(ogAdj && ogSub['IVA']==null) row+='<tr><td style="padding-left:22px;color:#888">↳ IVA ajustado <small>(según declarado)</small></td><td class="r"></td><td class="r" style="color:#888">'+fmtCRC(ogAdj)+'</td></tr>';
+    }
+    return row;
+  }).join('');
+  var gasCatHTML = gasCatKeys.length ? ('<h4>Gastos por categoría</h4><table class="rep-tbl"><thead><tr><th>Categoría</th><th class="r">%</th><th class="r">Monto</th></tr></thead><tbody>'+gasCatRows+'</tbody></table>') : '';
+  // Forecast fiscal (solo si el período incluye el año en curso)
+  var fcHTML='';
+  var _cyNow=new Date().getFullYear();
+  if(months.some(function(k){return +k.slice(0,4)===_cyNow;})){
+    var _fc=fcCompute('anual');
+    if(_fc.bruto>0){
+      fcHTML='<h4>Forecast fiscal · cierre '+_cyNow+' <small style="font-weight:500;color:#888">proyección a año completo, no solo este período</small></h4>'
+        +'<table class="rep-tbl"><thead><tr><th>Nivel</th><th class="r">Monto proyectado</th></tr></thead><tbody>'
+        +'<tr><td>① Bruto</td><td class="r" style="color:#1C3D60;font-weight:700">'+fmtCRC(_fc.bruto)+'</td></tr>'
+        +'<tr><td>② Operativo (antes de impuestos)</td><td class="r" style="color:#9A6B1E;font-weight:700">'+fmtCRC(_fc.operativo)+'</td></tr>'
+        +'<tr><td>③ Neto (reserva del negocio)</td><td class="r" style="color:#15805A;font-weight:700">'+fmtCRC(_fc.neto)+'</td></tr>'
+        +'</tbody></table>';
+    }
+  }
   var corrRepHTML='';
   if(!SET.corrRep||SET.corrRep.on!==false){
     var corrOff=(SET.corrRep&&SET.corrRep.off)||{};
@@ -4686,10 +4769,13 @@ function printReport(){
       <table class="rep-tbl"><thead><tr><th>Mes</th><th class="r">N° Ing.</th><th class="r">Ingresos</th><th class="r">N° Gas.</th><th class="r">Gastos</th><th class="r">Saldo</th></tr></thead>
         <tbody>${mrows||'<tr><td colspan="6">Sin datos</td></tr>'}</tbody>
         <tfoot><tr><td>Total</td><td class="r">${totCi}</td><td class="r">${fmtCRC(s.i)}</td><td class="r">${totCg}</td><td class="r">${fmtCRC(s.g)}</td><td class="r">${fmtCRC(s.n)}</td></tr></tfoot></table>
+      ${incCatHTML}
+      ${gasCatHTML}
       ${colocRepHTML}
       ${factRepHTML}
       ${corrRepHTML}
       ${ivaMesHTML}
+      ${fcHTML}
       <h4>Detalle de movimientos</h4>
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
         <tbody>${movs||'<tr><td colspan="7">Sin movimientos en el per\u00edodo</td></tr>'}</tbody></table>
@@ -4807,6 +4893,22 @@ function renderHistorico(){
      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Documento con el consolidado por año, metas y estacionalidad.</p>
      <button class="pdfbtn" onclick="printHistorico()">⎙  Generar PDF · histórico por año</button>
    </div>`;
+}
+function printIPC(){
+  const all=ipcAll();
+  if(!all.length){toast('No hay índices IPC registrados');return;}
+  const trs=all.map(x=>`<tr><td>${fmtMesAno(x.mes)}</td><td class="r"><b>${(+x.pct).toFixed(2)}%</b></td></tr>`).join('');
+  const INNER=`<div class="rep">
+    <div class="rep-head">${logoSVG('#1C3D60',50)}<div><div class="rep-title">Histórico de índice IPC</div><div class="rep-period">Aumentos anuales · alquileres en colones · generado ${new Date().toLocaleDateString('es-CR')}</div></div></div>
+    <table class="rep-tbl"><thead><tr><th>Mes de publicación (MIVAH)</th><th class="r">% autorizado</th></tr></thead>
+      <tbody>${trs}</tbody></table>
+    <div class="rep-foot">MH Finance Costa Rica · Fuente: índices publicados por el MIVAH, según Ley de Arrendamientos Urbanos y Suburbanos</div>
+  </div>`;
+  const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+'</style><title>Histórico IPC · MH Finance</title></head><body>'+INNER+'</body></html>';
+  let f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
 }
 function printHistorico(){
   const ing=DATA.filter(m=>m.tipo==='ingreso'&&!m.virt);
