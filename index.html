@@ -1403,7 +1403,7 @@ function metasHistEditor(){
   years.sort((a,b)=>b-a);
   return years.map(y=>{
     const v=(SET.metas&&SET.metas[y])||'';
-    return `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12.5px;font-weight:700;width:38px">${y}${y===cy?' •':''}</span><input class="miniInput num" style="width:150px" type="number" value="${v}" placeholder="Sin registrar" onchange="if(!SET.metas)SET.metas={};SET.metas[${y}]=parseFloat(this.value)||0;${y===cy?'SET.meta=SET.metas['+y+'];':''}persist();toast('Meta ${y} guardada');renderAjustes();"></div>`;
+    return `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12.5px;font-weight:700;width:38px">${y}${y===cy?' •':''}</span><input class="miniInput num" style="width:150px" type="number" value="${v}" placeholder="Sin registrar" onchange="if(!SET.metas)SET.metas={};SET.metas[${y}]=parseFloat(this.value)||0;${y===cy?'SET.meta=SET.metas['+y+'];':''}persist();toast('Meta ${y} guardada');render();"></div>`;
   }).join('');
 }
 function storageBytesUsed(){ let n=0; try{ for(const k in localStorage){ if(localStorage.hasOwnProperty(k)) n+=(localStorage[k]||'').length+k.length; } }catch(e){} return n; }
@@ -1584,12 +1584,12 @@ function swapCmp(){const d=CMP.aD,h=CMP.aH;CMP.aD=CMP.bD;CMP.aH=CMP.bH;CMP.bD=d;
 let CURRENT='hoy';
 const NAVGROUPS=[
   ['hoy','Hoy',['hoy']],
-  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes','forecast']],
+  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes','forecast','historico']],
   ['negocio','Negocio',['pipeline','citas','embudo']],
   ['alquileres','Alquileres',['alquileres']],
   ['mas','Más',['coaching','asistente','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',pipeline:'Pipeline',citas:'Citas',embudo:'Marketing',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
+const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',historico:'Histórico',pipeline:'Pipeline',citas:'Citas',embudo:'Marketing',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1613,6 +1613,7 @@ function render(){
   else if(CURRENT==='movimientos') renderMovs();
   else if(CURRENT==='reportes') renderReportes();
   else if(CURRENT==='forecast') renderForecast();
+  else if(CURRENT==='historico') renderHistorico();
   else if(CURRENT==='alquileres') renderAlquileres();
   else if(CURRENT==='pipeline') renderPipeline();
   else if(CURRENT==='citas') renderCitas();
@@ -2229,8 +2230,10 @@ function renderGraficos(){
        <div><div class="cmpk">Variaci\u00f3n</div><div class="cmpv num ${pct===0?'':good?'up':'down'}">${arr} ${Math.abs(pct)}%</div></div>
      </div>
    </div>
-   ${seasonalityHTML()}
-   ${metaHistoryHTML()}
+   <div class="section" style="cursor:pointer" onclick="go('historico')">
+     <h3>Estacionalidad y meta por a\u00f1o <span class="small">ver hist\u00f3rico completo \u2192</span></h3>
+     <p style="font-size:12.5px;color:var(--muted);margin:0">Promedios por mes y comparaci\u00f3n de meta vs. alcance de todos tus a\u00f1os en <b style="color:var(--paper)">Finanzas \u2192 Hist\u00f3rico</b>.</p>
+   </div>
   `;
 }
 function metaHistoryHTML(){
@@ -2491,8 +2494,8 @@ function renderAjustes(){
       <input class="miniInput num" type="number" value="${SET.meta||''}" placeholder="0" onchange="SET.meta=parseFloat(this.value)||0;if(!SET.metas)SET.metas={};SET.metas[new Date().getFullYear()]=SET.meta;persist();toast('Meta guardada')">
     </div>
     <div class="setrow" style="align-items:flex-start">
-      <div class="l">Historial de metas por año<small>Guardá la meta que tuviste vigente cada año — así los filtros de años pasados comparan contra la meta correcta, no la actual</small></div>
-      <div style="display:flex;flex-direction:column;gap:6px">${metasHistEditor()}</div>
+      <div class="l">Historial de metas por año<small>Editalo desde <b>Finanzas → Histórico</b>, donde también ves la comparación año contra año</small></div>
+      <button class="ghostbtn" onclick="go('historico')">Ver histórico</button>
     </div>
     <div class="setrow"><div class="l">Último respaldo<small>${SET.lastBackup?SET.lastBackup.split('-').reverse().join('/'):'Nunca desde este dispositivo'}</small></div><button class="ghostbtn" onclick="exportJSON()">Respaldar</button></div>
     <div class="setrow"><div class="l">Notificaciones<small>${notifStatus()==='denied'?'Bloqueadas en Safari para este sitio. Corregilo en: Safari (menú) → Ajustes → Sitios web → Notificaciones → buscá este sitio → cambiá a «Permitir», y volvé a intentar':'Alertas del sistema al abrir la app: vencimientos, aniversario IPC, seguimientos sin avanzar'}</small></div><button class="ghostbtn" onclick="toggleNotif()" ${notifStatus()==='denied'?'disabled style="opacity:.5"':''}>${SET.notif&&notifStatus()==='granted'?'Activadas ✓':'Activar'}</button></div>
@@ -3409,9 +3412,6 @@ function renderManual(){
       <li><b>IVA</b> (auto): 13% de lo que registrás <b>con factura</b>. Si en el <b>Resumen</b> anotaste el <b>IVA realmente pagado</b> de un mes (ajuste por crédito fiscal / IVA a favor), el forecast usa <u>ese</u> monto en vez del 13%. Meses sin ventas facturadas no suman IVA. <b>Renta, parciales y jurídica</b> los ponés con tu contador.</li>
     </ul>
     <div class="mtip">Lo editás una vez y queda guardado (viaja en el respaldo). Aparece también una <b>tarjeta-gancho</b> al final del Resumen con los 3 números.</div>
-    <ul class="mul">
-      <li><b>Histórico consolidado por año</b> (tabla al final de esta pantalla): meta, ingresos brutos, gastos y saldo neto <b>reales</b> de cada año con movimientos, columna por columna. El año en curso además muestra el <b>Forecast de cierre</b> (bruto y neto) resaltado — los años cerrados no llevan forecast porque ya son cifra final.</li>
-    </ul>
 
     <div class="mh2"><span>11.</span> Coaching y Asistente (IA)</div>
     <p>En el grupo <b>Más</b>. Usan tu suscripción <b>Claude Pro</b> con un puente seguro de copiar/pegar — nada se envía solo y los <b>datos de clientes nunca salen</b>.</p>
@@ -3427,9 +3427,7 @@ function renderManual(){
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
-      <li><b>Meta anual y comparación histórica:</b> en <b>Ajustes</b> guardás la meta del año en curso y también un <b>historial de metas por año</b> (pasadas y futuras) — así, cuando filtrás un año anterior en el Resumen, la barra de avance compara contra la meta que en verdad tenías vigente ese año, no contra la de hoy. Si un año no tiene meta guardada, la app avisa en vez de comparar mal.</li>
-      <li><b>Gráficos → Estacionalidad:</b> promedio histórico de ingresos por mes calendario (todos los años juntos) — resalta tus 3 mejores y 3 meses más flojos, para planear el esfuerzo comercial. Necesita al menos 2 años con datos.</li>
-      <li><b>Gráficos → Meta vs. alcance por año:</b> una barra por año con lo realmente cobrado contra la meta de ese año (línea punteada), coloreada por cumplimiento (verde ≥100%, oro 80-99%, rojo &lt;80%).</li>
+      <li><b>Finanzas → Histórico (nueva pestaña):</b> todo tu historial multianual en un solo lugar — <b>Meta vs. alcance por año</b> (barra por año contra su meta, coloreada por cumplimiento), <b>Estacionalidad</b> (promedio de ingresos por mes calendario, resaltando tus 3 mejores y 3 meses más flojos), la <b>tabla consolidada</b> (meta, bruto, gastos, saldo neto y % de meta de cada año) y el editor de <b>metas por año</b>. También genera su propio <b>reporte PDF</b>. Así, cuando filtrás un año anterior en el Resumen, la barra de avance compara contra la meta que en verdad tenías vigente ese año, no contra la de hoy.</li>
       <li><b>Espacio en el dispositivo:</b> Ajustes muestra el % de memoria local usada. Si llega a llenarse (por ejemplo, muchas fotos de inspección de alquileres), la app te pide autorización para liberar automáticamente las fotos más antiguas (priorizando contratos ya cancelados) antes de perder un guardado — nunca borra sin que le des OK, y nunca toca la foto de portada.</li>
     </ul>
 
@@ -4797,6 +4795,50 @@ function fcCompute(mode){
   return {cy,elapsed,cobrado,porCobrar,pipePond,bruto,biz,iva,fixed,prov,salary,rentaV,jurV,operativo,impuestos,neto,div,scopeLbl,grossNote,cfg,sal:+cfg.sal||0,personal:+cfg.personal||0,mode};
 }
 
+function renderHistorico(){
+  document.getElementById('view').innerHTML = `
+   <div class="fcbanner">📚 <b>Histórico</b> · todos tus años en un solo lugar: meta vs. alcance, estacionalidad y el consolidado de ingresos, gastos y saldo — para comparar tu evolución año contra año.</div>
+   ${metaHistoryHTML()}
+   ${seasonalityHTML()}
+   ${consolidatedYearlyHTML()}
+   <div class="section">
+     <h3>Editar metas por año</h3>
+     <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.5">Guardá la meta que tuviste vigente cada año — así todo lo de arriba compara contra la meta correcta de cada período, no la actual.</p>
+     <div style="display:flex;flex-direction:column;gap:6px">${metasHistEditor()}</div>
+   </div>
+   <div class="section">
+     <h3>Generar reporte PDF</h3>
+     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Documento con el consolidado por año, metas y estacionalidad.</p>
+     <button class="pdfbtn" onclick="printHistorico()">⎙  Generar PDF · histórico por año</button>
+   </div>`;
+}
+function printHistorico(){
+  const ing=DATA.filter(m=>m.tipo==='ingreso'&&!m.virt);
+  const cy=new Date().getFullYear();
+  const years=[...new Set(ing.map(m=>+m.fecha.slice(0,4)))].sort((a,b)=>a-b);
+  const rows=years.map(y=>{
+    const meta=metaForYear(y);
+    const yearData=DATA.filter(m=>+m.fecha.slice(0,4)===y);
+    const bruto=yearData.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend').reduce((a,m)=>a+crc(m),0);
+    const gastos=yearData.filter(m=>m.tipo==='gasto'&&!m.virt).reduce((a,m)=>a+crc(m),0);
+    let adj=0; if(SET.ivaPag) Object.keys(SET.ivaPag).forEach(k=>{ if(k.slice(0,4)===String(y)){ const d=ivaAdjFor(k); if(d) adj+=d; } });
+    const saldo=bruto-gastos-adj;
+    const pct=meta?Math.round(bruto/meta*100):null;
+    return {y,meta,bruto,gastos,saldo,pct};
+  });
+  const trs=rows.map(r=>`<tr><td>${r.y}${r.y===cy?' (año en curso)':''}</td><td class="r">${r.meta?fmtCRC(r.meta):'—'}</td><td class="r" style="color:#15805A">${fmtCRC(r.bruto)}</td><td class="r" style="color:#B85138">${fmtCRC(r.gastos)}</td><td class="r"><b>${fmtCRC(r.saldo)}</b></td><td class="r">${r.pct!=null?r.pct+'%':'—'}</td></tr>`).join('');
+  const INNER=`<div class="rep">
+    <div class="rep-head"><div><div class="rep-title">Histórico consolidado por año</div><div class="rep-period">Generado ${new Date().toLocaleDateString('es-CR')}</div></div></div>
+    <table class="rep-tbl"><thead><tr><th>Año</th><th class="r">Meta</th><th class="r">Ingresos brutos</th><th class="r">Gastos</th><th class="r">Saldo neto</th><th class="r">% de meta</th></tr></thead>
+      <tbody>${trs||'<tr><td colspan="6">Sin datos</td></tr>'}</tbody></table>
+    <div class="rep-foot">MH Finance Costa Rica · Montos en colones (CRC)</div>
+  </div>`;
+  const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+'</style><title>Histórico MH Finance</title></head><body>'+INNER+'</body></html>';
+  let f=document.getElementById('printFrame');
+  if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
+  const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
+  setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
+}
 function forecastGanchoHTML(){
   const f=fcCompute('anual');
   if(f.bruto<=0) return '';
@@ -4860,7 +4902,10 @@ function renderForecast(){
     <div class="fcdisc"><b>⚠︎ Sobre los impuestos:</b> no soy tu contador y la ley tributaria de CR cambia. <b>Renta, parciales y el impuesto de jurídica</b> los llenás con lo que te diga tu contador — la app solo hace la matemática. El <b>IVA (13%)</b> sí sale solo, de lo que registrás <b>con factura</b>.</div>
   </div>
 
-  ${consolidatedYearlyHTML()}`;
+  <div class="section" style="cursor:pointer" onclick="go('historico')">
+    <h3>Histórico por año <span class="small">meta · bruto · gastos · saldo · comparación entre años →</span></h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:0">Ver la tabla consolidada de todos tus años, el gráfico de meta vs. alcance y la estacionalidad en <b style="color:var(--paper)">Finanzas → Histórico</b>.</p>
+  </div>`;
   fcRecompute();
 }
 
