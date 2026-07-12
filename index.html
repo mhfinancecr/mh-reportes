@@ -2489,13 +2489,9 @@ function renderAjustes(){
       <div class="l">Tema<small>Auto: oscuro de 6 pm a 6 am y claro de día · Claro/Oscuro lo fijan manual</small></div>
       <div class="seg" style="flex:0 0 auto;width:225px"><button type="button" class="${SET.theme==='light'?'on':''}" onclick="applyTheme('light')">Claro</button><button type="button" class="${(SET.theme!=='light'&&SET.theme!=='dark')?'on':''}" onclick="applyTheme('auto')">Auto</button><button type="button" class="${SET.theme==='dark'?'on':''}" onclick="applyTheme('dark')">Oscuro</button></div>
     </div>
-    <div class="setrow">
-      <div class="l">Meta anual de ingresos (₡)<small>Activá la barra de avance en el Resumen — dejala en 0 para ocultarla</small></div>
-      <input class="miniInput num" type="number" value="${SET.meta||''}" placeholder="0" onchange="SET.meta=parseFloat(this.value)||0;if(!SET.metas)SET.metas={};SET.metas[new Date().getFullYear()]=SET.meta;persist();toast('Meta guardada')">
-    </div>
     <div class="setrow" style="align-items:flex-start">
-      <div class="l">Historial de metas por año<small>Editalo desde <b>Finanzas → Histórico</b>, donde también ves la comparación año contra año</small></div>
-      <button class="ghostbtn" onclick="go('historico')">Ver histórico</button>
+      <div class="l">Meta anual de ingresos<small>Activa la barra de avance en el Resumen · dejala en 0 (o vacía) para ocultarla. Se edita, año por año, en <b>Finanzas → Histórico</b></small></div>
+      <button class="ghostbtn" onclick="go('historico')">Ver / editar</button>
     </div>
     <div class="setrow"><div class="l">Último respaldo<small>${SET.lastBackup?SET.lastBackup.split('-').reverse().join('/'):'Nunca desde este dispositivo'}</small></div><button class="ghostbtn" onclick="exportJSON()">Respaldar</button></div>
     <div class="setrow"><div class="l">Notificaciones<small>${notifStatus()==='denied'?'Bloqueadas en Safari para este sitio. Corregilo en: Safari (menú) → Ajustes → Sitios web → Notificaciones → buscá este sitio → cambiá a «Permitir», y volvé a intentar':'Alertas del sistema al abrir la app: vencimientos, aniversario IPC, seguimientos sin avanzar'}</small></div><button class="ghostbtn" onclick="toggleNotif()" ${notifStatus()==='denied'?'disabled style="opacity:.5"':''}>${SET.notif&&notifStatus()==='granted'?'Activadas ✓':'Activar'}</button></div>
@@ -3427,7 +3423,7 @@ function renderManual(){
       <li>Los datos viven <b>solo en el dispositivo</b>. Para sincronizar: <b>Más → Ajustes → Descargar respaldo</b> (JSON) e <b>Importar</b> en los demás.</li>
       <li>Un <b>punto dorado</b> sobre el engranaje avisa a los 15 días sin respaldar.</li>
       <li><span class="mno">Nunca</span> borrés los datos de Safari sin respaldar antes.</li>
-      <li><b>Finanzas → Histórico (nueva pestaña):</b> todo tu historial multianual en un solo lugar — <b>Meta vs. alcance por año</b> (barra por año contra su meta, coloreada por cumplimiento), <b>Estacionalidad</b> (promedio de ingresos por mes calendario, resaltando tus 3 mejores y 3 meses más flojos), la <b>tabla consolidada</b> (meta, bruto, gastos, saldo neto y % de meta de cada año) y el editor de <b>metas por año</b>. También genera su propio <b>reporte PDF</b>. Así, cuando filtrás un año anterior en el Resumen, la barra de avance compara contra la meta que en verdad tenías vigente ese año, no contra la de hoy.</li>
+      <li><b>Finanzas → Histórico (nueva pestaña):</b> todo tu historial multianual en un solo lugar — <b>Meta vs. alcance por año</b> (barra por año contra su meta, coloreada por cumplimiento), <b>Estacionalidad</b> (promedio de ingresos por mes calendario, resaltando tus 3 mejores y 3 meses más flojos), la <b>tabla consolidada</b> (meta, bruto, gastos, saldo neto y % de meta de cada año) y el <b>único editor de metas por año</b> (incluida la del año en curso — Ajustes ya no tiene un campo aparte, solo un enlace). También genera su propio <b>reporte PDF</b>. Así, cuando filtrás un año anterior en el Resumen, la barra de avance compara contra la meta que en verdad tenías vigente ese año, no contra la de hoy.</li>
       <li><b>Espacio en el dispositivo:</b> Ajustes muestra el % de memoria local usada. Si llega a llenarse (por ejemplo, muchas fotos de inspección de alquileres), la app te pide autorización para liberar automáticamente las fotos más antiguas (priorizando contratos ya cancelados) antes de perder un guardado — nunca borra sin que le des OK, y nunca toca la foto de portada.</li>
     </ul>
 
