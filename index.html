@@ -1256,7 +1256,7 @@
 const PASS='MHFi240312';  // Contraseña de ingreso — cambiala por la que quieras
 const KEY='mh_ingresos_v1', SKEY='mh_settings_v1', PKEY='mh_pipeline_v1', LKEY='mh_lost_v1', CKEY='mh_citas_v1', COKEY='mh_coaching_v1', MKEY='mh_mkt_v1';
 let mem={}; // respaldo si localStorage no está disponible (p.ej. previsualización)
-function store(k,v){ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} }
+function store(k,v){ try{localStorage.setItem(k,v); return true;}catch(e){mem[k]=v; return false;} }
 function load(k){ try{const x=localStorage.getItem(k); return x!=null?x:(mem[k]??null)}catch(e){return mem[k]??null} }
 
 let DATA = JSON.parse(load(KEY) || '[]');
@@ -1266,7 +1266,55 @@ let LOST = JSON.parse(load(LKEY) || '[]');   // negocios perdidos — histórico
 let CITAS = JSON.parse(load(CKEY) || '[]');  // citas / visitas — solo seguimiento comercial de portafolio PROPIO, no afecta cifras reales
 let COACH = JSON.parse(load(COKEY) || '[]'); // coaching mensual — guía de buenas prácticas importada de Claude Pro, no afecta cifras reales
 let MKT  = JSON.parse(load(MKEY) || '{}');  // embudo de marketing — capturas mensuales {YYYY-MM:{fan, props:{propkey:{mkt,cons}}}}, no afecta cifras reales
-function persist(){ try{ store(KEY, JSON.stringify(DATA)); store(SKEY, JSON.stringify(SET)); store(PKEY, JSON.stringify(PIPE)); store(LKEY, JSON.stringify(LOST)); store(CKEY, JSON.stringify(CITAS)); store(COKEY, JSON.stringify(COACH)); store(MKEY, JSON.stringify(MKT)); }catch(e){ toast('⚠ Memoria del dispositivo llena — borrá algunas fotos'); } }
+function trySaveOnce(){
+  let ok=true;
+  try{
+    ok = store(KEY, JSON.stringify(DATA)) && ok;
+    ok = store(SKEY, JSON.stringify(SET)) && ok;
+    ok = store(PKEY, JSON.stringify(PIPE)) && ok;
+    ok = store(LKEY, JSON.stringify(LOST)) && ok;
+    ok = store(CKEY, JSON.stringify(CITAS)) && ok;
+    ok = store(COKEY, JSON.stringify(COACH)) && ok;
+    ok = store(MKEY, JSON.stringify(MKT)) && ok;
+  }catch(e){ ok=false; }
+  return ok;
+}
+function fotoCleanupCandidates(triedIds){
+  return DATA.filter(m=>m.alquiler && m.alquiler.fotos && m.alquiler.fotos.length && !triedIds.has(m.id))
+    .sort((a,b)=>{
+      const ca=a.alquiler.estado==='cancelado'?0:1, cb=b.alquiler.estado==='cancelado'?0:1;
+      if(ca!==cb) return ca-cb; // primero las de contratos ya cancelados
+      const da=a.alquiler.cancelado||a.alquiler.salida||a.alquiler.inicio||a.fecha||'';
+      const db=b.alquiler.cancelado||b.alquiler.salida||b.alquiler.inicio||b.fecha||'';
+      return String(da).localeCompare(String(db)); // más antiguo primero
+    });
+}
+function persist(){
+  let ok=trySaveOnce();
+  if(ok) return true;
+  const tried=new Set();
+  while(!ok){
+    const candidates=fotoCleanupCandidates(tried);
+    if(!candidates.length){
+      if(!window.__quotaWarned){
+        window.__quotaWarned=true;
+        alert('⚠ MEMORIA LLENA y no encontré fotos de inspección disponibles para liberar automáticamente. Este cambio NO se guardó.\n\nHacé tu respaldo JSON cuanto antes (Más → Ajustes) para no perder nada.');
+      }
+      toast('⚠ No guardado — memoria llena');
+      return false;
+    }
+    const target=candidates[0];
+    tried.add(target.id);
+    const n=target.alquiler.fotos.length;
+    const label=target.propiedad+(target.alquiler.estado==='cancelado'?' · contrato ya cancelado':' · contrato vigente');
+    const go=confirm('⚠ Memoria del dispositivo llena.\n\nPara poder guardar tu cambio más reciente, ¿autorizás borrar las '+n+' foto(s) de inspección de:\n\n"'+label+'"\n\nNo se toca nada más de esa ficha (ni portada, ni contrato, ni checklist) — solo esas fotos. Si no tenés su PDF descargado, cancelá y guardalo primero.');
+    if(!go){ toast('⚠ No guardado — el cambio queda pendiente hasta liberar espacio'); return false; }
+    target.alquiler.fotos=[];
+    ok=trySaveOnce();
+    if(ok) toast('Fotos de "'+target.propiedad+'" liberadas — cambio guardado');
+  }
+  return true;
+}
 const LOGO_PATH=`M2238 7250 c-16 -12 -28 -27 -28 -34 0 -7 22 -60 49 -117 86 -185
 124 -313 156 -533 41 -283 39 -923 -5 -1135 -25 -124 -53 -195 -109 -281 -22
 -35 -41 -70 -41 -77 0 -27 83 -165 104 -172 11 -5 124 -5 250 -1 176 6 230 11
@@ -1339,6 +1387,9 @@ const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','
 const crc = m => { const base = m.monto + ((m.tipo==='ingreso'&&m.factura==='si')?(+m.iva||0):0); return m.moneda==='USD' ? base*m.tc : base; };  // valor en colones (ingreso facturado = bruto con IVA)
 const mkey = f => f.slice(0,7);                                       // "YYYY-MM"
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+function storageBytesUsed(){ let n=0; try{ for(const k in localStorage){ if(localStorage.hasOwnProperty(k)) n+=(localStorage[k]||'').length+k.length; } }catch(e){} return n; }
+function storageUsagePct(){ const LIMIT=5*1024*1024; return Math.min(100, Math.round(storageBytesUsed()/LIMIT*100)); }
+function storageUsageNote(){ const mb=(storageBytesUsed()/1024/1024).toFixed(1); const pct=storageUsagePct(); return pct>=80?`${mb} MB · casi lleno — si se llena, la app te pedirá autorización para liberar fotos viejas`:`${mb} MB usados`; }
 function clipCopy(text){ try{ var p=navigator.clipboard&&navigator.clipboard.writeText(text); if(p&&p.catch)p.catch(function(){fallbackCopy(text);}); else fallbackCopy(text); }catch(e){ fallbackCopy(text); } }
 function fallbackCopy(text){ try{ var ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }catch(e){} }
 
@@ -2383,6 +2434,7 @@ function renderAjustes(){
     <div class="setrow"><div class="l">Último respaldo<small>${SET.lastBackup?SET.lastBackup.split('-').reverse().join('/'):'Nunca desde este dispositivo'}</small></div><button class="ghostbtn" onclick="exportJSON()">Respaldar</button></div>
     <div class="setrow"><div class="l">Notificaciones<small>${notifStatus()==='denied'?'Bloqueadas en Safari para este sitio. Corregilo en: Safari (menú) → Ajustes → Sitios web → Notificaciones → buscá este sitio → cambiá a «Permitir», y volvé a intentar':'Alertas del sistema al abrir la app: vencimientos, aniversario IPC, seguimientos sin avanzar'}</small></div><button class="ghostbtn" onclick="toggleNotif()" ${notifStatus()==='denied'?'disabled style="opacity:.5"':''}>${SET.notif&&notifStatus()==='granted'?'Activadas ✓':'Activar'}</button></div>
     <div class="setrow"><div class="l">Movimientos registrados<small>${DATA.length} en total</small></div><div class="num" style="color:var(--gold);font-weight:600">${DATA.length}</div></div>
+    <div class="setrow"><div class="l">Espacio usado en este dispositivo<small>${storageUsageNote()}</small></div><div class="num" style="color:${storageUsagePct()>=80?'var(--gasto)':storageUsagePct()>=50?'var(--gold)':'var(--ingreso)'};font-weight:600">${storageUsagePct()}%</div></div>
     <div class="setrow"><div class="l">Ingreso neto histórico<small>Todos los períodos</small></div><div class="num" style="color:var(--gold);font-weight:600">${fmtCRC(tot.n)}</div></div>
   </div>
   <div class="section">
