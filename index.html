@@ -4534,8 +4534,8 @@ function renderCoaching(){
 /* ---------- Reporte PDF (impresión) ---------- */
 const REP_CSS=`
   body{margin:0;background:#fff;color:#1a1a1a;font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
-  @page{margin:16mm}
-  .rep{padding:6mm}
+  @page{margin:14mm}
+  .rep{padding:5mm}
   .rep-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1C3D60;padding-bottom:8px;margin-bottom:10px}
   .rep-head>div{flex:1;min-width:0}
   .rep-logo{height:42px;width:auto;display:block;flex:0 0 auto}
@@ -4564,15 +4564,15 @@ const FICHA_CSS=`
   .ficha .festado.off{background:#F6E1DA;color:#B85138}
   .ficha .festado.aviso{background:#FBE6D6;color:#B5651D}
   .ftbl{width:100%;border-collapse:collapse;margin:3px 0 6px}
-  .ftbl td{padding:6px;border-bottom:1px solid #eee;font-size:11.5px;vertical-align:top}
-  .ftbl.big td{font-size:12.5px;padding:7px 6px}
+  .ftbl td{padding:5px 6px;border-bottom:1px solid #eee;font-size:11px;vertical-align:top}
+  .ftbl.big td{font-size:12px;padding:5px 6px}
   .ftbl td.fl{color:#1a1a1a;font-weight:600;width:42%}
   .ftbl td.fv{color:#1a1a1a;font-weight:600}
   .ftbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#1a1a1a;padding:6px;border-bottom:1.5px solid #ddd}
   .ftbl th.r,.ftbl td.r{text-align:right}
   .fcols{display:flex;gap:22px}.fcols>div{flex:1}
-  .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
-  .fnext{margin-top:6px;font-size:11px;color:#9A6B1E;background:#FBF3E2;border-radius:7px;padding:6px 10px;line-height:1.35;break-inside:avoid;page-break-inside:avoid}
+  .fcuota{margin:5px 0;font-size:12.5px;color:#444}.fcuota b{color:#15805A;font-size:14px}.fcuota span{color:#999;font-size:10.5px}
+  .fnext{margin-top:4px;font-size:10.5px;color:#9A6B1E;background:#FBF3E2;border-radius:6px;padding:5px 9px;line-height:1.3;break-inside:avoid;page-break-inside:avoid}
   .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#1C3D60;font-weight:700}
   .ftbl.chk td{font-size:10px;padding:4px 5px}
   .chkcols{gap:18px}
