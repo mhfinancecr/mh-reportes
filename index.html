@@ -4282,7 +4282,7 @@ function reporteGestion(prop){
     +'</div>'
     +segHTML('Detalle de visitas realizadas',segReal)
     +segHTML('Detalle de no realizadas',segNo)
-    +'<h4>Bitácora de citas y visitas</h4>'
+    +'<div style="break-before:page;page-break-before:always"></div><h4 style="margin-top:0">Bitácora de citas y visitas</h4>'
     +'<table class="ftbl"><thead><tr><th>Ingreso del prospecto</th><th>Fecha de cita</th><th>Hora</th><th>Cliente</th><th class="r">Resultado</th></tr></thead><tbody>'+rows+'</tbody></table>'
     +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
     +'<div class="rep-foot">MH Finance Costa Rica · Reporte de gestión generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
@@ -4536,7 +4536,7 @@ const REP_CSS=`
   body{margin:0;background:#fff;color:#1a1a1a;font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
   @page{margin:16mm}
   .rep{padding:6mm}
-  .rep-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1C3D60;padding-bottom:10px;margin-bottom:12px}
+  .rep-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #1C3D60;padding-bottom:8px;margin-bottom:10px}
   .rep-head>div{flex:1;min-width:0}
   .rep-logo{height:42px;width:auto;display:block;flex:0 0 auto}
   .rep-title{font-family:'Newsreader',serif;font-size:19px;font-weight:600;line-height:1.15}
@@ -4563,7 +4563,7 @@ const FICHA_CSS=`
   .ficha .festado.on{background:#E4F1EA;color:#15805A}
   .ficha .festado.off{background:#F6E1DA;color:#B85138}
   .ficha .festado.aviso{background:#FBE6D6;color:#B5651D}
-  .ftbl{width:100%;border-collapse:collapse;margin:4px 0 8px}
+  .ftbl{width:100%;border-collapse:collapse;margin:3px 0 6px}
   .ftbl td{padding:6px;border-bottom:1px solid #eee;font-size:11.5px;vertical-align:top}
   .ftbl.big td{font-size:12.5px;padding:7px 6px}
   .ftbl td.fl{color:#1a1a1a;font-weight:600;width:42%}
@@ -4572,12 +4572,12 @@ const FICHA_CSS=`
   .ftbl th.r,.ftbl td.r{text-align:right}
   .fcols{display:flex;gap:22px}.fcols>div{flex:1}
   .fcuota{margin:8px 0;font-size:13px;color:#444}.fcuota b{color:#15805A;font-size:15px}.fcuota span{color:#999;font-size:11px}
-  .fnext{margin-top:8px;font-size:11.5px;color:#9A6B1E;background:#FBF3E2;border-radius:8px;padding:8px 11px}
+  .fnext{margin-top:6px;font-size:11px;color:#9A6B1E;background:#FBF3E2;border-radius:7px;padding:6px 10px;line-height:1.35;break-inside:avoid;page-break-inside:avoid}
   .cok{color:#15805A;font-weight:700}.cdef{color:#B85138;font-weight:700}.cna{color:#1C3D60;font-weight:700}
   .ftbl.chk td{font-size:10px;padding:4px 5px}
   .chkcols{gap:18px}
   .chkcols .ftbl{margin:2px 0 4px}
-  .ficha h4{break-after:avoid;page-break-after:avoid;margin:8px 0 4px}
+  .ficha h4{break-after:avoid;page-break-after:avoid;margin:6px 0 3px}
   .ftbl tr{break-inside:avoid;page-break-inside:avoid}
   .p1block{break-inside:avoid;page-break-inside:avoid}
   .pbreak,.fsheet{break-before:page;page-break-before:always}
