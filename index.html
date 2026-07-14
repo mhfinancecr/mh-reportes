@@ -2838,7 +2838,9 @@ function fichaPDF(id){
     +'<div><h4>Inquilino</h4><table class="ftbl"><tbody>'+row('Nombre',a.tenName)+row('Cédula',a.tenCed)+row('Teléfono',a.tenTel)+row('Correo',a.tenMail)+'</tbody></table></div>'
     +'</div>'
     +incBlock
+    +(inspBlock?'<div style="break-before:page;page-break-before:always"></div>':'')
     +inspBlock
+    +(fotoBlock?'<div style="break-before:page;page-break-before:always"></div>':'')
     +fotoBlock
     +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Ficha generada '+new Date().toLocaleDateString('es-CR')+'</div></div>';
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+'</style><title>Ficha '+(m.propiedad||'alquiler')+'</title></head><body>'+INNER+'</body></html>';
