@@ -3513,6 +3513,7 @@ function pipeRow(p,venc){
     <button class="closebtn" onclick="openClose(${p.id})"><span class="ck"></span> Negocio cerrado</button>
     <button class="lostbtn" onclick="markLost(${p.id})">✕ Negocio perdido</button>
     ${p.coloc==='colega'?'':`<button class="citabtn" onclick="agendarDesdePipe(${p.id})">📅 Agendar cita</button>`}
+    ${(p.coloc!=='colega' && p.propiedad && CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===(p.propiedad||'').trim().toLowerCase()))?`<button class="citabtn" style="border-color:var(--gold);color:var(--gold)" onclick="event.stopPropagation();reporteGestion('${(p.propiedad||'').trim().replace(/'/g,"\\'")}')">📄 Reporte de gestión</button>`:''}
   </div>`;
 }
 function lostRow(p){
