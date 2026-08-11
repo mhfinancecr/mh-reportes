@@ -1019,7 +1019,10 @@
         <div class="colochint hide" id="cobroHint">No suma en tus cifras reales hasta marcarlo como cobrado. Tampoco genera los gastos automáticos (IVA, comisiones) todavía.</div>
       </div>
       <div class="twocol">
-        <div class="formrow"><label>Referido (nombre)</label><input type="text" id="fRefNombre" placeholder="Opcional"></div>
+        <div class="formrow"><label>Tipo de referido</label><select id="fRefTipo" onchange="fRefTipoChange()"><option value="persona">Persona (no corredor) · usual 10%</option><option value="corredor">Corredor colega · split negociado</option></select></div>
+      </div>
+      <div class="twocol">
+        <div class="formrow"><label id="fRefNombreLbl">Referido (nombre)</label><input type="text" id="fRefNombre" list="corredoresList" placeholder="Opcional"></div>
         <div class="formrow"><label>Comisión al referido</label><input type="number" id="fRefMonto" inputmode="decimal" placeholder="0"></div>
       </div>
     </div>
@@ -1220,6 +1223,7 @@
     <div class="formrow"><label>Propiedad</label><input type="text" id="citaProp" list="propsList" placeholder="Nombre de la propiedad"></div>
     <datalist id="propsList"></datalist>
     <div class="formrow"><label>Cliente / prospecto</label><input type="text" id="citaCli" placeholder="Nombre del comprador o inquilino"></div>
+    <div class="formrow" id="citaCorredorRow" style="display:none"><label>Corredor del cliente <small style="font-weight:500;text-transform:none;letter-spacing:0">· si lo trajo un colega</small></label><input type="text" id="citaCorredor" list="corredoresList" placeholder="Nombre del corredor / colega"></div>
     <div class="formrow"><label>Ingreso del prospecto</label><button type="button" class="wheelfield" id="citaIngBtn" onclick="pickCitaIng()">Elegir fecha</button></div>
     <div class="twocol">
       <div class="formrow"><label>Fecha de la cita</label><button type="button" class="wheelfield" id="citaFecBtn" onclick="pickCitaFec()">Elegir fecha</button></div>
@@ -1231,7 +1235,7 @@
       <button type="button" class="icsbtn" onclick="otraVisita()" style="color:var(--gold)">➕ Otra visita (con la pareja, 2ª vuelta…)</button>
     </div>
     <div class="formrow"><label>Estado</label><select id="citaEstado" onchange="citaEstadoChange()"></select></div>
-    <div class="formrow"><label>Origen del lead <small style="font-weight:500;text-transform:none;letter-spacing:0">· para el embudo</small></label><select id="citaOrigen"><option value="redes">Redes (fan page / Marketplace)</option><option value="referido">Referido</option><option value="colega">Cliente de colega</option><option value="directo">Directo / otro</option></select></div>
+    <div class="formrow"><label>Origen del lead <small style="font-weight:500;text-transform:none;letter-spacing:0">· para el embudo</small></label><select id="citaOrigen" onchange="citaOrigenChange()"><option value="redes">Redes (fan page / Marketplace)</option><option value="referido">Referido</option><option value="colega">Cliente de colega</option><option value="directo">Directo / otro</option></select></div>
     <div class="formrow" id="citaMotivoRow" style="display:none"><label id="citaMotivoLbl">Motivo (por qué no continuó)</label><textarea id="citaMotivo" placeholder="Ej: el perfil crediticio no calificó · al cliente no le gustó la ubicación · el propietario no aceptó el perfil…" style="min-height:64px"></textarea></div>
     <div class="formrow" id="citaResumenRow" style="display:none"><label>📝 Resumen de la visita</label><textarea id="citaResumen" placeholder="Escribí o dictá (micrófono del teclado) cómo estuvo la visita, qué dijo el cliente, el siguiente paso…" style="min-height:80px"></textarea>
       <div class="citaresbtns"><button type="button" class="icsbtn" style="margin-top:8px" onclick="estructurarResumen()">✨ Estructurar con Claude<br><span style="font-weight:500;color:var(--muted)">copia tus notas listas para pegar en Claude</span></button></div>
@@ -1401,6 +1405,10 @@ const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','
 const crc = m => { const base = m.monto + ((m.tipo==='ingreso'&&m.factura==='si')?(+m.iva||0):0); return m.moneda==='USD' ? base*m.tc : base; };  // valor en colones (ingreso facturado = bruto con IVA)
 const mkey = f => f.slice(0,7);                                       // "YYYY-MM"
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+function fRefTipoChange(){
+  var v=document.getElementById('fRefTipo').value, l=document.getElementById('fRefNombreLbl');
+  if(l) l.textContent=v==='corredor'?'Corredor referidor':'Referido (nombre)';
+}
 function metaForYear(y){ if(SET.metas && SET.metas[y]!=null && SET.metas[y]!=='' && +SET.metas[y]>0) return +SET.metas[y]; if(y===new Date().getFullYear()) return +SET.meta||0; return null; }
 function metasHistEditor(){
   const cy=new Date().getFullYear();
@@ -3013,6 +3021,7 @@ function openForm(id){
     document.getElementById('fIva').value=m.iva||'';
     document.getElementById('fRefNombre').value=m.refNombre||'';
     document.getElementById('fRefMonto').value=m.refMonto||'';
+    document.getElementById('fRefTipo').value=m.refTipo||'persona'; fRefTipoChange();
     document.getElementById('fDet').value=m.detalle||'';
     document.getElementById('fMonto').value=m.monto;
     setMon(m.moneda); document.getElementById('fTC').value=m.tc; updTcHint();
@@ -3051,7 +3060,7 @@ function openForm(id){
     setCobro('ok');
     document.getElementById('fFecha').value=isoLocal();
     ['fMonto','fProp','fDet','fTC','fRentIni','fRentVen','fRentPago','fRentCuota','fOwnName','fOwnCed','fOwnTel','fOwnMail','fTenName','fTenCed','fTenTel','fTenMail','fChkNotas'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; document.getElementById('fRentSalida').value=''; updRentCanc(); setCuotaMon('CRC'); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
+    document.getElementById('fRentEstado').value='vigente'; document.getElementById('fRentCanc').value=''; document.getElementById('fRentSalida').value=''; updRentCanc(); setCuotaMon('CRC'); document.getElementById('fRefTipo').value='persona'; fRefTipoChange(); fColegaDirty=false; setColoc('propia'); document.getElementById('fCorredor').value=''; setFact('no'); ['fIva','fRefNombre','fRefMonto','fColegaMonto'].forEach(i=>document.getElementById(i).value=''); document.getElementById('fSubcat').value='';
     fInspF=''; fInspH=''; fFotos=[]; fCheck={}; fCover=''; renderCover('f');
     document.getElementById('fIban').value=''; document.getElementById('fTitName').value=''; document.getElementById('fTitCed').value=''; document.getElementById('fNise').value=''; document.getElementById('fNis').value=''; document.getElementById('fTitSame').checked=false; updTitSame();
     document.getElementById('undoPipeBtn').classList.add('hide');
@@ -3085,6 +3094,7 @@ function saveMov(){
     iva:(fTipo==='ingreso'&&fFact==='si')?(parseFloat(document.getElementById('fIva').value)||0):0,
     refNombre:fTipo==='ingreso'?document.getElementById('fRefNombre').value.trim():'',
     refMonto:fTipo==='ingreso'?(parseFloat(document.getElementById('fRefMonto').value)||0):0,
+    refTipo:fTipo==='ingreso'?document.getElementById('fRefTipo').value:'',
     cobro:fTipo==='ingreso'?fCobro:'',
     foto:fCover||''
   };
@@ -3131,7 +3141,7 @@ function saveMov(){
       exRef.coloc=rec.coloc; exRef.corredor=rec.corredor; exRef.lid=rec.lid;
       extraToast+=' · gasto referido sincronizado';
     } else if(!editId || confirm('Este ingreso tiene comisión por referido ('+(rec.moneda==='USD'?fmtUSD(rec.refMonto):fmtCRC(rec.refMonto))+') sin gasto registrado.\n\n¿Crearlo ahora?')){
-      DATA.push({id:rec.id+3,lid:rec.lid,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:'Comisión a referido'+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor});
+      DATA.push({id:rec.id+3,lid:rec.lid,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:rec.fecha,propiedad:rec.propiedad,detalle:(rec.refTipo==='corredor'?'Comisión a corredor referidor':'Comisión a referido')+(rec.refNombre?' · '+rec.refNombre:''),moneda:rec.moneda,monto:rec.refMonto,tc:rec.tc,coloc:rec.coloc,corredor:rec.corredor,refTipo:rec.refTipo});
       extraToast+=' + gasto referido';
     }
   }
@@ -3345,6 +3355,8 @@ function renderManual(){
       <li><b>Monto:</b> la comisión <b>NETA</b> (sin IVA). En USD revisá el tipo de cambio.</li>
       <li><b>Colocación:</b> <i>Propia · solo</i> · <i>Propia · 50/50</i> · <i>De colega</i>. En 50/50 y colega indicá el <b>corredor</b>.</li>
       <li><b>Comisión al colega:</b> se precarga al 50% — editala si el acuerdo es otro. Al guardar crea el gasto solo.</li>
+      <li><b>Referido (split a 3 vías o persona externa):</b> campo separado del corredor de arriba. <b>Tipo de referido</b> distingue: <i>Persona (no corredor)</i> — alguien externo que te trajo el cliente, comisión usual 10% — o <i>Corredor colega</i> — cuando un corredor solo refirió el negocio sin gestionarlo, en un split de 3 vías. Ejemplo: comisión total 100%, tuya 40% (Monto de arriba), corredor con el cliente 40% (Corredor + Comisión al colega), corredor referidor 20% (Tipo=Corredor colega + Referido/Comisión al referido). Los tres montos son independientes y editables.</li>
+      <li><b>Corredor del cliente en Citas:</b> al agendar una cita con origen "Colega" o "Referido", aparece el campo <b>Corredor del cliente</b> — si esa cita gana el negocio (la elegís al cerrar en Pipeline), el nombre se hereda solo al corredor del cierre, sin volver a digitarlo.</li>
       <li><b>Facturado:</b> la app calcula el IVA (13% del neto), lo suma al ingreso (bruto) y crea el gasto de IVA.</li>
       <li><b>Referido:</b> nombre y monto — crea el gasto en "Pago de comisiones por referidos".</li>
       <li><b>Cobro:</b> <i>Cobrado</i> entra ya; <i>Por cobrar</i> queda en espera sin sumar hasta marcarlo cobrado. En el <b>Resumen</b>, la sección <b>Comisiones por cobrar</b> las agrupa por antigüedad (<span class="mok">0–30</span> · 31–60 · <span class="mno">+60 días</span>) para saber a quién apurar.</li>
@@ -3701,6 +3713,8 @@ function closePrecioCmpUpd(p,alq){
 function confirmClose(){
   const p=PIPE.find(x=>x.id===closeId); if(!p){closeCloseModal();return;}
   const d=document.getElementById('closeDate').value; if(!d){toast('Elegí la fecha de cierre');return;}
+  var _cs0=document.getElementById('closeCitaSel'); var _cid0=(_cs0&&_cs0.options.length)?parseInt(_cs0.value):null;
+  if(_cid0){ const _cWin=CITAS.find(c=>c.id===_cid0); if(_cWin&&_cWin.corredor&&!p.corredor){ p.corredor=_cWin.corredor; if(p.coloc==='propia')p.coloc='comp'; } }
   const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
   const newId=Date.now();
   const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p),precioLista:p.precioLista||0}};
@@ -3908,6 +3922,8 @@ function openCita(id,pre){
     document.getElementById('citaEstado').value=c.estado||'agendada';
     document.getElementById('citaMotivo').value=c.motivo||'';
     document.getElementById('citaOrigen').value=c.origen||'redes';
+    document.getElementById('citaCorredor').value=c.corredor||'';
+    citaOrigenChange();
     document.getElementById('citaResumen').value=c.resumen||'';
     citaHist=(c.historial||[]).slice();
     document.getElementById('citaTitle').textContent='Editar cita';
@@ -3920,6 +3936,8 @@ function openCita(id,pre){
     document.getElementById('citaEstado').value=pre.lid?'agendada':'poragendar';
     document.getElementById('citaMotivo').value='';
     document.getElementById('citaOrigen').value='redes';
+    document.getElementById('citaCorredor').value='';
+    citaOrigenChange();
     document.getElementById('citaResumen').value='';
     citaHist=[];
     document.getElementById('citaTitle').textContent='Nueva cita';
@@ -3979,6 +3997,10 @@ function pickCitaIng(){ openDateWheel('Ingreso del prospecto', citaIng, v=>{cita
 function pickCitaFec(){ openDateWheel('Fecha de la cita', citaFec, v=>{citaFec=v;updCitaBtns();}); }
 function pickCitaHor(){ openTimeWheel('Hora de la cita', citaHor, v=>{citaHor=v;updCitaBtns();}); }
 function closeCita(){document.getElementById('citaOverlay').classList.remove('open');citaEditId=null;citaLid=null;}
+function citaOrigenChange(){
+  var v=document.getElementById('citaOrigen').value, row=document.getElementById('citaCorredorRow');
+  if(row) row.style.display=(v==='colega'||v==='referido')?'':'none';
+}
 function saveCita(){
   const prop=document.getElementById('citaProp').value.trim();
   if(!prop){toast('Indicá la propiedad');return;}
@@ -3987,6 +4009,7 @@ function saveCita(){
     ingreso:citaIng||'', fecha:citaFec||'', hora:citaHor||'',
     estado:document.getElementById('citaEstado').value,
     origen:document.getElementById('citaOrigen').value,
+    corredor:document.getElementById('citaCorredor').value.trim(),
     historial:citaHist.slice(),
     resumen:document.getElementById('citaResumen').value.trim(),
     motivo:(CITA_COL[document.getElementById('citaEstado').value]==='r')?document.getElementById('citaMotivo').value.trim():'' };
