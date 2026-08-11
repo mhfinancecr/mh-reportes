@@ -1202,6 +1202,14 @@
     <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
     <div class="formrow hide" id="closeCitaRow"><label>Cita que cerró este negocio</label><select id="closeCitaSel"></select></div>
     <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 14px;cursor:pointer"><input type="checkbox" id="closePend" style="width:18px;height:18px;accent-color:var(--gold)"> Comisión aún no cobrada · queda en «por cobrar»</label>
+    <label class="titchk" style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);margin:2px 0 10px;cursor:pointer"><input type="checkbox" id="closeHasRef" style="width:18px;height:18px;accent-color:var(--gold)" onchange="closeRefToggle()"> Hay pago de referido en este negocio</label>
+    <div id="closeRefBlock" class="hide" style="margin-bottom:10px">
+      <div class="formrow"><label>Tipo de referido</label><select id="closeRefTipo"><option value="persona">Persona (no corredor) · usual 10%</option><option value="corredor">Corredor colega · split negociado</option></select></div>
+      <div class="twocol">
+        <div class="formrow"><label>Nombre</label><input type="text" id="closeRefNombre" list="corredoresList" placeholder="Opcional"></div>
+        <div class="formrow"><label>Comisión al referido</label><input type="number" id="closeRefMonto" inputmode="decimal" placeholder="0"></div>
+      </div>
+    </div>
     <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:-2px 0 16px">Al cerrar, este negocio se <b style="color:var(--paper)">suma a tus transacciones reales</b> y al gráfico principal con la fecha indicada, y sale del pipeline. No tenés que digitarlo de nuevo.</p>
     <button class="saveBtn" onclick="confirmClose()">Cerrar y trasladar a transacciones</button>
     <button class="delBtn" style="color:var(--muted);border-color:var(--line)" onclick="closeCloseModal()">Cancelar</button>
@@ -1453,6 +1461,8 @@ function ivaAdjTx(desde,hasta){
 function rango(desde,hasta){ return DATA.filter(m=>inRange(m,desde,hasta)&&m.cobro!=='pend').concat(ivaAdjTx(desde,hasta)); }
 let OGEXP=false;
 function toggleOG(){OGEXP=!OGEXP;render();}
+let RFEXP=false;
+function toggleRF(){RFEXP=!RFEXP;render();}
 function subcatOf(m){ if(m.subcat)return m.subcat; if(m.ivaAuto||m.virt||/(IVA 13%|Ajuste IVA)/i.test(m.detalle||''))return 'IVA'; return 'Sin clasificar'; }
 function setIvaPag(ym,v){ if(!SET.ivaPag)SET.ivaPag={}; if(v===''||v==null){delete SET.ivaPag[ym];} else {SET.ivaPag[ym]=parseFloat(v)||0;} persist(); render(); }
 function ivaPagSectionHTML(){
@@ -1728,12 +1738,17 @@ function renderResumen(){
     return `<div class="yoy">vs. ${labelPrev()}: <b class="${cls}">${arr} ${Math.abs(p)}%</b> · ${fmtCRC(b)}</div>`; };
 
   // breakdown
-  const OGCAT='Otros gastos de negocio';
+  const OGCAT='Otros gastos de negocio', RFCAT='Pago de comisiones por referidos';
   const brk = (tipo,color)=>{const g={}; cur.filter(m=>m.tipo===tipo&&!m.virt).forEach(m=>{g[m.categoria]=(g[m.categoria]||0)+crc(m);});
     let keys=Object.keys(g).sort((a,b)=>g[b]-g[a]);
     if(!keys.length) return `<div class="brk"><span class="name" style="color:var(--muted2)">Sin movimientos</span></div>`;
     if(tipo==='gasto'&&g[OGCAT]!=null){keys=keys.filter(k=>k!==OGCAT); keys.push(OGCAT);}
     return keys.map(k=>{
+      if(tipo==='gasto'&&k===RFCAT&&g[RFCAT]!=null){
+        const sg={persona:0,corredor:0}; cur.filter(m=>m.tipo==='gasto'&&!m.virt&&m.categoria===RFCAT).forEach(m=>{const t=(m.refTipo==='corredor')?'corredor':'persona'; sg[t]+=crc(m);});
+        const subs=[['persona','Persona (no corredor)'],['corredor','Corredor colega']].filter(([kk])=>sg[kk]>0).map(([kk,lbl])=>`<div class="brk ogsub"><span class="name">${lbl}</span><span class="amt num">${fmtCRC(sg[kk])}</span></div>`).join('');
+        return `<div class="brk og" onclick="toggleRF()"><span class="name"><span class="dot" style="background:${color}"></span>${k} <b class="ogchev">${RFEXP?'▾':'▸'}</b></span><span class="amt" style="color:${color}">${fmtCRC(g[k])}</span></div>${RFEXP?subs:''}`;
+      }
       if(tipo==='gasto'&&k===OGCAT){
         const sg={}; cur.filter(m=>m.tipo==='gasto'&&!m.virt&&m.categoria===OGCAT).forEach(m=>{const s=subcatOf(m); sg[s]=(sg[s]||0)+crc(m);});
         let subs='';
@@ -3668,8 +3683,18 @@ function deletePipe(){if(!pEditId)return;if(confirm('¿Quitar esta propiedad del
 
 /* Cerrar negocio → traslada a transacciones reales */
 let closeId=null;
+function closeRefToggle(){
+  var on=document.getElementById('closeHasRef').checked, b=document.getElementById('closeRefBlock');
+  if(b) b.classList.toggle('hide',!on);
+}
 function openClose(id){
   closeId=id; const p=PIPE.find(x=>x.id===id); if(!p)return;
+  updCorredoresList();
+  document.getElementById('closeHasRef').checked=false;
+  document.getElementById('closeRefTipo').value='persona';
+  document.getElementById('closeRefNombre').value='';
+  document.getElementById('closeRefMonto').value='';
+  closeRefToggle();
   document.getElementById('closeName').textContent=(p.propiedad||p.concepto)+' · '+fmtCRC(crc(p));
   document.getElementById('closeDate').value=isoLocal();
   const dd=diasEnPipe(p);
@@ -3723,10 +3748,19 @@ function confirmClose(){
   if(_precioCierre>0) rec.precioCierre=_precioCierre;
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
   var cpEl=document.getElementById('closePend'); if(cpEl&&cpEl.checked) rec.cobro='pend';
+  var hasRefEl=document.getElementById('closeHasRef');
+  if(hasRefEl&&hasRefEl.checked){
+    rec.refTipo=document.getElementById('closeRefTipo').value;
+    rec.refNombre=document.getElementById('closeRefNombre').value.trim();
+    rec.refMonto=parseFloat(document.getElementById('closeRefMonto').value)||0;
+  }
   DATA.push(rec);
   if(rec.cobro!=='pend' && rec.coloc==='comp' && confirm('Colocación compartida 50/50: ¿registrar también el GASTO del 50% por pago de comisión'+(rec.corredor?' a '+rec.corredor:' al corredor')+'?')){
     const gcat=/venta/i.test(cat)?'Pago de comisiones por ventas':/alquiler/i.test(cat)?'Pago de comisiones por alquileres':/referido/i.test(cat)?'Pago de comisiones por referidos':'Otros gastos de negocio';
     DATA.push({id:newId+1,tipo:'gasto',categoria:gcat,fecha:d,propiedad:p.propiedad||'',detalle:'Comisión compartida 50/50'+(rec.corredor?' · '+rec.corredor:''),moneda:p.moneda,monto:p.monto/2,tc:p.tc,coloc:'comp',corredor:rec.corredor});
+  }
+  if(rec.cobro!=='pend' && rec.refMonto>0){
+    DATA.push({id:newId+3,lid:rec.lid,tipo:'gasto',categoria:'Pago de comisiones por referidos',fecha:d,propiedad:p.propiedad||'',detalle:(rec.refTipo==='corredor'?'Comisión a corredor referidor':'Comisión a referido')+(rec.refNombre?' · '+rec.refNombre:''),moneda:p.moneda,monto:rec.refMonto,tc:p.tc,coloc:rec.coloc,corredor:rec.corredor,refTipo:rec.refTipo});
   }
   PIPE=PIPE.filter(x=>x.id!==closeId);
   var _cs=document.getElementById('closeCitaSel'); var _cid=(_cs&&_cs.options.length)?parseInt(_cs.value):null;
@@ -3911,6 +3945,7 @@ function ownProps(){ const seen={},out=[]; DATA.concat(PIPE).forEach(x=>{ if(x.c
 function citaPropList(){ const seen={},out=[]; DATA.concat(PIPE).concat(CITAS).forEach(x=>{ const p=(x.propiedad||'').trim(); if(p&&!seen[p.toLowerCase()]){seen[p.toLowerCase()]=1;out.push(p);} }); return out.sort((a,b)=>a.localeCompare(b,'es')); }
 function openCita(id,pre){
   pre=pre||{};
+  updCorredoresList();
   document.getElementById('citaEstado').innerHTML=CITA_ESTADOS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('');
   document.getElementById('propsList').innerHTML=citaPropList().map(p=>`<option value="${p.replace(/"/g,'&quot;')}"></option>`).join('');
   if(id){
@@ -4741,6 +4776,12 @@ function printReport(){
         return line;
       }).join('');
       if(ogAdj && ogSub['IVA']==null) row+='<tr><td style="padding-left:22px;color:#888">↳ IVA ajustado <small>(según declarado)</small></td><td class="r"></td><td class="r" style="color:#888">'+fmtCRC(ogAdj)+'</td></tr>';
+    }
+    if(k==='Pago de comisiones por referidos'){
+      var rfSub={persona:0,corredor:0}; cur.forEach(function(m){ if(m.tipo==='gasto'&&!m.virt&&m.categoria===k){ var t=(m.refTipo==='corredor')?'corredor':'persona'; rfSub[t]+=crc(m); } });
+      row+=[['persona','Persona (no corredor)'],['corredor','Corredor colega']].filter(function(p){return rfSub[p[0]]>0;}).map(function(p){
+        return '<tr><td style="padding-left:22px;color:#888">↳ '+p[1]+'</td><td class="r"></td><td class="r" style="color:#888">'+fmtCRC(rfSub[p[0]])+'</td></tr>';
+      }).join('');
     }
     return row;
   }).join('');
