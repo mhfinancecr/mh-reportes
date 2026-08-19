@@ -2695,14 +2695,14 @@ function alqCardBtns(m){
   const hasCitas=CITAS.some(c=>(c.propiedad||'').trim().toLowerCase()===key);
   const hasClosed=!!m.origenPipe || DATA.some(x=>x.origenPipe&&(x.propiedad||'').trim().toLowerCase()===key);
   let b='';
-  if(prop) b+=`<button class="fichabtn" onclick="event.stopPropagation();propFicha('${pe}')">⌂ Historial</button>`;
+  b+=`<button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙ Ficha resumen</button>`;
   if(hasCitas) b+=`<button class="fichabtn" onclick="event.stopPropagation();reporteGestion('${pe}')">📄 Gestión</button>`;
   if(hasClosed) b+=`<button class="fichabtn desemp" onclick="event.stopPropagation();reporteDesempeno('${pe}')">🏆 Desempeño</button>`;
   const menuId='cmnu'+m.id;
   b+=`<div class="cardmenu" style="position:relative;flex:0 0 auto">
     <button class="fichabtn" style="width:44px;flex:0 0 44px" onclick="event.stopPropagation();document.getElementById('${menuId}').classList.toggle('open')">⋯</button>
     <div id="${menuId}" class="cardmenu-pop">
-      <button onclick="event.stopPropagation();fichaPDF(${m.id})">⎙ Ficha resumen</button>
+      ${prop?`<button onclick="event.stopPropagation();propFicha('${pe}')">⌂ Historial</button>`:''}
       <button onclick="event.stopPropagation();reciboPago(${m.id})">🧾 Recibo de pago</button>
     </div>
   </div>`;
@@ -3453,7 +3453,7 @@ function renderManual(){
       <li>Un ingreso de categoría <b>alquiler</b> habilita el contrato: inicio, vencimiento, día de pago, estado, cuota, datos de <b>propietario e inquilino</b> (con cédula) e IBAN.</li>
       <li><b>Estado del contrato:</b> <span class="mok">Vigente</span> · <b style="color:#B5651D">En aviso de salida</b> (el inquilino avisó la salida — ponés la <b>fecha de entrega</b>; sigue contando como activo y sale del semáforo de vencimientos) · <span class="mno">Cancelado</span>. Un recuadro <b>En aviso</b> en la cejilla cuenta y filtra esos contratos.</li>
       <li><b>Recibí el apartamento:</b> en un contrato «En aviso» tocás <b>✓ Recibí el apartamento</b> (antes o después de la fecha) → el contrato pasa a <b>Cancelado</b> y la propiedad <b>vuelve sola al Pipeline</b> para volver a gestionarla, heredando corredor, colocación y precio. El historial se conserva. Si el dueño no te da la correduría de nuevo, la <b>borrás del Pipeline</b>.</li>
-      <li><b>Botones de cada tarjeta:</b> ⌂ Historial · 📄 Gestión · 🏆 Desempeño (los de reporte aparecen según haya citas o cierre) · menú <b>⋯</b> con ⎙ Ficha resumen y 🧾 Recibo de pago.</li>
+      <li><b>Botones de cada tarjeta:</b> ⎙ Ficha resumen · 📄 Gestión · 🏆 Desempeño (los de reporte aparecen según haya citas o cierre) · menú <b>⋯</b> con ⌂ Historial y 🧾 Recibo de pago.</li>
       <li><b>Ficha PDF:</b> contrato, cuota, cédulas, IBAN, aumento por IPC, fotos de inspección (6 por página) y checklist. Solo para tu portafolio (no en "De colega").</li>
       <li><b>Vencimientos:</b> semáforo según la ventana legal de aviso de 3 meses + botón para agregar a tu Calendario de Apple.</li>
       <li>Buscá por propiedad, propietario o inquilino; filtrá por mes/año. El portafolio muestra vigentes, desocupadas y reparto colones/dólares.</li>
