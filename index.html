@@ -1699,6 +1699,8 @@ function renderEjecutivo(){
      <div class="metabar"><div class="fill" style="width:${Math.min(100,pYTD)}%;background:${col}"></div><span class="pct">${pYTD}%</span></div>
      <div class="metainfo"><span><b>${fmtCRC(ytdReal)}</b> cobrado</span><span>· meta YTD ${fmtCRC(metaYTD)}</span></div>
    </div>
+   ${gapToGoalHTML(meta,mk)}
+   ${streakHTML(meta)}
    <div class="section">
      <div class="statstrip" style="flex-wrap:wrap">
        ${card('Cerrado este mes',fmtC(closedThisM.reduce((a,m)=>a+crc(m),0)),closedThisM.length+' cierre(s)','var(--ingreso)')}
@@ -1712,6 +1714,30 @@ function renderEjecutivo(){
    <div class="section" style="cursor:pointer" onclick="go('hoy')">
      <h3>Ver detalle y prioridades del día <span class="small">→</span></h3>
    </div>`;
+}
+function streakHTML(meta){
+  if(!meta) return '';
+  const now=new Date(); let n=0;
+  for(let off=0; off<36; off++){
+    const d=new Date(now.getFullYear(),now.getMonth()-off,1); const k=mkLocal(d); const y=d.getFullYear();
+    const mMeta=metaForYear(y); if(!mMeta) break;
+    const real=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)===k).reduce((a,m)=>a+crc(m),0);
+    if(off===0 && d.getMonth()===now.getMonth() && real < Math.round(mMeta/12) && now.getDate()<28) break; // mes actual aún en curso, no corta racha injustamente
+    if(real >= Math.round(mMeta/12)) n++; else break;
+  }
+  if(n<1) return '';
+  return `<div class="mtip" style="background:var(--ingreso-soft);border-left-color:var(--ingreso);color:var(--paper)">🔥 <b>Racha de ${n} mes${n===1?'':'es'}</b> cumpliendo la meta mensual seguido${n>=3?' — seguí así':''}.</div>`;
+}
+function gapToGoalHTML(meta,mk){
+  if(!meta) return '';
+  const metaMes=Math.round(meta/12);
+  const realMes=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)===mk).reduce((a,m)=>a+crc(m),0);
+  const falta=metaMes-realMes;
+  if(falta<=0) return `<div class="mtip" style="background:var(--ingreso-soft);border-left-color:var(--ingreso);color:var(--paper)">✓ Ya superaste la meta de este mes.</div>`;
+  const closedYear=DATA.filter(m=>m.tipo==='ingreso'&&m.origenPipe&&+m.fecha.slice(0,4)===new Date().getFullYear());
+  const avgTicket=closedYear.length?closedYear.reduce((a,m)=>a+crc(m),0)/closedYear.length:0;
+  const need=avgTicket>0?Math.ceil(falta/avgTicket):null;
+  return `<div class="mtip">📌 Te faltan <b>${fmtCRC(falta)}</b> para la meta de este mes${need?` — a tu ticket promedio (${fmtCRC(Math.round(avgTicket))}), son aprox. <b>${need} cierre${need===1?'':'s'} más</b>`:''}.</div>`;
 }
 function scorecardHTML(){
   const cy=new Date().getFullYear(), now=new Date(), mk=mkLocal(now);
@@ -3461,7 +3487,7 @@ function renderManual(){
     <p>El botón <b>＋ Nuevo</b> crea una transacción desde cualquier pantalla (en Pipeline agrega al pipeline, en Citas agenda una cita). El <b>tema automático</b> usa modo oscuro de 6 pm a 6 am y claro de día.</p>
 
     <div class="mh2"><span>1.1</span> Ejecutivo (Hoy → Ejecutivo)</div>
-    <p>Portada de una sola pantalla, sin scroll, para tu revisión diaria de 30 segundos: barra de <b>meta YTD</b>, 5 tarjetas (cerrado este mes, pipeline activo ponderado, comisiones por cobrar, contratos por vencer, citas de hoy) y un <b>Scorecard balanceado</b> con 4 perspectivas: <b>Financiero</b> (% de meta YTD alcanzada), <b>Cliente</b> (efectividad de citas: cierres ÷ citas efectuadas), <b>Operación</b> (días promedio de gestión hasta cerrar), <b>Crecimiento</b> (variación del alcance en redes vs. el promedio de los 2 meses previos). Cada número cambia de color según su semáforo (verde ≥100%, oro 80-99%, rojo &lt;80%, en la escala propia de cada indicador).</p>
+    <p>Portada de una sola pantalla, sin scroll, para tu revisión diaria de 30 segundos: barra de <b>meta YTD</b>, <b>racha de meses cumpliendo meta</b> (mensajes seguidos con ingreso real ≥ meta mensual, se corta si un mes no llega), <b>qué te falta este mes</b> (monto pendiente para la meta y cuántos cierres más, a tu ticket promedio del año), 5 tarjetas (cerrado este mes, pipeline activo ponderado, comisiones por cobrar, contratos por vencer, citas de hoy) y un <b>Scorecard balanceado</b> con 4 perspectivas: <b>Financiero</b> (% de meta YTD alcanzada), <b>Cliente</b> (efectividad de citas: cierres ÷ citas efectuadas), <b>Operación</b> (días promedio de gestión hasta cerrar), <b>Crecimiento</b> (variación del alcance en redes vs. el promedio de los 2 meses previos). Cada número cambia de color según su semáforo (verde ≥100%, oro 80-99%, rojo &lt;80%, en la escala propia de cada indicador).</p>
 
     <div class="mh2"><span>2.</span> Hoy (centro de mando)</div>
     <p>La pantalla de inicio. <b>No guarda nada nuevo</b>: lee y prioriza lo que ya está en las otras pantallas.</p>
@@ -3509,6 +3535,7 @@ function renderManual(){
 
     <div class="mh2"><span>6.</span> Pipeline (proyección)</div>
     <ul class="mul">
+      <li><b>Salud del pipeline (0-100):</b> aviso arriba de la pantalla, combina 3 señales — % de propiedades con más de 60 días sin cerrar, % del pipeline total ya vencido (+3 meses sin visitas registradas), y cuántas activas llevan 45+ días sin ninguna cita agendada. Semáforo: verde ≥80 (Saludable), oro 55-79 (Atención), rojo &lt;55 (Crítico). Fórmula: <code>100 − %con60días×0.4 − %vencido×0.4 − %sinVisitas45d×0.2</code>.</li>
       <li>Cada negocio en proceso con su comisión y plazo (1/2/3 meses). Suma solo en su casilla de plazo.</li>
       <li><b>Fecha de ingreso editable</b> · <b>⏱ días en gestión</b> en cada ficha · a los 3 meses pasa a <b>Vencido</b>.</li>
       <li><b>Antigüedad (aging):</b> tramos <b>0-30 / 31-60 / 61-90 / +90 días</b> con semáforo verde→rojo, con cantidad y monto — para ver de un vistazo qué reactivar o soltar.</li>
@@ -3680,6 +3707,21 @@ function restoreLost(id){
   persist();render();toast('↩ Devuelto al pipeline');
 }
 
+function pipeHealthHTML(active,venc){
+  if(!active.length && !venc.length) return '';
+  const aging=active.map(p=>daysSince(pipeCreado(p))||0);
+  const oldPct=aging.length?Math.round(aging.filter(d=>d>60).length/aging.length*100):0;
+  const riskN=active.filter(p=>{const d=daysSince(pipeCreado(p))||0; const cs=CITAS.filter(c=>(c.propiedad||'').trim().toLowerCase()===(p.propiedad||'').trim().toLowerCase()); return d>45 && cs.length===0;}).length;
+  const vencPct=(active.length+venc.length)?Math.round(venc.length/(active.length+venc.length)*100):0;
+  let score=100 - oldPct*0.4 - vencPct*0.4 - (active.length?Math.round(riskN/active.length*100):0)*0.2;
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  const col=score>=80?'var(--ingreso)':score>=55?'var(--gold)':'var(--gasto)';
+  const label=score>=80?'Saludable':score>=55?'Atención':'Crítico';
+  return `<div class="mtip" style="background:var(--surface2);border-left-color:${col};color:var(--paper);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <span>⚕︎ <b>Salud del pipeline: <span style="color:${col}">${score}/100 · ${label}</span></b></span>
+    <span style="font-size:11px;color:var(--muted)">${oldPct}% con +60 días · ${vencPct}% vencido · ${riskN} sin visitas en 45+ días</span>
+  </div>`;
+}
 function renderPipeline(){
   const cy=new Date().getFullYear();
   const realInc=DATA.filter(m=>m.tipo==='ingreso'&&+m.fecha.slice(0,4)===cy).reduce((a,m)=>a+crc(m),0);
@@ -3696,6 +3738,7 @@ function renderPipeline(){
   const vencList=[...venc].sort((a,b)=>crc(b)-crc(a));
 
   document.getElementById('view').innerHTML=`
+   ${pipeHealthHTML(active,venc)}
    <div class="pjhero">
      <div class="k">Pipeline por cerrar</div>
      <div class="v num">${fmtCRC(porCerrar)}</div>
