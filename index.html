@@ -886,6 +886,7 @@
   .rep-tbl.small{font-size:10px}
   .rep-tbl .c{color:#777;font-weight:600}
   .rep-foot{margin-top:22px;padding-top:12px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center}
+  .rep-notes{margin-top:16px;padding:10px 13px;background:#F7F8FA;border-radius:8px;font-size:10px;color:#666;line-height:1.5}
   @media print{ thead{display:table-header-group} .rep-tbl tr{page-break-inside:avoid} }
 </style>
 </head>
@@ -1423,6 +1424,22 @@ function fRefTipoChange(){
   if(l) l.textContent=v==='corredor'?'Corredor referidor':'Referido (nombre)';
 }
 function metaForYear(y){ if(SET.metas && SET.metas[y]!=null && SET.metas[y]!=='' && +SET.metas[y]>0) return +SET.metas[y]; if(y===new Date().getFullYear()) return +SET.meta||0; return null; }
+function setMetaYear(y,val){
+  if(!SET.metas)SET.metas={};
+  const prev=SET.metas[y];
+  SET.metas[y]=val;
+  if(!SET.metaHist)SET.metaHist=[];
+  SET.metaHist.push({fecha:isoLocal(),year:y,de:prev||0,a:val});
+  if(SET.metaHist.length>200) SET.metaHist=SET.metaHist.slice(-200);
+}
+function metaVersionsHTML(){
+  const h=(SET.metaHist||[]).slice().reverse().slice(0,12);
+  if(!h.length) return '';
+  const rows=h.map(v=>`<tr><td>${fmtFecha(v.fecha)}</td><td>${v.year}</td><td class="r">${fmtCRC(v.de)} → ${fmtCRC(v.a)}</td></tr>`).join('');
+  return `<div class="section"><h3>Historial de revisiones de meta <span class="small">últimos cambios</span></h3>
+    <table class="rep-tbl" style="width:100%"><thead><tr><th>Fecha</th><th>Año</th><th class="r">Cambio</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
 function metasHistEditor(){
   const cy=new Date().getFullYear();
   const years=[]; for(let y=cy+1;y>=cy-4;y--) years.push(y);
@@ -1431,7 +1448,7 @@ function metasHistEditor(){
   years.sort((a,b)=>b-a);
   return years.map(y=>{
     const v=(SET.metas&&SET.metas[y])||'';
-    return `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12.5px;font-weight:700;width:38px">${y}${y===cy?' •':''}</span><input class="miniInput num" style="width:150px" type="number" value="${v}" placeholder="Sin registrar" onchange="if(!SET.metas)SET.metas={};SET.metas[${y}]=parseFloat(this.value)||0;${y===cy?'SET.meta=SET.metas['+y+'];':''}persist();toast('Meta ${y} guardada');render();"></div>`;
+    return `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12.5px;font-weight:700;width:38px">${y}${y===cy?' •':''}</span><input class="miniInput num" style="width:150px" type="number" value="${v}" placeholder="Sin registrar" onchange="setMetaYear(${y},parseFloat(this.value)||0);${y===cy?'SET.meta=SET.metas['+y+'];':''}persist();toast('Meta ${y} guardada');render();"></div>`;
   }).join('');
 }
 function storageBytesUsed(){ let n=0; try{ for(const k in localStorage){ if(localStorage.hasOwnProperty(k)) n+=(localStorage[k]||'').length+k.length; } }catch(e){} return n; }
@@ -1691,11 +1708,42 @@ function renderEjecutivo(){
        ${card('Citas hoy',citasHoy.length,'',citasHoy.length?'var(--gold)':'var(--muted2)')}
      </div>
    </div>
+   ${scorecardHTML()}
    <div class="section" style="cursor:pointer" onclick="go('hoy')">
      <h3>Ver detalle y prioridades del día <span class="small">→</span></h3>
    </div>`;
 }
-
+function scorecardHTML(){
+  const cy=new Date().getFullYear(), now=new Date(), mk=mkLocal(now);
+  const meta=metaForYear(cy)||0;
+  const ytdMonths=monthsInRange(cy+'-01',mk);
+  const ytdReal=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&ytdMonths.indexOf(mkey(m.fecha))>=0).reduce((a,m)=>a+crc(m),0);
+  const metaYTD=meta?Math.round(meta/12*ytdMonths.length):0;
+  const finPct=metaYTD?Math.round(ytdReal/metaYTD*100):null;
+  const cs=CITAS; const efec=cs.filter(c=>['cerro','espera','nocontinua','rechazopost'].indexOf(c.estado)>=0);
+  const cierres=cs.filter(c=>c.estado==='cerro').length;
+  const clientePct=efec.length?Math.round(cierres/efec.length*100):null;
+  const closedPipe=DATA.filter(m=>m.origenPipe&&m.origenPipe.diasGestion);
+  const avgDias=closedPipe.length?Math.round(closedPipe.reduce((a,m)=>a+(m.origenPipe.diasGestion||0),0)/closedPipe.length):null;
+  const mesesAgo=[1,2].map(off=>{const d=new Date(cy,now.getMonth()-off,1);return mkLocal(d);});
+  const fanPrev=mesesAgo.map(k=>(MKT[k]&&MKT[k].fan)||0).filter(v=>v>0);
+  const fanNow=(MKT[mk]&&MKT[mk].fan)||0;
+  const fanBase=fanPrev.length?fanPrev.reduce((a,b)=>a+b,0)/fanPrev.length:0;
+  const growPct=fanBase?Math.round((fanNow-fanBase)/fanBase*100):null;
+  const row=(icon,label,val,sub,pct)=>{
+    const col=pct==null?'var(--muted2)':pct>=100?'var(--ingreso)':pct>=80?'var(--gold)':'var(--gasto)';
+    return `<div class="stat" style="flex:1 1 160px"><div class="sv num" style="color:${col}">${val}</div><div class="sk">${icon} ${label}</div><div style="font-size:10px;color:var(--muted2);margin-top:2px">${sub}</div></div>`;
+  };
+  return `<div class="section">
+    <h3>Scorecard <span class="small">balanceado · 4 perspectivas</span></h3>
+    <div class="statstrip" style="flex-wrap:wrap">
+      ${row('💰','Financiero',finPct!=null?finPct+'%':'—','Meta YTD alcanzada',finPct)}
+      ${row('🤝','Cliente',clientePct!=null?clientePct+'%':'—','Efectividad de citas',clientePct)}
+      ${row('⚙︎','Operación',avgDias!=null?avgDias+' d':'—','Tiempo promedio de cierre',avgDias!=null?(avgDias<=60?100:avgDias<=90?80:60):null)}
+      ${row('📈','Crecimiento',growPct!=null?(growPct>=0?'+':'')+growPct+'%':'—','Alcance en redes vs. prom. 2m',growPct!=null?(growPct+100):null)}
+    </div>
+  </div>`;
+}
 /* ---------- Vista HOY (centro de mando) ---------- */
 function renderHoy(){
   const today=new Date(); const todayISO=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'); const mk=todayISO.slice(0,7);
@@ -3413,7 +3461,7 @@ function renderManual(){
     <p>El botón <b>＋ Nuevo</b> crea una transacción desde cualquier pantalla (en Pipeline agrega al pipeline, en Citas agenda una cita). El <b>tema automático</b> usa modo oscuro de 6 pm a 6 am y claro de día.</p>
 
     <div class="mh2"><span>1.1</span> Ejecutivo (Hoy → Ejecutivo)</div>
-    <p>Portada de una sola pantalla, sin scroll, para tu revisión diaria de 30 segundos: barra de <b>meta YTD</b>, y 5 tarjetas — cerrado este mes, pipeline activo (ponderado), comisiones por cobrar, contratos por vencer (≤90 días) y citas de hoy. Un enlace lleva al detalle completo en Hoy.</p>
+    <p>Portada de una sola pantalla, sin scroll, para tu revisión diaria de 30 segundos: barra de <b>meta YTD</b>, 5 tarjetas (cerrado este mes, pipeline activo ponderado, comisiones por cobrar, contratos por vencer, citas de hoy) y un <b>Scorecard balanceado</b> con 4 perspectivas: <b>Financiero</b> (% de meta YTD alcanzada), <b>Cliente</b> (efectividad de citas: cierres ÷ citas efectuadas), <b>Operación</b> (días promedio de gestión hasta cerrar), <b>Crecimiento</b> (variación del alcance en redes vs. el promedio de los 2 meses previos). Cada número cambia de color según su semáforo (verde ≥100%, oro 80-99%, rojo &lt;80%, en la escala propia de cada indicador).</p>
 
     <div class="mh2"><span>2.</span> Hoy (centro de mando)</div>
     <p>La pantalla de inicio. <b>No guarda nada nuevo</b>: lee y prioriza lo que ya está en las otras pantallas.</p>
@@ -3504,7 +3552,7 @@ function renderManual(){
     <div class="mh2"><span>9.</span> Reportes (Finanzas → Reportes)</div>
     <p>Hub central de documentos de negocio. <b>No incluye</b> las fichas por propiedad (ficha resumen, gestión, desempeño, recibo) — esas viven en la tarjeta de cada propiedad (Alquileres, Pipeline o Citas).</p>
     <ul class="mul">
-      <li><b>📄 Reporte del período</b> — el más completo. Según el período que elijas arriba, incluye: tarjetas de ingreso/gasto/saldo, gráfico de evolución mensual, tabla mes a mes, <b>ingresos por categoría</b> (venta/alquiler/referido/otro), <b>gastos por categoría</b> (con el desglose de "Otros gastos" en IVA/legal/mantenimiento/cashback), cierres por <b>colocación</b> (propia/50-50/colega), por <b>facturación</b>, por <b>corredor</b>, <b>IVA declarado</b> a Hacienda mes a mes, un resumen del <b>Forecast fiscal</b> (si el período incluye el año en curso), el <b>detalle de cada movimiento</b> y los <b>contratos de alquiler</b> del período. Si activaste los comparativos (año anterior o A vs. B libre), también se agregan.</li>
+      <li><b>📄 Reporte del período</b> — el más completo. Según el período que elijas arriba, incluye: tarjetas de ingreso/gasto/saldo, gráfico de evolución mensual, tabla mes a mes, <b>ingresos por categoría</b> (venta/alquiler/referido/otro), <b>gastos por categoría</b> (con el desglose de "Otros gastos" en IVA/legal/mantenimiento/cashback), cierres por <b>colocación</b> (propia/50-50/colega), por <b>facturación</b>, por <b>corredor</b>, <b>IVA declarado</b> a Hacienda mes a mes, un resumen del <b>Forecast fiscal</b> (si el período incluye el año en curso), un <b>análisis de varianza vs. meta</b> (brecha real vs. meta del período, y si se explica por volumen de cierres o por ticket promedio, comparado contra el mismo período del año anterior), el <b>detalle de cada movimiento</b>, los <b>contratos de alquiler</b> del período y notas de metodología al final. Si activaste los comparativos (año anterior o A vs. B libre), también se agregan.</li>
       <li><b>🏠 Reporte de alquileres</b> — portafolio de contratos: propiedad, estado (vigente/en aviso/cancelado), fechas de inicio y vencimiento, día de pago y cantidad de contratos. Respeta el filtro de mes/año/búsqueda que tengas activo en la pestaña Alquileres.</li>
       <li><b>📚 Histórico por año</b> — el mismo consolidado de Finanzas → Histórico: meta, ingresos brutos, gastos y saldo neto de <b>todos tus años</b> con datos, columna por columna.</li>
       <li><b>📈 Histórico de IPC</b> — lista completa de los índices de inflación del MIVAH que registraste (mes de publicación + % autorizado), para respaldar ante un propietario los aumentos anuales aplicados.</li>
@@ -3517,7 +3565,7 @@ function renderManual(){
       <li><b>Meta vs. alcance por año:</b> una barra por año con lo cobrado real contra la meta vigente ese año (línea punteada), coloreada por cumplimiento (verde ≥100%, oro 80-99%, rojo &lt;80%).</li>
       <li><b>Estacionalidad:</b> promedio de ingresos por mes calendario a través de todos tus años — resalta tus 3 mejores y 3 meses más flojos.</li>
       <li><b>Tabla consolidada:</b> meta, ingresos brutos, gastos, saldo neto y % de meta de cada año; el año en curso añade el Forecast de cierre (bruto/neto) resaltado.</li>
-      <li><b>Editor de metas por año:</b> único lugar para guardar la meta de cada año (pasado, actual o futuro) — así el Resumen compara bien cuando filtrás un año anterior.</li>
+      <li><b>Editor de metas por año:</b> único lugar para guardar la meta de cada año (pasado, actual o futuro) — así el Resumen compara bien cuando filtrás un año anterior. <b>Historial de revisiones:</b> cada vez que cambiás una meta, queda un registro con fecha, año y el cambio (de → a) — para saber cuándo y por qué ajustaste la meta original.</li>
     </ul>
 
     <div class="mh2"><span>10.</span> Forecast fiscal (Finanzas → Forecast)</div>
@@ -3527,6 +3575,9 @@ function renderManual(){
       <li><b>3 niveles:</b> ① Bruto → ② Operativo (antes de impuestos) → ③ Neto (reserva del negocio).</li>
       <li>Cada línea marca <span class="mok">auto</span> (la calcula la app) o <b style="color:#9A6B1E">manual</b> (la llenás vos/tu contador).</li>
     </ul>
+    <div class="mh2"><span>10.1</span> Flujo de caja proyectado (dentro de Forecast)</div>
+    <p>Distinto del Forecast fiscal (que es contable/anual): esto muestra <b>cuándo entra el dinero de verdad</b> mes por mes — mes actual + los 2 siguientes — contra tus gastos fijos, para anticipar meses ajustados de caja. "Entra" suma lo ya cobrado del mes, lo pendiente por cobrar (asignado al mes actual) y el pipeline activo esperado según el plazo (1/2/3 meses) y probabilidad que definiste en cada propiedad. "Sale" son tus gastos fijos mensuales (salario + gastos personales + contador + CCSS). No sustituye tus gastos variables del período.</p>
+    <div class="mf"><code>Entra (mes N)</code> = cobrado real + por cobrar (solo mes actual) + Σ pipeline con plazo=N × probabilidad%</div>
     <div class="mf"><code>① Bruto proyectado</code> = cobrado del año + por cobrar + pipeline ponderado</div>
     <div class="mf"><code>Pipeline ponderado</code> = Σ (comisión esperada × probabilidad%) de cada negocio activo</div>
     <div class="mf"><code>② Operativo</code> = Bruto − gastos de negocio − gastos fijos − provisiones − salario</div>
@@ -4907,6 +4958,8 @@ function printReport(){
       <table class="rep-tbl small"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categor\u00eda</th><th>Propiedad</th><th>Detalle</th><th class="r">Original</th><th class="r">Monto \u20a1</th></tr></thead>
         <tbody>${movs||'<tr><td colspan="7">Sin movimientos en el per\u00edodo</td></tr>'}</tbody></table>
       ${rentHTML}
+      ${varianceHTML(cur,s,months)}
+      <div class="rep-notes"><b>Notas y metodolog\u00eda:</b> Ingresos brutos = comisiones cobradas (excluye \u00abpor cobrar\u00bb). El Forecast asume cobro del 100% del pipeline ponderado por probabilidad y no incluye contingencias. El IVA se calcula al 13% sobre transacciones facturadas y se ajusta seg\u00fan lo efectivamente declarado a Hacienda. Los splits de comisi\u00f3n (colega/referido) reflejan el monto editado en cada transacci\u00f3n, no un % fijo. Cifras en colones (CRC); USD convertido al tipo de cambio registrado en cada movimiento.</div>
       <div class="rep-foot">MH Finance Costa Rica \u00b7 Generado ${new Date().toLocaleDateString('es-CR')} \u00b7 Montos en colones (CRC)</div>
     </div>`;
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+'</style><title>Reporte MH Finance</title></head><body>'+REPORT_INNER+'</body></html>';
@@ -5015,6 +5068,7 @@ function renderHistorico(){
      <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px;line-height:1.5">Guardá la meta que tuviste vigente cada año — así todo lo de arriba compara contra la meta correcta de cada período, no la actual.</p>
      <div style="display:flex;flex-direction:column;gap:6px">${metasHistEditor()}</div>
    </div>
+   ${metaVersionsHTML()}
    <div class="section">
      <h3>Generar reporte PDF</h3>
      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Documento con el consolidado por año, metas y estacionalidad.</p>
@@ -5063,6 +5117,62 @@ function printHistorico(){
   if(!f){f=document.createElement('iframe');f.id='printFrame';f.setAttribute('style','position:fixed;right:0;bottom:0;width:0;height:0;border:0;');document.body.appendChild(f);}
   const fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
   setTimeout(function(){ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ document.getElementById('printArea').innerHTML=INNER; window.print(); } }, 500);
+}
+function varianceHTML(cur,s,months){
+  const cy=new Date().getFullYear();
+  const yrs=[...new Set(months.map(mk=>+mk.slice(0,4)))];
+  const meta=yrs.length===1?metaForYear(yrs[0]):null;
+  const metaPer=meta?Math.round(meta/12*months.length):null;
+  if(!metaPer) return '';
+  const brecha=s.i-metaPer;
+  const nCierres=cur.filter(m=>m.tipo==='ingreso').length;
+  const avgTicket=nCierres?s.i/nCierres:0;
+  // año anterior mismo período para comparar ticket promedio y volumen
+  const py=yrs[0]-1;
+  const pmonths=months.map(mk=>{const[y,m]=mk.split('-');return (+y-1)+'-'+m;});
+  const prevCur=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&pmonths.indexOf(mkey(m.fecha))>=0);
+  const prevN=prevCur.length, prevTot=prevCur.reduce((a,m)=>a+crc(m),0);
+  const prevAvg=prevN?prevTot/prevN:0;
+  const volEfecto=(nCierres-prevN)*prevAvg;
+  const precioEfecto=(avgTicket-prevAvg)*nCierres;
+  const causaTxt = Math.abs(volEfecto)>=Math.abs(precioEfecto)
+    ? (volEfecto>=0?'más volumen de cierres':'menos volumen de cierres')
+    : (precioEfecto>=0?'tickets promedio más altos':'tickets promedio más bajos');
+  return `<h4>Análisis de varianza vs. meta del período</h4>
+    <table class="rep-tbl"><thead><tr><th>Concepto</th><th class="r">Monto</th></tr></thead><tbody>
+    <tr><td>Meta del período</td><td class="r">${fmtCRC(metaPer)}</td></tr>
+    <tr><td>Real cobrado</td><td class="r">${fmtCRC(s.i)}</td></tr>
+    <tr><td>Brecha (real − meta)</td><td class="r" style="color:${brecha>=0?'#15805A':'#B85138'}"><b>${brecha>=0?'+':''}${fmtCRC(brecha)}</b></td></tr>
+    <tr><td>Cierres este período vs. mismo período año anterior</td><td class="r">${nCierres} vs. ${prevN}</td></tr>
+    <tr><td>Ticket promedio este período vs. año anterior</td><td class="r">${fmtCRC(Math.round(avgTicket))} vs. ${fmtCRC(Math.round(prevAvg))}</td></tr>
+    </tbody></table>
+    <p style="font-size:11px;color:#666;margin-top:4px">La brecha se explica principalmente por <b>${causaTxt}</b> respecto al mismo período del año anterior (efecto volumen ${fmtCRC(Math.round(volEfecto))} vs. efecto precio ${fmtCRC(Math.round(precioEfecto))}).</p>`;
+}
+function cashflowHTML(){
+  const now=new Date(), cy=now.getFullYear(), mk=mkLocal(now);
+  const cfg=fcCfg();
+  const fixed=(cfg.sal||0)+(cfg.personal||0)+(cfg.cont||0)+(cfg.ccss||0);
+  const pend=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro==='pend');
+  const pendTot=pend.reduce((a,m)=>a+crc(m),0);
+  const activePipe=PIPE.filter(p=>!isVencido(p));
+  const rows=[0,1,2].map(off=>{
+    const d=new Date(cy,now.getMonth()+off,1); const k=mkLocal(d);
+    const label=MES[d.getMonth()]+' '+d.getFullYear();
+    const cobrCierto = off===0 ? DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk&&m.cobro!=='pend').reduce((a,m)=>a+crc(m),0) : 0;
+    const pendEsteMes = off===0 ? pendTot : 0; // lo pendiente ya vencido, lo esperamos cobrar cuanto antes → lo ponemos en el mes actual
+    const pipeEsperado = activePipe.filter(p=>{const plazo=p.meses||1; return plazo===off+1 || (plazo<=1&&off===0);}).reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0);
+    const entra = cobrCierto + (off===0?pendEsteMes:0) + pipeEsperado;
+    const sale = fixed;
+    const neto = entra - sale;
+    return {label,entra,sale,neto,off};
+  });
+  const trs=rows.map(r=>`<tr><td>${r.label}${r.off===0?' (actual)':''}</td><td class="r" style="color:#15805A">${fmtC(r.entra)}</td><td class="r" style="color:#B85138">${fmtC(r.sale)}</td><td class="r"><b style="color:${r.neto>=0?'#15805A':'#B85138'}">${fmtC(r.neto)}</b></td></tr>`).join('');
+  return `<div class="section">
+    <h3>Flujo de caja proyectado <span class="small">próximos 3 meses</span></h3>
+    <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;line-height:1.5">Cuándo entra el dinero de verdad (cobrado + por cobrar + pipeline esperado por plazo) contra tus gastos fijos mensuales — para anticipar meses ajustados de caja, no solo el resultado contable.</p>
+    <table class="rep-tbl" style="width:100%"><thead><tr><th>Mes</th><th class="r">Entra</th><th class="r">Sale (fijos)</th><th class="r">Neto de caja</th></tr></thead><tbody>${trs}</tbody></table>
+    <p style="font-size:11px;color:var(--muted2);margin-top:8px">"Pipeline esperado" usa el plazo (meses) y probabilidad que definiste en cada propiedad. No incluye gastos variables del período.</p>
+  </div>`;
 }
 function forecastGanchoHTML(){
   const f=fcCompute('anual');
@@ -5130,7 +5240,9 @@ function renderForecast(){
   <div class="section" style="cursor:pointer" onclick="go('historico')">
     <h3>Histórico por año <span class="small">meta · bruto · gastos · saldo · comparación entre años →</span></h3>
     <p style="font-size:12.5px;color:var(--muted);margin:0">Ver la tabla consolidada de todos tus años, el gráfico de meta vs. alcance y la estacionalidad en <b style="color:var(--paper)">Finanzas → Histórico</b>.</p>
-  </div>`;
+  </div>
+
+  ${cashflowHTML()}`;
   fcRecompute();
 }
 
