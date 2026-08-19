@@ -1722,8 +1722,9 @@ function streakHTML(meta){
     const d=new Date(now.getFullYear(),now.getMonth()-off,1); const k=mkLocal(d); const y=d.getFullYear();
     const mMeta=metaForYear(y); if(!mMeta) break;
     const real=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&mkey(m.fecha)===k).reduce((a,m)=>a+crc(m),0);
-    if(off===0 && d.getMonth()===now.getMonth() && real < Math.round(mMeta/12) && now.getDate()<28) break; // mes actual aún en curso, no corta racha injustamente
-    if(real >= Math.round(mMeta/12)) n++; else break;
+    const cumplio = real >= Math.round(mMeta/12);
+    if(off===0 && !cumplio){ continue; } // mes actual en curso y aún no llega — no cuenta, pero tampoco corta la racha de meses ya cerrados
+    if(cumplio) n++; else break;
   }
   if(n<1) return '';
   return `<div class="mtip" style="background:var(--ingreso-soft);border-left-color:var(--ingreso);color:var(--paper)">🔥 <b>Racha de ${n} mes${n===1?'':'es'}</b> cumpliendo la meta mensual seguido${n>=3?' — seguí así':''}.</div>`;
