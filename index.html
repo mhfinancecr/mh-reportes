@@ -821,6 +821,11 @@
   html[data-theme="dark"] .fichabtn.recibo{color:var(--paper)}
   .fichabtn:hover{border-color:var(--gold);background:var(--gold-soft)}
   .fichabtn:active{background:#F1E4CF}
+  .cardmenu-pop{display:none;position:absolute;right:0;bottom:calc(100% + 6px);background:var(--surface);border:1px solid var(--line2);border-radius:10px;box-shadow:var(--shadow);z-index:20;min-width:170px;overflow:hidden}
+  .cardmenu-pop.open{display:block}
+  .cardmenu-pop button{display:block;width:100%;text-align:left;background:none;border:0;padding:11px 13px;font-size:12.5px;font-weight:600;color:var(--paper);border-bottom:1px solid var(--line)}
+  .cardmenu-pop button:last-child{border-bottom:0}
+  .cardmenu-pop button:hover{background:var(--gold-soft)}
   .cuotaup{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:600;color:var(--ingreso);margin-left:4px}
   /* Tarjeta IPC */
   .ipccard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
@@ -1608,13 +1613,13 @@ function swapCmp(){const d=CMP.aD,h=CMP.aH;CMP.aD=CMP.bD;CMP.aH=CMP.bH;CMP.bD=d;
 /* ---------- Navegación (5 grupos con sub-pestañas) ---------- */
 let CURRENT='hoy';
 const NAVGROUPS=[
-  ['hoy','Hoy',['hoy']],
-  ['finanzas','Finanzas',['resumen','graficos','movimientos','reportes','forecast','historico']],
+  ['hoy','Hoy',['hoy','ejecutivo']],
+  ['finanzas','Finanzas',['resumen','movimientos','reportes','forecast','historico']],
   ['negocio','Negocio',['pipeline','citas','embudo']],
   ['alquileres','Alquileres',['alquileres']],
   ['mas','Más',['coaching','asistente','ajustes','manual']]
 ];
-const SUBLABEL={resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',historico:'Histórico',pipeline:'Pipeline',citas:'Citas',embudo:'Marketing',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
+const SUBLABEL={hoy:'Hoy',ejecutivo:'Ejecutivo',resumen:'Resumen',graficos:'Gráficos',movimientos:'Movim.',reportes:'Reportes',forecast:'Forecast',historico:'Histórico',pipeline:'Pipeline',citas:'Citas',embudo:'Marketing',coaching:'Coaching',asistente:'Asistente',ajustes:'Ajustes',manual:'Manual'};
 const SCREENGROUP={}; NAVGROUPS.forEach(g=>g[2].forEach(s=>SCREENGROUP[s]=g[0]));
 const LASTSCREEN={hoy:'hoy',finanzas:'resumen',negocio:'pipeline',alquileres:'alquileres',mas:'coaching'};
 function go(v){
@@ -1624,6 +1629,7 @@ function go(v){
   render(); window.scrollTo(0,0);
 }
 function goGroup(grp){ go(LASTSCREEN[grp] || (NAVGROUPS.find(g=>g[0]===grp)||[])[2][0] || 'hoy'); }
+document.addEventListener('click',function(e){ if(!e.target.closest('.cardmenu')) document.querySelectorAll('.cardmenu-pop.open').forEach(function(el){el.classList.remove('open');}); });
 function subTabsHTML(){
   const grp=SCREENGROUP[CURRENT]; const g=NAVGROUPS.find(x=>x[0]===grp);
   if(!g || g[2].length<2) return '';
@@ -1633,6 +1639,7 @@ function subTabsHTML(){
 function render(){
   try{var gd=document.getElementById('gearDot'); if(gd)gd.classList.toggle('hide',!backupOverdue());}catch(e){}
   if(CURRENT==='hoy') renderHoy();
+  else if(CURRENT==='ejecutivo') renderEjecutivo();
   else if(CURRENT==='resumen') renderResumen();
   else if(CURRENT==='graficos') renderGraficos();
   else if(CURRENT==='movimientos') renderMovs();
@@ -1648,6 +1655,45 @@ function render(){
   else if(CURRENT==='manual') renderManual();
   else renderAjustes();
   try{ const bar=subTabsHTML(); if(bar) document.getElementById('view').insertAdjacentHTML('afterbegin',bar); }catch(e){}
+}
+
+/* ---------- Vista EJECUTIVO (portada de una sola pantalla) ---------- */
+function renderEjecutivo(){
+  const cy=new Date().getFullYear(), now=new Date(), mk=mkLocal(now);
+  const meta=metaForYear(cy)||0;
+  const ytdMonths=monthsInRange(cy+'-01',mk);
+  const ytdReal=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro!=='pend'&&ytdMonths.indexOf(mkey(m.fecha))>=0).reduce((a,m)=>a+crc(m),0);
+  const metaYTD=meta?Math.round(meta/12*ytdMonths.length):0;
+  const pYTD=metaYTD?Math.round(ytdReal/metaYTD*100):0;
+  const pend=DATA.filter(m=>m.tipo==='ingreso'&&m.cobro==='pend');
+  const pendTot=pend.reduce((a,m)=>a+crc(m),0);
+  const activePipe=PIPE.filter(p=>!isVencido(p));
+  const pipePond=activePipe.reduce((a,p)=>a+crc(p)*((p.prob??100)/100),0);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const vencSoon=DATA.filter(m=>{const a=m.alquiler; if(!a||!a.vencimiento||a.estado==='cancelado')return false; const v=new Date(a.vencimiento+'T00:00:00'); const d=Math.round((v-today)/86400000); return d<=90;});
+  const citasHoy=CITAS.filter(c=>c.fecha===isoLocal());
+  const closedThisM=DATA.filter(m=>m.tipo==='ingreso'&&mkey(m.fecha)===mk&&m.origenPipe);
+  const col=pYTD>=100?'var(--ingreso)':pYTD>=80?'var(--gold)':'var(--gasto)';
+  const card=(label,val,sub,color)=>`<div class="stat" style="flex:1 1 150px"><div class="sv num" style="color:${color||'var(--paper)'}">${val}</div><div class="sk">${label}</div>${sub?`<div style="font-size:10.5px;color:var(--muted2);margin-top:2px">${sub}</div>`:''}</div>`;
+  document.getElementById('view').innerHTML=`
+   <div class="fcbanner">🎯 <b>Ejecutivo</b> · lo esencial de hoy, sin scroll — para tu revisión diaria de 30 segundos.</div>
+   <div class="section">
+     <h3>Meta ${cy} <span class="small">a la fecha (YTD)</span></h3>
+     <div class="metabar"><div class="fill" style="width:${Math.min(100,pYTD)}%;background:${col}"></div><span class="pct">${pYTD}%</span></div>
+     <div class="metainfo"><span><b>${fmtCRC(ytdReal)}</b> cobrado</span><span>· meta YTD ${fmtCRC(metaYTD)}</span></div>
+   </div>
+   <div class="section">
+     <div class="statstrip" style="flex-wrap:wrap">
+       ${card('Cerrado este mes',fmtC(closedThisM.reduce((a,m)=>a+crc(m),0)),closedThisM.length+' cierre(s)','var(--ingreso)')}
+       ${card('Pipeline activo',fmtC(pipePond),activePipe.length+' propiedades · ponderado','var(--gold)')}
+       ${card('Por cobrar',fmtC(pendTot),pend.length+' comisión(es)',pend.length?'var(--gasto)':'var(--muted2)')}
+       ${card('Contratos por vencer',vencSoon.length,'≤ 90 días',vencSoon.length?'var(--gasto)':'var(--muted2)')}
+       ${card('Citas hoy',citasHoy.length,'',citasHoy.length?'var(--gold)':'var(--muted2)')}
+     </div>
+   </div>
+   <div class="section" style="cursor:pointer" onclick="go('hoy')">
+     <h3>Ver detalle y prioridades del día <span class="small">→</span></h3>
+   </div>`;
 }
 
 /* ---------- Vista HOY (centro de mando) ---------- */
@@ -1815,7 +1861,11 @@ function renderResumen(){
     </div>
   </div>
 
-  ${forecastGanchoHTML()}`;
+  ${forecastGanchoHTML()}
+  <div class="section" style="cursor:pointer" onclick="go('graficos')">
+    <h3>Gráficos y estacionalidad <span class="small">evolución mensual, comparativos, meta por año →</span></h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:0">Ver evolución mensual, comparación año contra año y estacionalidad completa.</p>
+  </div>`;
   foldApply();
 }
 
@@ -2648,8 +2698,14 @@ function alqCardBtns(m){
   if(prop) b+=`<button class="fichabtn" onclick="event.stopPropagation();propFicha('${pe}')">⌂ Historial</button>`;
   if(hasCitas) b+=`<button class="fichabtn" onclick="event.stopPropagation();reporteGestion('${pe}')">📄 Gestión</button>`;
   if(hasClosed) b+=`<button class="fichabtn desemp" onclick="event.stopPropagation();reporteDesempeno('${pe}')">🏆 Desempeño</button>`;
-  b+=`<button class="fichabtn" onclick="event.stopPropagation();fichaPDF(${m.id})">⎙ Ficha resumen</button>`;
-  b+=`<button class="fichabtn recibo" onclick="event.stopPropagation();reciboPago(${m.id})">🧾 Recibo de pago</button>`;
+  const menuId='cmnu'+m.id;
+  b+=`<div class="cardmenu" style="position:relative;flex:0 0 auto">
+    <button class="fichabtn" style="width:44px;flex:0 0 44px" onclick="event.stopPropagation();document.getElementById('${menuId}').classList.toggle('open')">⋯</button>
+    <div id="${menuId}" class="cardmenu-pop">
+      <button onclick="event.stopPropagation();fichaPDF(${m.id})">⎙ Ficha resumen</button>
+      <button onclick="event.stopPropagation();reciboPago(${m.id})">🧾 Recibo de pago</button>
+    </div>
+  </div>`;
   return b;
 }
 let RENTQ='', RENTCRIT='todos', RENTMONTH=null, RENTVENC='', RENTAVISO=false;
@@ -3348,13 +3404,16 @@ function renderManual(){
     <p>La barra inferior tiene <b>5 botones</b>. Los que agrupan varias pantallas muestran un <b>control segmentado</b> arriba para cambiar entre ellas. Arriba, junto al botón «+», el ícono <b>🔍</b> abre una <b>búsqueda global</b>: escribís y salen coincidencias de propiedades, clientes/citas y corredores — tocás el resultado y saltás directo a la ficha o pantalla correspondiente.</p>
     <p>En <b>Ajustes → Notificaciones</b> podés activar alertas del sistema (banner nativo del dispositivo): al abrir la app, si hay contratos en ventana de aviso, aniversarios de IPC del mes o seguimientos de citas sin avanzar 5+ días, te llega una notificación (máximo una por día). Requiere dar permiso una vez; si el dispositivo lo bloquea, hay que habilitarlo desde Ajustes de Safari/iOS.</p>
     <table class="mtbl">
-      <tr><td>◈ Hoy</td><td>Centro de mando del día. Es la pantalla de inicio.</td></tr>
-      <tr><td>₡ Finanzas</td><td><b>Resumen</b> · <b>Gráficos</b> · <b>Movim.</b> · <b>Reportes</b>.</td></tr>
+      <tr><td>◈ Hoy</td><td><b>Hoy</b> (centro de mando del día, pantalla de inicio) · <b>Ejecutivo</b> (portada de una sola pantalla con los números clave, sin scroll).</td></tr>
+      <tr><td>₡ Finanzas</td><td><b>Resumen</b> (incluye enlace a Gráficos) · <b>Movim.</b> · <b>Reportes</b> · <b>Forecast</b> · <b>Histórico</b>.</td></tr>
       <tr><td>⇗ Negocio</td><td><b>Pipeline</b> · <b>Citas</b>. No afectan las cifras reales.</td></tr>
       <tr><td>⌂ Alquil.</td><td>Contratos: estado, vencimientos, día de pago, IPC, ficha PDF, recibo.</td></tr>
       <tr><td>⋯ Más</td><td><b>Coaching</b> · <b>Asistente</b> (IA) · <b>Ajustes</b> · <b>Manual</b>. El engranaje ⚙︎ también abre Ajustes.</td></tr>
     </table>
     <p>El botón <b>＋ Nuevo</b> crea una transacción desde cualquier pantalla (en Pipeline agrega al pipeline, en Citas agenda una cita). El <b>tema automático</b> usa modo oscuro de 6 pm a 6 am y claro de día.</p>
+
+    <div class="mh2"><span>1.1</span> Ejecutivo (Hoy → Ejecutivo)</div>
+    <p>Portada de una sola pantalla, sin scroll, para tu revisión diaria de 30 segundos: barra de <b>meta YTD</b>, y 5 tarjetas — cerrado este mes, pipeline activo (ponderado), comisiones por cobrar, contratos por vencer (≤90 días) y citas de hoy. Un enlace lleva al detalle completo en Hoy.</p>
 
     <div class="mh2"><span>2.</span> Hoy (centro de mando)</div>
     <p>La pantalla de inicio. <b>No guarda nada nuevo</b>: lee y prioriza lo que ya está en las otras pantallas.</p>
@@ -3394,7 +3453,7 @@ function renderManual(){
       <li>Un ingreso de categoría <b>alquiler</b> habilita el contrato: inicio, vencimiento, día de pago, estado, cuota, datos de <b>propietario e inquilino</b> (con cédula) e IBAN.</li>
       <li><b>Estado del contrato:</b> <span class="mok">Vigente</span> · <b style="color:#B5651D">En aviso de salida</b> (el inquilino avisó la salida — ponés la <b>fecha de entrega</b>; sigue contando como activo y sale del semáforo de vencimientos) · <span class="mno">Cancelado</span>. Un recuadro <b>En aviso</b> en la cejilla cuenta y filtra esos contratos.</li>
       <li><b>Recibí el apartamento:</b> en un contrato «En aviso» tocás <b>✓ Recibí el apartamento</b> (antes o después de la fecha) → el contrato pasa a <b>Cancelado</b> y la propiedad <b>vuelve sola al Pipeline</b> para volver a gestionarla, heredando corredor, colocación y precio. El historial se conserva. Si el dueño no te da la correduría de nuevo, la <b>borrás del Pipeline</b>.</li>
-      <li><b>Botones de cada tarjeta:</b> ⌂ Historial · 📄 Gestión · 🏆 Desempeño · ⎙ Ficha resumen · 🧾 Recibo de pago (los de reporte aparecen según haya citas o cierre).</li>
+      <li><b>Botones de cada tarjeta:</b> ⌂ Historial · 📄 Gestión · 🏆 Desempeño (los de reporte aparecen según haya citas o cierre) · menú <b>⋯</b> con ⎙ Ficha resumen y 🧾 Recibo de pago.</li>
       <li><b>Ficha PDF:</b> contrato, cuota, cédulas, IBAN, aumento por IPC, fotos de inspección (6 por página) y checklist. Solo para tu portafolio (no en "De colega").</li>
       <li><b>Vencimientos:</b> semáforo según la ventana legal de aviso de 3 meses + botón para agregar a tu Calendario de Apple.</li>
       <li>Buscá por propiedad, propietario o inquilino; filtrá por mes/año. El portafolio muestra vigentes, desocupadas y reparto colones/dólares.</li>
