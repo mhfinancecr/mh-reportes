@@ -301,6 +301,18 @@
   .proplink{display:inline-block;margin-top:7px;background:none;border:none;font:inherit;font-size:12px;font-weight:600;color:var(--paper);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
   .searchbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:16px;cursor:pointer;flex:0 0 auto;color:var(--paper)}
   .searchbtn:active{background:var(--surface2)}
+  .calcbtn{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:16px;cursor:pointer;flex:0 0 auto;color:var(--paper);position:relative}
+  .calcbtn:active{background:var(--surface2)}
+  .calcpanel{position:fixed;top:64px;right:14px;width:260px;background:var(--surface);border:1px solid var(--line2);border-radius:14px;box-shadow:var(--shadow);z-index:500;padding:14px;display:none}
+  .calcpanel.open{display:block}
+  .calcpanel .cdisp{width:100%;box-sizing:border-box;font-size:22px;font-weight:700;text-align:right;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--paper);margin-bottom:10px;font-family:inherit}
+  .calcpanel .cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .calcpanel .cgrid button{padding:12px 0;border-radius:9px;border:1px solid var(--line);background:var(--surface2);color:var(--paper);font-size:15px;font-weight:600;cursor:pointer}
+  .calcpanel .cgrid button:active{background:var(--gold-soft)}
+  .calcpanel .cgrid button.op{color:var(--gold)}
+  .calcpanel .cgrid button.eq{background:var(--gold);color:#fff;grid-column:span 2}
+  .calcpanel .chdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;font-weight:700;color:var(--muted)}
+  .calcpanel .chdr button{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0}
   .searchrow{padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-size:14.5px;color:var(--paper)}
   .searchrow:active{background:var(--surface2)}
   .searchrow small{color:var(--muted);font-size:12px}
@@ -908,12 +920,24 @@
   </div>
   <button class="addbtn" onclick="fabAdd()">＋ Nuevo</button>
   <button class="searchbtn" onclick="openSearch()" aria-label="Buscar">🔍</button>
+  <button class="calcbtn" onclick="toggleCalc()" aria-label="Calculadora">🧮</button>
   <button class="gearbtn" onclick="go('ajustes')">⚙︎<span class="bdot hide" id="gearDot"></span></button>
 </header>
 
 <main id="view"></main>
 
 <!-- BÚSQUEDA GLOBAL -->
+<div class="calcpanel" id="calcPanel">
+  <div class="chdr"><span>🧮 Calculadora</span><button onclick="toggleCalc()">✕</button></div>
+  <input class="cdisp" id="calcDisp" readonly value="0">
+  <div class="cgrid">
+    <button onclick="calcPress('C')">C</button><button onclick="calcPress('±')">±</button><button onclick="calcPress('%')" class="op">%</button><button onclick="calcPress('÷')" class="op">÷</button>
+    <button onclick="calcPress('7')">7</button><button onclick="calcPress('8')">8</button><button onclick="calcPress('9')">9</button><button onclick="calcPress('×')" class="op">×</button>
+    <button onclick="calcPress('4')">4</button><button onclick="calcPress('5')">5</button><button onclick="calcPress('6')">6</button><button onclick="calcPress('−')" class="op">−</button>
+    <button onclick="calcPress('1')">1</button><button onclick="calcPress('2')">2</button><button onclick="calcPress('3')">3</button><button onclick="calcPress('+')" class="op">+</button>
+    <button onclick="calcPress('0')" style="grid-column:span 2">0</button><button onclick="calcPress('.')">.</button><button onclick="calcPress('=')" class="eq" style="grid-column:span 1">=</button>
+  </div>
+</div>
 <div class="overlay" id="searchOverlay">
   <div class="sheet" style="max-height:82vh">
     <div class="grab"></div>
@@ -1419,6 +1443,30 @@ const MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','
 const crc = m => { const base = m.monto + ((m.tipo==='ingreso'&&m.factura==='si')?(+m.iva||0):0); return m.moneda==='USD' ? base*m.tc : base; };  // valor en colones (ingreso facturado = bruto con IVA)
 const mkey = f => f.slice(0,7);                                       // "YYYY-MM"
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+let CALC={cur:'0',prev:null,op:null,resetNext:false};
+function toggleCalc(){ document.getElementById('calcPanel').classList.toggle('open'); }
+function calcRender(){ document.getElementById('calcDisp').value=CALC.cur; }
+function calcPress(k){
+  const c=CALC;
+  if(k==='C'){ CALC={cur:'0',prev:null,op:null,resetNext:false}; calcRender(); return; }
+  if(k==='±'){ c.cur=(parseFloat(c.cur)*-1).toString(); calcRender(); return; }
+  if(k==='%'){ c.cur=(parseFloat(c.cur)/100).toString(); calcRender(); return; }
+  if(['÷','×','−','+'].indexOf(k)>=0){ c.prev=parseFloat(c.cur); c.op=k; c.resetNext=true; return; }
+  if(k==='='){
+    if(c.op!=null && c.prev!=null){
+      const b=parseFloat(c.cur); let r=c.prev;
+      if(c.op==='+') r=c.prev+b; else if(c.op==='−') r=c.prev-b; else if(c.op==='×') r=c.prev*b; else if(c.op==='÷') r=b!==0?c.prev/b:0;
+      c.cur=(Math.round(r*100)/100).toString(); c.prev=null; c.op=null; c.resetNext=true;
+      calcRender();
+    }
+    return;
+  }
+  if(k==='.'){ if(c.resetNext){c.cur='0.';c.resetNext=false;} else if(c.cur.indexOf('.')<0) c.cur+='.'; calcRender(); return; }
+  // dígito
+  if(c.resetNext || c.cur==='0'){ c.cur=k; c.resetNext=false; } else { c.cur+=k; }
+  calcRender();
+}
+document.addEventListener('click',function(e){ if(!e.target.closest('.calcpanel') && !e.target.closest('.calcbtn')) document.getElementById('calcPanel').classList.remove('open'); });
 function fRefTipoChange(){
   var v=document.getElementById('fRefTipo').value, l=document.getElementById('fRefNombreLbl');
   if(l) l.textContent=v==='corredor'?'Corredor referidor':'Referido (nombre)';
