@@ -1447,10 +1447,11 @@ function toast(t){const e=document.getElementById('toast');e.textContent=t;e.cla
    así que en iPhone/iPad se imprime el contenido inyectado en #printArea. */
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
 window.addEventListener('afterprint',function(){ var pa=document.getElementById('printArea'); if(pa) pa.innerHTML=''; });
-function printDoc(doc, inner){
+function printDoc(doc, inner, css){
+  var sheet=css||REP_CSS;
   if(isIOS()){
     var pa=document.getElementById('printArea');
-    pa.innerHTML='<style media="print">'+REP_CSS+'</style>'+inner;
+    pa.innerHTML='<style media="print">'+sheet+'</style>'+inner;
     setTimeout(function(){ window.print(); }, 350);
     return;
   }
@@ -1459,7 +1460,7 @@ function printDoc(doc, inner){
   var fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
   setTimeout(function(){
     try{ f.contentWindow.focus(); f.contentWindow.print(); }
-    catch(e){ var pa=document.getElementById('printArea'); pa.innerHTML='<style media="print">'+REP_CSS+'</style>'+inner; window.print(); }
+    catch(e){ var pa=document.getElementById('printArea'); pa.innerHTML='<style media="print">'+sheet+'</style>'+inner; window.print(); }
   }, 500);
 }
 let CALC={cur:'0',prev:null,op:null,resetNext:false};
@@ -2524,8 +2525,8 @@ function seasonalityHTML(){
     <h3>Estacionalidad <span class="small">promedio hist\u00f3rico por mes \u00b7 ${years.size} a\u00f1o${years.size===1?'':'s'}</span></h3>
     <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.5">Promedio de ingresos de cada mes calendario a lo largo de tu historial completo \u2014 te muestra en qu\u00e9 meses sol\u00e9s cerrar m\u00e1s y en cu\u00e1les menos, para planear tu esfuerzo comercial.</p>
     <div style="display:flex;gap:4px;align-items:flex-end;margin-bottom:14px">${bars}</div>
-    ${topTxt?`<div class="mtip" style="background:var(--panel2);border-left-color:var(--ingreso);color:var(--paper)">\ud83d\udcc8 Tus mejores meses hist\u00f3ricamente: <b style="color:var(--ingreso)">${topTxt}</b></div>`:''}
-    ${botTxt?`<div class="mtip" style="background:var(--panel2);border-left-color:var(--gasto);color:var(--paper);margin-top:8px">\ud83d\udcc9 Tus meses m\u00e1s flojos: <b style="color:var(--gasto)">${botTxt}</b> \u2014 reforz\u00e1 prospecci\u00f3n y marketing en esos meses.</div>`:''}
+    ${topTxt?`<div class="mtip" style="background:var(--surface2);border-left-color:var(--ingreso);color:var(--paper)">\ud83d\udcc8 Tus mejores meses hist\u00f3ricamente: <b style="color:var(--ingreso)">${topTxt}</b></div>`:''}
+    ${botTxt?`<div class="mtip" style="background:var(--surface2);border-left-color:var(--gasto);color:var(--paper);margin-top:8px">\ud83d\udcc9 Tus meses m\u00e1s flojos: <b style="color:var(--gasto)">${botTxt}</b> \u2014 reforz\u00e1 prospecci\u00f3n y marketing en esos meses.</div>`:''}
   </div>`;
 }
 
@@ -3062,7 +3063,7 @@ function fichaPDF(id){
     +fotoBlock
     +'<div class="rep-foot">MH Finance Costa Rica \u00b7 Ficha generada '+new Date().toLocaleDateString('es-CR')+'</div></div>';
   var doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+'</style><title>Ficha '+(m.propiedad||'alquiler')+'</title></head><body>'+INNER+'</body></html>';
-  printDoc(doc, INNER);
+  printDoc(doc, INNER, REP_CSS+FICHA_CSS);
 }
 
 /* ---------- Formulario ---------- */
@@ -4561,7 +4562,7 @@ function reporteGestion(prop){
     +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
     +'<div class="rep-foot">MH Finance Costa Rica · Reporte de gestión generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
   const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+GEST_CSS+'</style><title>Gestión '+prop+'</title></head><body>'+INNER+'</body></html>';
-  printDoc(doc, INNER);
+  printDoc(doc, INNER, REP_CSS+FICHA_CSS+GEST_CSS);
 }
 
 /* ----- Reporte de desempeño / cierre (PDF para el propietario) ----- */
@@ -4628,7 +4629,7 @@ function reporteDesempeno(prop){
     +'<div class="gstate">Estado comercial: <b>'+estadoTxt+'</b></div>'
     +'<div class="rep-foot">MH Finance Costa Rica · Reporte de desempeño generado '+new Date().toLocaleDateString('es-CR')+' · Documento de respaldo de la gestión inmobiliaria</div></div>';
   const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+FICHA_CSS+DESEMP_CSS+'</style><title>Desempeño '+prop+'</title></head><body>'+INNER+'</body></html>';
-  printDoc(doc, INNER);
+  printDoc(doc, INNER, REP_CSS+FICHA_CSS+DESEMP_CSS);
 }
 
 /* ----- Recibo de pago de comisión (PDF para el propietario) ----- */
@@ -4692,7 +4693,7 @@ function genRecibo(id, fechaPago){
     +'<div class="rep-foot">MH Finance Costa Rica · Recibo emitido el '+hoy+'</div>'
     +'</div></div>';
   const doc='<!DOCTYPE html><html lang="es-CR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><style>'+REP_CSS+REC_CSS+'</style><title>Recibo '+num+'</title></head><body>'+INNER+'</body></html>';
-  printDoc(doc, INNER);
+  printDoc(doc, INNER, REP_CSS+REC_CSS);
 }
 
 /* ====================== COACHING MENSUAL (buenas prácticas · vía Claude Pro) ====================== */
