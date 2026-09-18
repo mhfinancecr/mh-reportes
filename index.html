@@ -1202,8 +1202,17 @@
     </div>
     <div class="formrow">
       <label id="pLblPrecio">Precio publicado <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
-      <input type="number" id="pPrecioLista" inputmode="decimal" placeholder="0">
+      <div style="display:flex;gap:8px">
+        <input type="number" id="pPrecioLista" inputmode="decimal" placeholder="0" style="flex:1">
+        <select id="pPrecioMon" style="flex:0 0 92px"><option value="CRC">₡ CRC</option><option value="USD">$ USD</option></select>
+      </div>
       <div class="fotonote" id="pPrecioNote">Precio de venta, o renta mensual si es alquiler. Sirve para mostrarle al dueño qué % del precio pedido lograste al cerrar.</div>
+    </div>
+    <div class="formrow">
+      <label>Ajustes de precio <small style="font-weight:500;text-transform:none;letter-spacing:0">· rebajas autorizadas por el dueño</small></label>
+      <div id="pPriceHistList"></div>
+      <button type="button" class="ghostbtn" style="width:100%;margin-top:6px" onclick="pAddPriceAdj()">＋ Registrar ajuste de precio</button>
+      <div class="fotonote">Cada rebaja queda con su fecha. Sale en los reportes al propietario como respaldo de la estrategia de precio.</div>
     </div>
     <div class="formrow">
       <label>Probabilidad de cierre</label>
@@ -1235,7 +1244,10 @@
     </div>
     <div class="formrow">
       <label id="closePrecioLbl">Precio de cierre <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small></label>
-      <input type="number" id="closePrecio" inputmode="decimal" placeholder="0">
+      <div style="display:flex;gap:8px">
+        <input type="number" id="closePrecio" inputmode="decimal" placeholder="0" style="flex:1">
+        <select id="closePrecioMon" style="flex:0 0 92px" onchange="closePrecioMonChange()"><option value="CRC">₡ CRC</option><option value="USD">$ USD</option></select>
+      </div>
       <div id="closePrecioCmp" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
     </div>
     <p id="closeDias" style="font-size:12.5px;color:var(--muted);margin:-4px 0 12px"></p>
@@ -2383,10 +2395,14 @@ function propFicha(name){
   const isAlqProp=(txClosed&&(isAlquilerCat(txClosed.categoria)||/alquiler/i.test((txClosed.origenPipe||{}).concepto||'')))||(pipes[0]&&/alquiler/i.test(pipes[0].concepto||''));
   const pSuf=isAlqProp?'/mes':'';
   let priceLine='';
-  if(listP>0){
-    const pr=closeP>0?Math.round(closeP/listP*100):null;
-    const prCol=pr===null?'var(--muted)':(pr>=98?'var(--ingreso)':(pr>=92?'var(--gold)':'var(--gasto)'));
-    priceLine=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span style="color:var(--muted)">${isAlqProp?'Precio de alquiler':'Precio de venta'}</span><span class="num" style="color:var(--paper);font-weight:700">${listP.toLocaleString('es-CR')}${pSuf}${closeP>0?` <span style="color:var(--muted2);font-weight:500">→</span> ${closeP.toLocaleString('es-CR')}${pSuf} <b style="color:${prCol}">(${pr}%)</b>`:' <small style="color:var(--muted2)">publicado</small>'}</span></div>`;
+  {
+    const _fpj=priceJourney(txClosed,pipes[0],isAlqProp);
+    if(_fpj.has){
+      const prCol=_fpj.pct===null?'var(--muted)':(_fpj.pct>=98?'var(--ingreso)':(_fpj.pct>=92?'var(--gold)':'var(--gasto)'));
+      priceLine=_fpj.rows.map(function(r){
+        return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px"><span style="color:var(--muted)">${r.lab}${r.fecha?` <small style="color:var(--muted2)">${fmtFecha(r.fecha)}</small>`:''}</span><span class="num" style="color:var(--paper);font-weight:700">${r.val}${r.final&&_fpj.pct!==null?` <b style="color:${prCol}">(${_fpj.pct}%)</b>`:''}</span></div>`;
+      }).join('');
+    }
   }
   document.getElementById('propSheet').innerHTML=`<div class="grab"></div>
     <h2 style="font-family:'Newsreader',serif;font-size:21px;margin:8px 0 2px">⌂ ${name}</h2>
@@ -3912,17 +3928,42 @@ function openPipe(id){
     pSetProb(p.prob??100); pSetMeses(p.meses||1);
     document.getElementById('pCreado').value=pipeCreado(p);
     document.getElementById('pPrecioLista').value=p.precioLista||'';
+    document.getElementById('pPrecioMon').value=p.precioListaMon||p.moneda||'CRC';
+    pPriceHist=(p.precioHist||[]).map(function(x){return {fecha:x.fecha,monto:x.monto,mon:x.mon||'CRC'};});
     pCover=p.foto||'';
   } else {
     ['pProp','pDet','pMonto','pTC','pCorredor','pPrecioLista'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('pCreado').value=isoLocal();
+    document.getElementById('pPrecioMon').value='CRC';
+    pPriceHist=[];
     pSetMon('CRC'); pSetProb(75); pSetMeses(1); pSetColoc('propia');
     pCover='';
   }
+  pRenderPriceHist();
   pPrecioLbl();
   renderCover('p');
 }
 function closePipe(){document.getElementById('poverlay').classList.remove('open');}
+let pPriceHist=[];
+function pAddPriceAdj(){
+  const cur=document.getElementById('pPrecioMon').value||'CRC';
+  pPriceHist.push({fecha:isoLocal(),monto:'',mon:cur});
+  pRenderPriceHist();
+}
+function pDelPriceAdj(i){ pPriceHist.splice(i,1); pRenderPriceHist(); }
+function pPriceAdjSet(i,k,v){ if(pPriceHist[i]) pPriceHist[i][k]=(k==='monto')?v:v; }
+function pRenderPriceHist(){
+  const w=document.getElementById('pPriceHistList'); if(!w) return;
+  if(!pPriceHist.length){ w.innerHTML='<div class="fotonote" style="margin:0">Sin ajustes registrados.</div>'; return; }
+  w.innerHTML=pPriceHist.map(function(a,i){
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
+      +'<input type="date" value="'+(a.fecha||'')+'" style="flex:1 1 118px" onchange="pPriceAdjSet('+i+',\'fecha\',this.value)">'
+      +'<input type="number" inputmode="decimal" placeholder="Nuevo precio" value="'+(a.monto||'')+'" style="flex:1 1 92px" onchange="pPriceAdjSet('+i+',\'monto\',this.value)">'
+      +'<select style="flex:0 0 80px" onchange="pPriceAdjSet('+i+',\'mon\',this.value)"><option value="CRC"'+(a.mon==='CRC'?' selected':'')+'>₡</option><option value="USD"'+(a.mon==='USD'?' selected':'')+'>$</option></select>'
+      +'<button type="button" class="ghostbtn" style="flex:0 0 40px;padding:8px 0" onclick="pDelPriceAdj('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
 function pPrecioLbl(){
   const cpt=document.getElementById('pCat').value||'';
   const alq=isAlquilerCat(PIPE_TO_CAT[cpt]||'')||/alquiler/i.test(cpt);
@@ -3935,7 +3976,7 @@ function savePipe(){
   const tc=pMon==='USD'?(parseFloat(document.getElementById('pTC').value)||SET.tc):1;
   const ex=pEditId?PIPE.find(x=>x.id===pEditId):null;
   const creado=document.getElementById('pCreado').value||((ex&&ex.creado)?ex.creado:new Date().toISOString().slice(0,10));
-  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||'',precioLista:parseFloat(document.getElementById('pPrecioLista').value)||0};
+  const rec={id:pEditId||Date.now(),creado,concepto:document.getElementById('pCat').value,propiedad:document.getElementById('pProp').value.trim(),detalle:document.getElementById('pDet').value.trim(),moneda:pMon,monto,tc,prob:pProb,meses:pMeses,coloc:pColoc,corredor:document.getElementById('pCorredor').value.trim(),foto:pCover||'',precioLista:parseFloat(document.getElementById('pPrecioLista').value)||0,precioListaMon:document.getElementById('pPrecioMon').value||'CRC',precioHist:pPriceHist.filter(function(a){return a.fecha&&parseFloat(a.monto)>0;}).map(function(a){return {fecha:a.fecha,monto:parseFloat(a.monto),mon:a.mon||'CRC'};}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);})};
   if(pEditId){const i=PIPE.findIndex(x=>x.id===pEditId);PIPE[i]=rec;}else PIPE.push(rec);
   persist();closePipe();render();toast(pEditId?'Pipeline actualizado':'Agregado al pipeline');
 }
@@ -3968,7 +4009,10 @@ function openClose(id){
   var lblP=document.getElementById('closePrecioLbl'), inP=document.getElementById('closePrecio');
   if(lblP&&inP){
     lblP.innerHTML=(alq?'Precio de alquiler logrado (mensual)':'Precio de venta logrado')+' <small style="font-weight:500;text-transform:none;letter-spacing:0">· opcional</small>';
-    inP.value=p.precioLista||'';
+    var _h=(p.precioHist||[]), _vig=_h.length?_h[_h.length-1]:null;
+    inP.value=(_vig?_vig.monto:p.precioLista)||'';
+    var _ms=document.getElementById('closePrecioMon');
+    if(_ms) _ms.value=(_vig?_vig.mon:(p.precioListaMon||p.moneda))||'CRC';
     inP.oninput=function(){closePrecioCmpUpd(p,alq);};
     closePrecioCmpUpd(p,alq);
   }
@@ -3985,14 +4029,24 @@ function openClose(id){
   document.getElementById('closeOverlay').classList.add('open');
 }
 function closeCloseModal(){document.getElementById('closeOverlay').classList.remove('open');closeId=null;}
+function closePrecioMonChange(){ var p=PIPE.find(function(x){return x.id===closeId;}); if(p) closePrecioCmpUpd(p, isAlquilerCat(PIPE_TO_CAT[p.concepto]||'')||/alquiler/i.test(p.concepto||'')); }
 function closePrecioCmpUpd(p,alq){
   var inP=document.getElementById('closePrecio'), cmpP=document.getElementById('closePrecioCmp');
   if(!inP||!cmpP)return;
-  var lista=p.precioLista||0, cierre=parseFloat(inP.value)||0;
+  var hist=(p.precioHist||[]);
+  var vigente=hist.length?hist[hist.length-1]:null;
+  var lista=vigente?vigente.monto:(p.precioLista||0);
+  var listaMon=vigente?(vigente.mon||'CRC'):(p.precioListaMon||p.moneda||'CRC');
+  var cierre=parseFloat(inP.value)||0;
+  var cierreMon=(document.getElementById('closePrecioMon')||{}).value||'CRC';
   if(lista>0&&cierre>0){
-    var pct=Math.round(cierre/lista*100);
+    var mismaMon=(listaMon===cierreMon);
+    var cmp=mismaMon?cierre/lista:(cierreMon==='USD'? (cierre*(+SET.tc||1))/lista : cierre/(lista*(+SET.tc||1)));
+    var pct=Math.round(cmp*100);
     var col=pct>=98?'var(--ingreso)':(pct>=92?'var(--gold)':'var(--gasto)');
-    cmpP.innerHTML='Lográs <b style="color:'+col+'">'+pct+'%</b> del precio publicado'+(alq?' de alquiler':'')+'.';
+    cmpP.innerHTML='Lográs <b style="color:'+col+'">'+pct+'%</b> del precio '+(vigente?'vigente':'publicado')+(alq?' de alquiler':'')
+      +' ('+(listaMon==='USD'?'$':'₡')+lista.toLocaleString('es-CR')+')'
+      +(mismaMon?'':' <span style="color:var(--gold)">· cambio de moneda, comparado al TC '+(+SET.tc||1)+'</span>');
   } else cmpP.innerHTML='';
 }
 function confirmClose(){
@@ -4002,10 +4056,11 @@ function confirmClose(){
   if(_cid0){ const _cWin=CITAS.find(c=>c.id===_cid0); if(_cWin&&_cWin.corredor&&!p.corredor){ p.corredor=_cWin.corredor; if(p.coloc==='propia')p.coloc='comp'; } }
   const cat=PIPE_TO_CAT[p.concepto]||'Otro ingreso';
   const newId=Date.now();
-  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p),precioLista:p.precioLista||0}};
+  const rec={id:newId,tipo:'ingreso',categoria:cat,fecha:d,propiedad:p.propiedad||'',detalle:p.detalle||'',moneda:p.moneda,monto:p.monto,tc:p.tc,coloc:p.coloc||'propia',corredor:p.corredor||'',foto:p.foto||'',origenPipe:{concepto:p.concepto,prob:p.prob,meses:p.meses,creado:pipeCreado(p),precioLista:p.precioLista||0,precioListaMon:p.precioListaMon||p.moneda||'CRC',precioHist:p.precioHist||[]}};
   var _precioCierre=parseFloat((document.getElementById('closePrecio')||{}).value)||0;
-  if(p.precioLista>0) rec.precioLista=p.precioLista;
-  if(_precioCierre>0) rec.precioCierre=_precioCierre;
+  if(p.precioLista>0){ rec.precioLista=p.precioLista; rec.precioListaMon=p.precioListaMon||p.moneda||'CRC'; }
+  if((p.precioHist||[]).length) rec.precioHist=p.precioHist;
+  if(_precioCierre>0){ rec.precioCierre=_precioCierre; rec.precioCierreMon=(document.getElementById('closePrecioMon')||{}).value||'CRC'; }
   if(isAlquilerCat(cat)) rec.alquiler={inicio:'',vencimiento:'',pago:'',estado:'vigente'};
   var cpEl=document.getElementById('closePend'); if(cpEl&&cpEl.checked) rec.cobro='pend';
   var hasRefEl=document.getElementById('closeHasRef');
@@ -4530,6 +4585,32 @@ function mktTrendHTML(){
 }
 
 /* ----- Reporte de gestión por propiedad (PDF) ----- */
+function priceJourney(tx,pipe,isAlq){
+  const src=tx||pipe||{};
+  const op=(tx&&tx.origenPipe)||{};
+  const listP=src.precioLista||op.precioLista||(pipe&&pipe.precioLista)||0;
+  const listMon=src.precioListaMon||op.precioListaMon||(pipe&&(pipe.precioListaMon||pipe.moneda))||src.moneda||'CRC';
+  const hist=(src.precioHist&&src.precioHist.length?src.precioHist:(op.precioHist||(pipe&&pipe.precioHist)||[]));
+  const closeP=(tx&&tx.precioCierre)||0;
+  const closeMon=(tx&&tx.precioCierreMon)||(tx&&tx.moneda)||'CRC';
+  const suf=isAlq?' /mes':'';
+  const sym=m=>m==='USD'?'$':'₡';
+  const f=(v,m)=>sym(m)+(+v).toLocaleString('es-CR')+suf;
+  if(!listP && !closeP) return {has:false};
+  // % logrado contra el último precio vigente (publicado o última rebaja)
+  const vig=hist.length?hist[hist.length-1]:null;
+  const baseP=vig?vig.monto:listP, baseMon=vig?(vig.mon||'CRC'):listMon;
+  // Solo se calcula el % si ambos montos están en la misma moneda: al negociarse
+  // el cierre en otra moneda el ratio no es comparable (mismo criterio que closePrecioCmpUpd).
+  let pct=null;
+  if(baseP>0 && closeP>0 && closeMon===baseMon) pct=Math.round(closeP/baseP*100);
+  const rows=[];
+  if(listP>0) rows.push({lab:'Precio publicado',val:f(listP,listMon),fecha:null});
+  hist.forEach((a,i)=>rows.push({lab:'Ajuste de precio'+(hist.length>1?' '+(i+1):''),val:f(a.monto,a.mon||'CRC'),fecha:a.fecha}));
+  if(closeP>0) rows.push({lab:'Monto final del negocio',val:f(closeP,closeMon),fecha:null,final:true});
+  return {has:true,rows,pct,listP,listMon,closeP,closeMon,baseP,baseMon,hist,f,suf,
+    monedaCambio:(closeP>0 && closeMon!==baseMon)};
+}
 function reporteGestion(prop){
   prop=(prop||'').trim();
   const cs=CITAS.filter(c=>(c.propiedad||'').trim().toLowerCase()===prop.toLowerCase());
@@ -4574,11 +4655,14 @@ function reporteGestion(prop){
   const _listP=(tx&&(tx.precioLista||(tx.origenPipe&&tx.origenPipe.precioLista)))||(pipe&&pipe.precioLista)||0;
   const _closeP=(tx&&tx.precioCierre)||0;
   const _pSuf=_isAlq?' /mes':'';
+  const _pj=priceJourney(tx,pipe,_isAlq);
   let precioRow='';
-  if(_listP>0){
-    const _pr=_closeP>0?Math.round(_closeP/_listP*100):null;
-    precioRow='<tr><td class="fl">'+(_isAlq?'Precio de alquiler':'Precio de venta')+'</td><td class="fv">₡'+_listP.toLocaleString('es-CR')+_pSuf
-      +(_closeP>0?' → cerrado en ₡'+_closeP.toLocaleString('es-CR')+_pSuf+' <b>('+_pr+'% del precio publicado)</b>':' (publicado)')+'</td></tr>';
+  if(_pj.has){
+    precioRow=_pj.rows.map(function(r){
+      return '<tr><td class="fl">'+r.lab+(r.fecha?' <small>('+fmtFecha(r.fecha)+')</small>':'')+'</td><td class="fv">'+(r.final?'<b>'+r.val+'</b>':r.val)
+        +(r.final&&_pj.pct!==null?' <b>('+_pj.pct+'% del precio vigente)</b>':'')
+        +(r.final&&_pj.monedaCambio?' <small>· negociado en otra moneda</small>':'')+'</td></tr>';
+    }).join('');
   }
   const GEST_CSS=`.gcards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid;page-break-inside:avoid}.gcard{border:1px solid #E2E6EE;border-radius:11px;padding:11px 12px;text-align:center;break-inside:avoid}.gcard .v{font-family:'Newsreader',serif;font-size:24px;font-weight:600;color:#1C3D60}.gcard .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:3px}.gcard.g{background:#E4F3EC;border-color:#BFE0CC}.gcard.g .v{color:#15805A}.gsegwrap{margin:4px 0 0;break-inside:avoid;page-break-inside:avoid}.gsegt{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6E7886;font-weight:700;margin:8px 0 4px}.gseg{display:flex;flex-wrap:wrap;gap:6px}.gsg{font-size:10px;background:#F2F5F9;border:1px solid #E2E6EE;border-radius:999px;padding:3px 9px;color:#3A4656}.gsg b{color:#1C3D60}.gsg.g{background:#E4F3EC;color:#15805A}.gsg.g b{color:#15805A}.gsg.y{background:#FBF1DD;color:#9A6B1E}.gsg.y b{color:#9A6B1E}.gsg.r{background:#FBE7E1;color:#BE3A22}.gsg.r b{color:#BE3A22}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;margin:2px 0 6px}.gst{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid;page-break-inside:avoid}.ficha h4{break-after:avoid;page-break-after:avoid}`;
   const INNER='<div class="rep ficha">'
@@ -4624,7 +4708,8 @@ function reporteDesempeno(prop){
   const pSuf=isAlq?' /mes':'';
   const listP=tx.precioLista||(tx.origenPipe&&tx.origenPipe.precioLista)||0;
   const closeP=tx.precioCierre||0;
-  const pr=(listP>0&&closeP>0)?Math.round(closeP/listP*100):null;
+  const _dpj=priceJourney(tx,null,isAlq);
+  const pr=_dpj.pct;
   const owner=tx.alquiler&&tx.alquiler.ownName?tx.alquiler.ownName:'';
   const totalCitas=cs.length;
   // Exposición desde el embudo de marketing (suma todos los meses de esta propiedad)
@@ -4650,12 +4735,21 @@ function reporteDesempeno(prop){
   kpiArr.push('<div class="dkc"><div class="v">'+totalCitas+'</div><div class="k">Prospectos atendidos</div></div>');
   if(dom!==null) kpiArr.push('<div class="dkc"><div class="v">'+dom+'</div><div class="k">Días en el mercado</div></div>');
   kpiArr.push('<div class="dkc"><div class="v">'+realizadas+'</div><div class="k">Visitas hasta cerrar</div></div>');
-  if(pr!==null) kpiArr.push('<div class="dkc g"><div class="v">'+pr+'%</div><div class="k">Del precio pedido</div></div>');
+  if(pr!==null) kpiArr.push('<div class="dkc g"><div class="v">'+pr+'%</div><div class="k">Del precio vigente</div></div>');
   const kpis='<div class="dk" style="grid-template-columns:repeat('+kpiArr.length+',1fr)">'+kpiArr.join('')+'</div>';
-  const priceBlock=(listP>0)?'<h4>Precio defendido</h4><div class="dprice"><div><div class="lab">'+(isAlq?'Alquiler publicado':'Precio publicado')+'</div><div class="big">₡'+listP.toLocaleString('es-CR')+pSuf+'</div></div>'
-    +(closeP>0?'<div style="text-align:center"><div class="lab">Logrado</div><div class="big">₡'+closeP.toLocaleString('es-CR')+pSuf+'</div></div><div style="text-align:right"><div class="lab">Del precio pedido</div><div class="ratio">'+pr+'%</div></div>':'')+'</div>':'';
+  const pCur=(tx.moneda==='USD')?'$':'₡';
+  let priceBlock='';
+  if(_dpj.has){
+    const ajustes=_dpj.hist.length?('<div style="margin-top:9px;font-size:11px;color:#3A4656">Estrategia de precio: '
+      +_dpj.hist.map(function(a){return 'ajuste a <b>'+(a.mon==='USD'?'$':'₡')+(+a.monto).toLocaleString('es-CR')+'</b> el '+fmtFecha(a.fecha);}).join(' · ')+'</div>'):'';
+    priceBlock='<h4>Precio defendido</h4><div class="dprice">'
+      +'<div><div class="lab">'+(isAlq?'Alquiler publicado':'Precio publicado')+'</div><div class="big">'+(_dpj.listMon==='USD'?'$':'₡')+(+_dpj.listP).toLocaleString('es-CR')+_dpj.suf+'</div></div>'
+      +(_dpj.closeP>0?'<div style="text-align:center"><div class="lab">Monto final</div><div class="big">'+(_dpj.closeMon==='USD'?'$':'₡')+(+_dpj.closeP).toLocaleString('es-CR')+_dpj.suf+'</div></div>'
+        +(_dpj.pct!==null?'<div style="text-align:right"><div class="lab">Del precio vigente</div><div class="ratio">'+_dpj.pct+'%</div></div>':''):'')
+      +'</div>'+ajustes;
+  }
   const DESEMP_CSS=".dk{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0 6px;break-inside:avoid}.dkc{border:1px solid #E2E6EE;border-radius:11px;padding:13px 8px;text-align:center}.dkc .v{font-family:'Newsreader',serif;font-size:25px;font-weight:600;color:#1C3D60;line-height:1}.dkc .k{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#6E7886;font-weight:700;margin-top:6px}.dkc.g{background:#E4F3EC;border-color:#BFE0CC}.dkc.g .v{color:#15805A}.dexpo{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #E2E6EE;border-radius:12px;overflow:hidden;margin:6px 0;break-inside:avoid}.dec{padding:15px 10px;text-align:center;border-right:1px solid #E2E6EE}.dec:last-child{border-right:none}.dec .n{font-family:'Newsreader',serif;font-size:27px;font-weight:600;color:#1C3D60;line-height:1}.dec .l{font-size:10.5px;color:#6E7886;font-weight:600;margin-top:6px}.dprice{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#EAF0F6;border:1px solid #D6E2EE;border-radius:12px;padding:15px 18px;break-inside:avoid}.dprice .lab{font-size:11px;color:#6E7886;font-weight:600}.dprice .big{font-family:'Newsreader',serif;font-size:20px;font-weight:600;color:#1C3D60}.dprice .ratio{font-family:'Newsreader',serif;font-size:28px;font-weight:700;color:#15805A}.dtl{margin-top:8px}.dev{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid #EEF1F6;break-inside:avoid}.dd{font-size:11px;color:#6E7886;font-weight:700;white-space:nowrap;min-width:74px}.dt{font-size:12.5px;color:#1E2A38}.dst{font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;white-space:nowrap}.dres{font-size:10px;color:#3A4656;margin-top:2px;line-height:1.4}.gsince{display:inline-block;background:#EAF0F6;color:#1C3D60;border-radius:999px;padding:5px 14px;font-size:12.5px;font-weight:700;margin:2px 0 6px}.gstate{margin:18px 0 4px;padding:12px 14px;border-radius:11px;background:#F4F8F4;border:1px solid #CFE5D8;font-size:13px;color:#1E2A38;break-inside:avoid}.ficha h4{break-after:avoid}";
-  const estadoTxt='Negocio cerrado'+(cierre?' el '+fmtFecha(cierre):'')+(dom!==null?' tras '+dom+' días de gestión':'')+(realizadas>0?' y '+realizadas+' visita'+(realizadas===1?'':'s'):'')+(pr!==null?', al '+pr+'% del precio publicado':'')+'.';
+  const estadoTxt='Negocio cerrado'+(cierre?' el '+fmtFecha(cierre):'')+(dom!==null?' tras '+dom+' días de gestión':'')+(realizadas>0?' y '+realizadas+' visita'+(realizadas===1?'':'s'):'')+(pr!==null?', al '+pr+'% del precio vigente':'')+'.';
   const INNER='<div class="rep ficha">'
     +'<div class="rep-head">'+logoSVG('#1C3D60',50)+'<div><div class="rep-title">Reporte de desempeño de la propiedad</div><div class="rep-period">'+prop+' · '+new Date().toLocaleDateString('es-CR')+'</div></div></div>'
     +(dom!==null?'<div class="gsince">⏱ Colocada en '+dom+' días</div>':'')
