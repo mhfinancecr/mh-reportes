@@ -871,6 +871,15 @@
   .swapbtn{display:block;margin:2px auto 12px;font-size:12px;color:var(--gold);font-weight:600;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);white-space:nowrap}
   .swapbtn:hover{border-color:var(--gold);background:var(--gold-soft)}
   #printArea{display:none}
+  #repViewer{position:fixed;inset:0;z-index:900;background:#fff;display:none;flex-direction:column}
+  #repViewer.open{display:flex}
+  #repViewer .rvbar{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:#1C3D60;color:#fff}
+  #repViewer .rvhint{flex:1;font-size:11px;opacity:.85;line-height:1.3;text-align:center}
+  #repViewer .rvbar button{border:0;border-radius:9px;padding:10px 13px;font-size:13px;font-weight:700;cursor:pointer;flex:0 0 auto;min-height:44px}
+  #repViewer .rvclose{background:rgba(255,255,255,.16);color:#fff}
+  #repViewer .rvprint{background:#E8C27A;color:#1C3D60}
+  #repViewer iframe{flex:1;width:100%;border:0;background:#fff}
+  @media print{ #repViewer{display:none !important} }
   @page{margin:16mm}
   @media print{
     body{background:#fff !important;color:#1a1a1a !important;padding:0 !important}
@@ -1446,13 +1455,14 @@ function toast(t){const e=document.getElementById('toast');e.textContent=t;e.cla
 /* Impresión de reportes. Safari en iOS ignora print() dentro de un iframe oculto,
    así que en iPhone/iPad se imprime el contenido inyectado en #printArea. */
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
-window.addEventListener('afterprint',function(){ var pa=document.getElementById('printArea'); if(pa) pa.innerHTML=''; });
+function isStandalone(){ return window.navigator.standalone===true || (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches); }
+window.addEventListener('afterprint',function(){ var v=document.getElementById('repViewer'); if(v&&v.classList.contains('open')) return; var pa=document.getElementById('printArea'); if(pa) pa.innerHTML=''; });
 function printDoc(doc, inner, css){
   var sheet=css||REP_CSS;
   if(isIOS()){
-    var pa=document.getElementById('printArea');
-    pa.innerHTML='<style media="print">'+sheet+'</style>'+inner;
-    setTimeout(function(){ window.print(); }, 350);
+    // En iPhone/iPad el reporte se muestra a pantalla completa dentro de la app.
+    // Desde ahí: "⎙ Imprimir / Guardar PDF" (o Compartir del sistema si la app corre como ícono de inicio).
+    showReportViewer(doc, inner, sheet);
     return;
   }
   var f=document.getElementById('printFrame');
@@ -1460,8 +1470,42 @@ function printDoc(doc, inner, css){
   var fd=f.contentWindow.document; fd.open(); fd.write(doc); fd.close();
   setTimeout(function(){
     try{ f.contentWindow.focus(); f.contentWindow.print(); }
-    catch(e){ var pa=document.getElementById('printArea'); pa.innerHTML='<style media="print">'+sheet+'</style>'+inner; window.print(); }
+    catch(e){ showReportViewer(doc, inner, sheet); }
   }, 500);
+}
+var RV_CUR=null;
+function showReportViewer(doc, inner, sheet){
+  var v=document.getElementById('repViewer');
+  if(!v){
+    v=document.createElement('div'); v.id='repViewer';
+    v.innerHTML='<div class="rvbar"><button class="rvclose" onclick="closeReportViewer()">✕ Cerrar</button>'
+      +'<span class="rvhint">Tocá Imprimir y elegí <b>Guardar en PDF</b></span>'
+      +'<button class="rvprint" onclick="printReportViewer()">⎙ Imprimir / PDF</button></div>'
+      +'<iframe id="rvFrame" title="Reporte"></iframe>';
+    document.body.appendChild(v);
+  }
+  var fr=document.getElementById('rvFrame');
+  fr.srcdoc=doc;
+  v.classList.add('open');
+  document.body.style.overflow='hidden';
+  // El contenido también se deja en #printArea: así el botón de imprimir funciona
+  // aunque Safari no permita imprimir el iframe.
+  RV_CUR={inner:inner, sheet:sheet};
+  document.getElementById('printArea').innerHTML='<style media="print">'+sheet+'</style>'+inner;
+}
+function printReportViewer(){
+  // Re-inyecta el contenido: cancelar la hoja de impresión de iOS dispara afterprint
+  // y dejaría #printArea vacío para el segundo intento.
+  if(RV_CUR) document.getElementById('printArea').innerHTML='<style media="print">'+RV_CUR.sheet+'</style>'+RV_CUR.inner;
+  if(isIOS()){ window.print(); return; }
+  var fr=document.getElementById('rvFrame');
+  try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){ window.print(); }
+}
+function closeReportViewer(){
+  var v=document.getElementById('repViewer'); if(v) v.classList.remove('open');
+  document.body.style.overflow='';
+  RV_CUR=null;
+  var pa=document.getElementById('printArea'); if(pa) pa.innerHTML='';
 }
 let CALC={cur:'0',prev:null,op:null,resetNext:false};
 function toggleCalc(){ document.getElementById('calcPanel').classList.toggle('open'); }
